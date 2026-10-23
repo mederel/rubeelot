@@ -1,4 +1,5 @@
 pub mod announcements;
+pub mod bidding;
 pub mod board;
 pub mod card;
 pub mod error;
