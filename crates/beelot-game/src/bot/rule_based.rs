@@ -441,7 +441,7 @@ fn lowest(cards: &[Card], trump: Suit, memory: &CardMemory) -> Card {
 }
 
 /// Orders cards by points, then by strength within their suit.
-fn by_value(trump: Suit) -> impl Fn(&Card, &Card) -> Ordering + Copy {
+pub(crate) fn by_value(trump: Suit) -> impl Fn(&Card, &Card) -> Ordering + Copy {
     move |a, b| {
         rules::points(*a, trump)
             .cmp(&rules::points(*b, trump))
@@ -464,7 +464,7 @@ fn first_max(
 }
 
 /// Java's `Stream.min`: the first of equal minimums.
-fn first_min(
+pub(crate) fn first_min(
     cards: impl IntoIterator<Item = Card>,
     compare: impl Fn(&Card, &Card) -> Ordering,
 ) -> Option<Card> {
@@ -478,7 +478,7 @@ fn first_min(
 }
 
 /// The cards that match, or all of them when none does.
-fn preferring(cards: &[Card], preferred: impl Fn(&Card) -> bool) -> Vec<Card> {
+pub(crate) fn preferring(cards: &[Card], preferred: impl Fn(&Card) -> bool) -> Vec<Card> {
     let matching: Vec<Card> = cards
         .iter()
         .copied()

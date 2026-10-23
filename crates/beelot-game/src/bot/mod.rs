@@ -2,6 +2,7 @@
 //! hands, and strategies can be swapped without touching the rules engine. Port of the Java
 //! `fr.beelot.game.bot` package.
 
+pub mod arena;
 pub(crate) mod memory;
 pub mod rule_based;
 pub mod sampling;
