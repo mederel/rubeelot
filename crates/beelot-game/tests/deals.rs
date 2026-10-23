@@ -8,6 +8,7 @@ use std::panic::{self, AssertUnwindSafe};
 
 use beelot_game::bot::BotStrategy;
 use beelot_game::bot::rule_based::RuleBasedStrategy;
+use beelot_game::bot::sampling::SamplingStrategy;
 use common::{Step, load_deals, replay};
 
 fn panic_message(payload: Box<dyn Any + Send>) -> String {
@@ -42,14 +43,11 @@ fn engine_matches_every_recorded_deal() {
     println!("replayed {} deals, {steps} steps", deals.len());
 }
 
-/// For every step whose seat the `"current"` bot plays (`north_south` for even seats, `east_west`
-/// for odd ones), `RuleBasedStrategy::new()` gives the recorded call or card. Java's current bot
-/// ignores the random generator, so this check draws nothing from it.
-#[test]
-fn current_bot_matches_java() {
-    const BOT: &str = "current";
+/// For every step whose seat the given bot plays (`north_south` for even seats, `east_west` for
+/// odd ones), the strategy gives the recorded call or card. Panics listing every deal that
+/// differs, and when no step is played by the bot. Returns the number of decisions checked.
+fn bot_matches_java(bot_name: &str, strategy: &dyn BotStrategy) -> usize {
     let deals = load_deals();
-    let strategy = RuleBasedStrategy::new();
     let mut checked = 0;
     let mut failures = Vec::new();
     for (label, deal) in &deals {
@@ -68,7 +66,7 @@ fn current_bot_matches_java() {
                 } else {
                     &deal.east_west
                 };
-                if bot != BOT {
+                if bot != bot_name {
                     return;
                 }
                 match step {
@@ -96,11 +94,30 @@ fn current_bot_matches_java() {
     }
     assert!(
         failures.is_empty(),
-        "{} of {} deals have a {BOT} bot decision that differs from Java:\n{}",
+        "{} of {} deals have a {bot_name} bot decision that differs from Java:\n{}",
         failures.len(),
         deals.len(),
         failures.join("\n\n")
     );
-    assert!(checked > 0, "no step is played by the {BOT} bot");
-    println!("{checked} {BOT} bot decisions match Java");
+    assert!(checked > 0, "no step is played by the {bot_name} bot");
+    checked
+}
+
+/// `RuleBasedStrategy::new()` decides as Java's `"current"` bot. Java's current bot ignores the
+/// random generator, so this check draws nothing from it.
+#[test]
+fn current_bot_matches_java() {
+    let checked = bot_matches_java("current", &RuleBasedStrategy::new());
+    println!("{checked} current bot decisions match Java");
+}
+
+/// The sampling strategy the Java recorder used for its `"challenging"` bot (seed 1, 50 samples,
+/// from the third trick, with no time budget to cut the search short) decides as it did. One
+/// strategy serves every deal, as in Java. Java's challenging bot draws its samples from its own
+/// generators, so this check draws nothing from the deal's.
+#[test]
+fn challenging_bot_matches_java() {
+    let strategy = SamplingStrategy::with_settings(1, 50, None, 3);
+    let checked = bot_matches_java("challenging", &strategy);
+    println!("{checked} challenging bot decisions match Java");
 }

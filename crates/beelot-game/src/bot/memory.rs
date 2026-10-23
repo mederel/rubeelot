@@ -111,9 +111,8 @@ impl CardMemory {
         self.unseen.contains(card)
     }
 
-    /// The cards neither in the bot's hand nor played yet, by suit, then by rank. Only the
-    /// sampling bot uses it in Java, which is not ported yet.
-    #[allow(dead_code)]
+    /// The cards neither in the bot's hand nor played yet, by suit, then by rank, as Java lists
+    /// them: the sampling bot shuffles this list.
     pub(crate) fn unseen_cards(&self) -> Vec<Card> {
         self.unseen.cards().collect()
     }
@@ -138,8 +137,8 @@ impl CardMemory {
     }
 
     /// The cards the seat revealed with an announcement and has not played yet, by suit then
-    /// rank; none for the bot. Only the sampling bot uses it in Java, which is not ported yet.
-    #[allow(dead_code)]
+    /// rank; none for the bot. Java returns a hash set, but the sampling bot only adds these
+    /// cards to hands and removes them from the unseen cards, so their order never matters.
     pub(crate) fn known_cards(&self, seat: Seat) -> Vec<Card> {
         self.known[seat].cards().collect()
     }

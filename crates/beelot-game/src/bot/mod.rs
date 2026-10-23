@@ -4,6 +4,9 @@
 
 pub(crate) mod memory;
 pub mod rule_based;
+pub mod sampling;
+pub mod solver;
+pub mod strategies;
 pub mod turns;
 
 use crate::bidding::{AuctionDecision, AuctionView};
