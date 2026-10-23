@@ -5,9 +5,12 @@
 
 use std::fs;
 use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use beelot_game::bidding::{AuctionDecision, AuctionView, BiddingState};
 use beelot_game::board::{GameBoard, PlayView};
+use beelot_game::bot::BotStrategy;
+use beelot_game::bot::rule_based::RuleBasedStrategy;
 use beelot_game::scoring::RoundResult;
 use beelot_game::{Card, JavaRandom, Seat, SplitMix64, Variant};
 use serde::Deserialize;
@@ -217,5 +220,42 @@ fn board(phase: &mut Phase, index: usize) -> &mut GameBoard {
     match phase {
         Phase::Board(board) => board,
         Phase::Bidding(_) | Phase::Switching => unreachable!(),
+    }
+}
+
+/// Plays the current rules and counts the decisions it was asked for.
+pub struct RecordingStrategy {
+    rules: RuleBasedStrategy,
+    auction_decisions: AtomicUsize,
+    card_decisions: AtomicUsize,
+}
+
+impl RecordingStrategy {
+    pub fn new() -> Self {
+        Self {
+            rules: RuleBasedStrategy::new(),
+            auction_decisions: Default::default(),
+            card_decisions: Default::default(),
+        }
+    }
+
+    pub fn decisions(&self) -> usize {
+        self.auction_decisions.load(Ordering::Relaxed) + self.card_decisions()
+    }
+
+    pub fn card_decisions(&self) -> usize {
+        self.card_decisions.load(Ordering::Relaxed)
+    }
+}
+
+impl BotStrategy for RecordingStrategy {
+    fn decide_auction(&self, view: &AuctionView) -> AuctionDecision {
+        self.auction_decisions.fetch_add(1, Ordering::Relaxed);
+        self.rules.decide_auction(view)
+    }
+
+    fn choose_card(&self, view: &PlayView) -> Card {
+        self.card_decisions.fetch_add(1, Ordering::Relaxed);
+        self.rules.choose_card(view)
     }
 }

@@ -1,0 +1,19 @@
+//! Bot players. A strategy only receives what its seat can see, so it cannot look at the other
+//! hands, and strategies can be swapped without touching the rules engine. Port of the Java
+//! `fr.beelot.game.bot` package.
+
+pub(crate) mod memory;
+pub mod rule_based;
+pub mod turns;
+
+use crate::bidding::{AuctionDecision, AuctionView};
+use crate::board::PlayView;
+use crate::card::Card;
+
+/// How a bot bids and plays.
+pub trait BotStrategy: Send + Sync {
+    fn decide_auction(&self, view: &AuctionView) -> AuctionDecision;
+
+    /// Returns one of the view's legal cards.
+    fn choose_card(&self, view: &PlayView) -> Card;
+}

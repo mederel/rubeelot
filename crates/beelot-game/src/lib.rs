@@ -1,6 +1,7 @@
 pub mod announcements;
 pub mod bidding;
 pub mod board;
+pub mod bot;
 pub mod card;
 pub mod error;
 pub mod match_score;
