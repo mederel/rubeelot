@@ -1,0 +1,10 @@
+Bot arena — Classic Belote
+current vs random, 100 duplicate deal pairs, seed 1, announcements on
+
+Point difference per deal (current − random): +41.69 ± 11.10 (95% CI +30.59 to +52.79)
+Matches to 1,000 won by current: 90.0% (18/20), 95% CI 69.9%–97.2%
+Contract success: current 90.4% (85/94); random 70.2% (66/94)
+Coinche success: current n/a (0/0); random n/a (0/0)
+Redeal rate: 6.0% (12/200)
+Rounds with announcements: 66.0% (124/188)
+Decision time per card: current avg 7.4 µs, p99 19.0 µs; random avg 1.5 µs, p99 3.0 µs

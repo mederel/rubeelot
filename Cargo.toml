@@ -1,0 +1,7 @@
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
+[profile.test]
+opt-level = 3
+overflow-checks = true

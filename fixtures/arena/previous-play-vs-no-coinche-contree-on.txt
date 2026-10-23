@@ -1,0 +1,10 @@
+Bot arena — Contrée
+previous-play vs no-coinche, 100 duplicate deal pairs, seed 1, announcements on
+
+Point difference per deal (previous-play − no-coinche): -39.30 ± 13.30 (95% CI -52.60 to -26.00)
+Matches to 1,000 won by previous-play: 13.0% (3/23), 95% CI 4.5%–32.1%
+Contract success: previous-play 77.8% (77/99); no-coinche 92.1% (93/101)
+Coinche success: previous-play 20.0% (1/5); no-coinche n/a (0/0)
+Redeal rate: 0.0% (0/200)
+Rounds with announcements: 64.0% (128/200)
+Decision time per card: previous-play avg 2.6 µs, p99 11.2 µs; no-coinche avg 7.5 µs, p99 10.6 µs
