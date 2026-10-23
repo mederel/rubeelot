@@ -1,4 +1,5 @@
 pub mod announcements;
+pub mod board;
 pub mod card;
 pub mod error;
 pub mod match_score;
