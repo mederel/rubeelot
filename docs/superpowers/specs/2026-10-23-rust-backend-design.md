@@ -178,9 +178,14 @@ parallel maps and the duplicated lifecycle in `PrivateTableService`.
 `GET /api/tables/{id}/events` subscribes to the table's `watch` channel. On
 each new version it builds that player's view (hidden hands differ per seat) and
 sends it as one `snapshot` event. A client that misses versions only gets the
-latest one. A keep-alive comment is sent every 15 seconds. When an online
-player's stream closes, the seat becomes disconnected after a grace period, as
-the `/disconnect` beacon does today; opening a new stream reconnects it.
+latest one. A keep-alive comment is sent every 15 seconds. An online seat
+becomes disconnected when its last open stream closes (a player may have two
+tabs), as the `/disconnect` beacon does today, and a bot takes it over 2 minutes
+later; opening a new stream before then reconnects it.
+
+At online tables a completed trick is collected 4 seconds after it completes,
+by the server's sweep, instead of on the first poll 4 seconds after someone
+loaded it. Local tables keep the player's "continue" click.
 
 ### Background jobs
 
@@ -201,7 +206,7 @@ with `sqlx::migrate!` and run at startup. Tables:
 - `passkey`: `account_id` (unique: one passkey per account),
   `credential_id`, the serialized `webauthn_rs::Passkey` as JSON, `created_at`,
   `last_used_at`. It replaces `user_entities` and `user_credentials`.
-- `session`: token hash, `account_id`, `created_at`, `expires_at`.
+- `session`: token hash, `account_id`, `signed_in_at`, `last_seen_at`.
 - `match_record`, `match_seat`, `match_round`: as today, announcements
   included.
 - `security_event`: as today.
@@ -214,7 +219,9 @@ Tables in progress stay in memory, so a restart drops them, as today.
 
 - Guests need no session. Signing up or signing in creates a `session` row and
   sets a random 256-bit token in an HttpOnly, SameSite=Lax cookie; the database
-  stores only its hash. Sessions last 7 days, as today.
+  stores only its hash. As today, a session ends after 7 idle days or 30 days
+  after its sign-in, whichever comes first, and deleting an account needs a
+  sign-in less than 10 minutes old.
 - Deleting an account deletes its sessions with one statement (replacing
   `AccountSessions`).
 - Passkeys use `webauthn-rs` with the relying party from configuration, as
@@ -274,9 +281,15 @@ POST   /api/tables/{id}/actions      one action → 200 with the new snapshot
 - `LOCAL` covers solo and pass-and-play: `seats` says which seats are human;
   the one player token acts for every human seat on that device. `PRIVATE`
   tables are joined by code; public tables come from quick-match.
-- The snapshot: `{version, kind, status, seats, lobby?, bidding?, board?, match, reactions}`,
+- The snapshot: `{version, tableId, kind, you, table, bidding?, board?, match?, reactions}`,
   each part shown from the requesting player's seat. It replaces the four GETs
-  `/`, `/bidding`, `/board` and `/match`.
+  `/`, `/bidding`, `/board` and `/match`. Its parts keep the JSON shapes of
+  today's responses (`PrivateTableResponse`, both `BiddingResponse`s, both board
+  responses, `MatchResponse`, `ReactionResponse`), so the frontend renderers
+  keep working. Player ids are no longer exposed: seats carry `you`, and the
+  table carries `ownerPosition`.
+- Local tables get a player token too; today anyone with a bot game's id can
+  play it.
 - Actions are one tagged enum (`#[serde(tag = "type")]`):
 
   ```
@@ -314,8 +327,12 @@ WebAuthn JSON that `webauthn-rs` produces.
 
 ### Errors
 
-Every error body is `{error: <stable code>, message}`. The frontend translates
-the code through i18n and no longer shows the server's English message.
+Every error body is `{error: <stable code>, message}`. The frontend's i18n
+uses English text as its key, including patterns such as `"(.+) bids (\d+) …"`,
+so the server keeps sending Java's exact English messages (errors, auction
+messages, call labels, Belote announcements) and the frontend keeps
+translating `message`. The code is for the frontend's logic, such as
+`reauthenticate`.
 
 | `AppError` | Status |
 |---|---|
@@ -348,7 +365,8 @@ named in the copying commit's message) and changed only in `rubeelot`; the
 - An `EventSource` replaces the 3-second `setInterval` and the `pagehide`
   beacon, with a backoff if the browser does not reconnect by itself.
 - The new sign-in, sign-up and sign-out URLs.
-- Error-code keys added to `i18n.js` and `i18n-nl.js`.
+- Translations added to `i18n.js` and `i18n-nl.js` only for new English
+  messages; the existing ones are unchanged.
 - Unknown paths that are not API routes fall back to `index.html`, as
   `HomeController` does today.
 
@@ -384,7 +402,6 @@ Production switches from the `beelot` build to the `rubeelot` build. In
   (`cargo bench -p beelot-game`), Release build (`cargo build --release`), and
   the badges.
 - AGENTS.md: build, test and formatting commands.
-- `compose.yaml` for MariaDB, copied from `beelot`.
 
 In `beelot`: a README note pointing to `rubeelot`. Whether to archive `beelot`
 is decided at that point, not in this spec.
