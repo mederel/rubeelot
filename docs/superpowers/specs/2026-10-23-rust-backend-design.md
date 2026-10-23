@@ -25,8 +25,8 @@ match. MariaDB stays.
   [`mederel/rubeelot`](https://github.com/mederel/rubeelot), started with a
   fresh history: no Java, no Gradle. The Java backend stays in
   [`mederel/beelot`](https://github.com/mederel/beelot) and remains the product
-  until the cutover. The only changes made in `beelot` for this work are the
-  determinism fix and the fixture recorder (phase 1).
+  until the cutover. The only change made in `beelot` for this work is the
+  fixture recorder (phase 1).
 - **Incremental.** `rubeelot` grows in three phases, each its own PR or set of
   PRs; Java stays the product until the cutover in phase 3.
 - **Rejected:** a big-bang rewrite on a long-lived branch (one huge PR, features
@@ -55,13 +55,21 @@ freshly recorded fixtures.
 
 ## Phase 1: `beelot-game` and `beelot-arena`
 
-### Determinism fix in Java, first (in `beelot`)
+### What is deterministic
 
-`SamplingStrategy.mix` hashes `card.rank().hashCode()`. An enum's `hashCode` is
-an identity hash that changes on every JVM start, so the Challenging bot is not
-reproducible from a seed today. Change it to `card.rank().ordinal()` in Java
-before recording fixtures. The distribution of seeds is unchanged; only their
-values become stable across runs.
+Every decision is a function of the seed and the view, with two exceptions:
+
+- **The Challenging bot's time budget** (200 ms by default) stops its search at
+  a point that depends on timing. Fixtures record it with no budget, and the
+  Rust `SamplingStrategy` takes the budget as `Option<Duration>` so tests can do
+  the same. Arena runs with `challenging` are therefore compared by strength,
+  not line by line.
+- **Decision times** in the arena report differ by nature; that line is left
+  out of the comparison.
+
+`SamplingStrategy.mix` hashes `card.rank().hashCode()`: the rank is a `String`,
+whose hash Java defines exactly, so Rust reproduces it with a constant per
+rank. No change to the Java code is needed.
 
 ### Randomness reproduced exactly
 
@@ -81,16 +89,24 @@ parity.
 - Modules follow `fr.beelot.game`: `card`, `bidding`, `board`, `scoring`
   (`RoundScoring`), `announcements`, `match_score`, `rules` (`BeloteRules`),
   `bot::{rule_based, sampling, solver, memory, turns}`.
-- `Card`, `Suit`, `Rank`, `Variant` and `Difficulty` are `Copy` enums.
-- Seats are `SeatIndex(u8)`, not `UUID` keys in a `HashMap`; player identity
-  belongs to the server.
+- `Suit`, `Rank`, `Variant`, `Difficulty` and `Team` are `Copy` enums; `Card`
+  is a `Copy` struct of a rank and a suit.
+- Seats are `Seat = usize` indices 0–3 in play order (North–South hold the even
+  seats), not `UUID` keys in a `HashMap`; player identity and names belong to
+  the server.
 - `BiddingState` and `GameBoard` are structs whose operations return
   `Result<_, GameError>`; `GameError` is a `thiserror` enum with one variant per
-  rejected move, and each variant has a stable code for the API.
-- Bots implement
-  `trait BotStrategy { fn decide_auction(&self, view: &AuctionView, rng: &mut dyn RngCore) -> AuctionDecision; fn choose_card(&self, view: &PlayView, rng: &mut dyn RngCore) -> Card; }`.
-- Dependencies: `thiserror`, `rand_core`, and `serde` behind a `serde`
-  feature (used by the fixtures and the server).
+  rejected move, and each variant has a stable code for the API. The English
+  messages of the Java engine move to the server and the frontend in phase 2,
+  as do the player-facing views (`BiddingView`, `GameBoardView`).
+- Production bots implement
+  `trait BotStrategy { fn decide_auction(&self, view: &AuctionView) -> AuctionDecision; fn choose_card(&self, view: &PlayView) -> Card; }`;
+  arena bots implement `ArenaBot`, which also receives a
+  `&mut dyn RandomSource`.
+- `RandomSource` is the crate's own one-method trait
+  (`next_int(bound) -> i32`), implemented by `JavaRandom` and `SplitMix64` with
+  Java's exact algorithms; the server implements it over an OS RNG in phase 2.
+- Dependencies: `thiserror` and `serde`.
 
 ### `beelot-arena`
 
@@ -104,21 +120,25 @@ no-announcement-bidding, random) and prints the same report as `ArenaReport`.
 ### Fixtures
 
 - `FixtureRecorder`, a new test-scope class in `beelot`, plays seeded arena
-  matches: both variants, announcements on and off, every arena bot. It writes
-  JSON lines: each line holds the seed and the input view, then the legal
-  moves, the bot's decision, and the trick and round scores.
-- About 2,000 decision lines are copied into `rubeelot/fixtures/`, with a
-  `fixtures/SOURCE` file naming the `beelot` commit they were recorded from.
-  `tests/fixtures.rs` replays every line.
-- Arena parity: for one fixed seed and configuration per variant, the Java and
-  Rust arena reports must be identical; the expected reports are checked in
-  next to the fixtures.
+  deals: both variants, announcements on and off, every arena bot. It writes
+  one JSON line per deal: the seed, the dealer, the bots, then every step (each
+  bot's view and decision, each trick continuation) and the round result. It
+  also writes test vectors for the random generators.
+- About 100 deals (some 3,500 decisions) are copied into `rubeelot/fixtures/`,
+  with a `fixtures/SOURCE` file naming the `beelot` commit they were recorded
+  from. A Rust test replays every deal, checking each view, each decision and
+  the result.
+- Arena parity: for a fixed seed and a handful of configurations without the
+  `challenging` bot, the Java and Rust arena reports must be identical apart
+  from the decision-time line; the expected reports are checked in next to the
+  fixtures.
 
 ### Tests
 
 The Java tests under `src/test/java/fr/beelot/game` are ported one-for-one as
 Rust `#[test]`s, so each rule keeps a readable test of its own beside the
-fixtures.
+fixtures. `PrivateTableTest`, `PublicTableTest` and `PlayerViewsTest` test the
+table lifecycle and player-facing views, so they are ported in phase 2.
 
 ### Done when
 
