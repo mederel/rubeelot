@@ -88,7 +88,29 @@ impl DoubleDummySolver {
         }
     }
 
+    /// The position must be consistent: `current_trick` holds fewer than four cards, and the
+    /// hands are sized to match the trick state, each seat that has played to the current trick
+    /// holding one card fewer than each seat yet to play, which all hold as many as one another.
+    /// The completed tricks are not checked against the hands, so a caller may leave out tricks
+    /// it does not need. Checked in debug builds.
     pub fn solve(&mut self, position: &Position) -> Solution {
+        debug_assert!(
+            position.current_trick.len() < 4,
+            "a complete trick is no current trick"
+        );
+        debug_assert!(
+            {
+                let played = |seat: Seat| position.current_trick.iter().any(|c| c.seat == seat);
+                let waiting = (0..4)
+                    .find(|&seat| !played(seat))
+                    .map(|seat| position.hands[seat].len());
+                (0..4).all(|seat| {
+                    let size = position.hands[seat].len();
+                    waiting.is_some_and(|n| size + usize::from(played(seat)) == n)
+                })
+            },
+            "hand sizes must match the trick state"
+        );
         self.prepare(position.trump);
         for seat in 0..4 {
             self.hands[seat] = self.mask(&position.hands[seat]);

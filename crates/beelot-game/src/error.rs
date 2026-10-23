@@ -1,29 +1,30 @@
-/// Rule violations reported by the engine.
-#[derive(thiserror::Error, Debug, PartialEq, Eq)]
+/// Rule violations reported by the engine. The `Display` text is the kebab-case code, never
+/// English: the server maps each code to its message.
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameError {
-    #[error("it is not this seat's turn to play")]
+    #[error("not-your-turn")]
     NotYourTurn,
-    #[error("that card is not a legal play")]
+    #[error("illegal-card")]
     IllegalCard,
-    #[error("the round has ended")]
+    #[error("round-ended")]
     RoundEnded,
-    #[error("there is no completed trick to continue from")]
+    #[error("no-completed-trick")]
     NoCompletedTrick,
-    #[error("contract bids are only available in Contrée")]
+    #[error("contract-only-in-contree")]
     ContractOnlyInContree,
-    #[error("the trump is chosen without a contract value in Classic Belote")]
+    #[error("trump-choice-only-in-classic")]
     TrumpChoiceOnlyInClassic,
-    #[error("the auction has ended")]
+    #[error("auction-ended")]
     AuctionEnded,
-    #[error("in the first round only the upturned suit may be accepted")]
+    #[error("must-take-upturned-suit")]
     MustTakeUpturnedSuit,
-    #[error("the second round needs a suit other than the upturned suit")]
+    #[error("must-choose-another-suit")]
     MustChooseAnotherSuit,
-    #[error("a bid must be from 80 to 160 in steps of 10")]
+    #[error("invalid-bid")]
     InvalidBid,
-    #[error("a bid must be higher than the current contract")]
+    #[error("bid-too-low")]
     BidTooLow,
-    #[error("only an opponent of the declaring team may coinche")]
+    #[error("coinche-not-allowed")]
     CoincheNotAllowed,
 }
 
@@ -43,6 +44,32 @@ impl GameError {
             GameError::InvalidBid => "invalid-bid",
             GameError::BidTooLow => "bid-too-low",
             GameError::CoincheNotAllowed => "coinche-not-allowed",
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::GameError::{self, *};
+
+    #[test]
+    fn display_is_the_code_for_every_variant() {
+        let all: [GameError; 12] = [
+            NotYourTurn,
+            IllegalCard,
+            RoundEnded,
+            NoCompletedTrick,
+            ContractOnlyInContree,
+            TrumpChoiceOnlyInClassic,
+            AuctionEnded,
+            MustTakeUpturnedSuit,
+            MustChooseAnotherSuit,
+            InvalidBid,
+            BidTooLow,
+            CoincheNotAllowed,
+        ];
+        for e in all {
+            assert_eq!(e.to_string(), e.code());
         }
     }
 }

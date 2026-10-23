@@ -45,13 +45,6 @@ impl RuleBasedStrategy {
         Self::with_trump_control(TAKING_THRESHOLD, BIDDING_MARGIN, false)
     }
 
-    /// A strategy that takes a classic contract when its hand scores at least the given
-    /// threshold, and that bids in Contrée up to its estimate minus the given margin.
-    #[allow(dead_code)]
-    pub(crate) fn with_thresholds(taking_threshold: i32, bidding_margin: i32) -> Self {
-        Self::with_trump_control(taking_threshold, bidding_margin, true)
-    }
-
     fn with_trump_control(taking_threshold: i32, bidding_margin: i32, trump_control: bool) -> Self {
         Self {
             taking_threshold,

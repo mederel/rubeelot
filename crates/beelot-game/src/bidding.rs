@@ -113,6 +113,30 @@ pub struct BiddingState {
     announcements: bool,
 }
 
+impl std::fmt::Debug for BiddingState {
+    /// Leaves out the random source.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BiddingState")
+            .field("variant", &self.variant)
+            .field("deals", &self.deals)
+            .field("hands", &self.hands)
+            .field("remaining_deck", &self.remaining_deck)
+            .field("upturned_card", &self.upturned_card)
+            .field("dealer", &self.dealer)
+            .field("active", &self.active)
+            .field("round", &self.round)
+            .field("consecutive_passes", &self.consecutive_passes)
+            .field("highest_bid", &self.highest_bid)
+            .field("highest_bidder", &self.highest_bidder)
+            .field("highest_bid_suit", &self.highest_bid_suit)
+            .field("coinched", &self.coinched)
+            .field("completed_board", &self.completed_board)
+            .field("auction", &self.auction)
+            .field("announcements", &self.announcements)
+            .finish_non_exhaustive()
+    }
+}
+
 impl BiddingState {
     /// The dealer deals, then the seat to the dealer's left speaks first and leads the first trick.
     pub fn new(variant: Variant, dealer: Seat, rng: Box<dyn RandomSource + Send>) -> Self {

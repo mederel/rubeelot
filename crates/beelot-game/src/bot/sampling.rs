@@ -123,7 +123,9 @@ impl BotStrategy for SamplingStrategy {
         if legal.len() == 1 || view.tricks.len() + 1 < self.first_searched_trick {
             return self.rules.choose_card(view);
         }
-        let deadline = self.budget.map(|budget| Instant::now() + budget);
+        let deadline = self
+            .budget
+            .and_then(|budget| Instant::now().checked_add(budget));
         let pooled = self
             .solvers
             .lock()
@@ -446,6 +448,16 @@ mod tests {
                 memory.unseen_cards().into_iter().collect::<HashSet<_>>()
             );
         }
+    }
+
+    #[test]
+    fn an_unrepresentably_long_budget_means_no_deadline() {
+        let board = (1..=20)
+            .find_map(|seed| board_after_tricks(seed, 3))
+            .expect("a board");
+        let view = board.play_view(board.active_seat());
+        let strategy = SamplingStrategy::with_settings(1, 2, Some(Duration::MAX), 1);
+        assert!(view.legal_cards.contains(&strategy.choose_card(&view)));
     }
 
     fn spade_tierce() -> Announcement {

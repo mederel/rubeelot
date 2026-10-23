@@ -12,3 +12,15 @@ pub mod scoring;
 pub use card::{Card, Difficulty, Rank, Seat, Suit, Team, Variant};
 pub use error::GameError;
 pub use rng::{JavaRandom, RandomSource, SplitMix64, java_shuffle};
+
+#[cfg(test)]
+mod thread_safety {
+    use super::{bidding::BiddingState, board::GameBoard};
+
+    const _: fn() = || {
+        fn assert_send<T: Send>() {}
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send::<BiddingState>();
+        assert_send_sync::<GameBoard>();
+    };
+}

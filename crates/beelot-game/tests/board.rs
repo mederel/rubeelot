@@ -179,6 +179,26 @@ fn play_view_keeps_dealt_order() {
     assert_eq!(board.play_view(0).hand.len(), 5);
 }
 
+#[test]
+fn a_completed_trick_moves_from_the_current_trick_to_the_tricks() {
+    let mut board = rules_board();
+    let mut played = Vec::new();
+    for _ in 0..4 {
+        let seat = board.active_seat();
+        let card = board.legal_cards(seat)[0];
+        board.play(seat, card, false).unwrap();
+        played.push((seat, card));
+    }
+    assert!(board.reviewing_completed_trick());
+    for seat in 0..4 {
+        let view = board.play_view(seat);
+        assert!(view.current_trick.is_empty());
+        let last = view.tricks.last().expect("the completed trick");
+        let seats_and_cards: Vec<_> = last.iter().map(|c| (c.seat, c.card)).collect();
+        assert_eq!(seats_and_cards, played);
+    }
+}
+
 // ---- belote ----
 
 #[test]

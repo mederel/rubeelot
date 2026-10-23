@@ -27,6 +27,7 @@ impl JavaRandom {
 
 impl RandomSource for JavaRandom {
     fn next_int(&mut self, bound: i32) -> i32 {
+        assert!(bound > 0, "bound must be positive");
         let mut r = self.next(31);
         let m = bound.wrapping_sub(1);
         if bound & m == 0 {
@@ -76,6 +77,7 @@ impl SplitMix64 {
 
 impl RandomSource for SplitMix64 {
     fn next_int(&mut self, bound: i32) -> i32 {
+        assert!(bound > 0, "bound must be positive");
         let mut r = self.raw_int();
         let m = bound.wrapping_sub(1);
         if bound & m == 0 {
@@ -96,5 +98,22 @@ impl RandomSource for SplitMix64 {
 pub fn java_shuffle<T>(items: &mut [T], rng: &mut dyn RandomSource) {
     for i in (2..=items.len()).rev() {
         items.swap(i - 1, rng.next_int(i as i32) as usize);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "bound must be positive")]
+    fn java_random_rejects_a_non_positive_bound() {
+        JavaRandom::new(1).next_int(0);
+    }
+
+    #[test]
+    #[should_panic(expected = "bound must be positive")]
+    fn split_mix_rejects_a_non_positive_bound() {
+        SplitMix64::new(1).next_int(-3);
     }
 }

@@ -10,6 +10,7 @@ use crate::scoring::{RoundResult, RoundSummary};
 pub const WINNING_SCORE: i32 = 1_000;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MatchScore {
     rounds: Vec<RoundSummary>,
     north_south: i32,
@@ -102,6 +103,14 @@ mod tests {
             coinched: false,
             result,
         }
+    }
+
+    #[test]
+    fn serializes_its_fields_in_camel_case() {
+        let json = serde_json::to_value(MatchScore::new()).unwrap();
+        let mut keys: Vec<_> = json.as_object().unwrap().keys().cloned().collect();
+        keys.sort();
+        assert_eq!(keys, ["complete", "eastWest", "northSouth", "rounds"]);
     }
 
     #[test]

@@ -21,6 +21,11 @@ fn panic_message(payload: Box<dyn Any + Send>) -> String {
 #[test]
 fn engine_matches_every_recorded_deal() {
     let deals = load_deals();
+    assert_eq!(
+        deals.len(),
+        96,
+        "a truncated fixture must not shrink the test"
+    );
     let mut steps = 0;
     let mut failures = Vec::new();
     for (label, deal) in &deals {
@@ -49,6 +54,11 @@ fn engine_matches_every_recorded_deal() {
 #[test]
 fn every_bot_matches_java() {
     let deals = load_deals();
+    assert_eq!(
+        deals.len(),
+        96,
+        "a truncated fixture must not shrink the test"
+    );
     let bots: BTreeMap<&str, Box<dyn ArenaBot>> = ARENA_BOTS
         .iter()
         .map(|&name| (name, arena_bot_unbounded(name).expect("an arena bot")))
