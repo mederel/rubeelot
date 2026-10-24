@@ -136,12 +136,19 @@ impl Config {
             },
             None => false,
         };
+        let public_url = text("BEELOT_PUBLIC_URL", defaults.public_url);
+        if let Err(problem) = crate::auth::relying_party::RelyingParty::of(&public_url) {
+            return Err(ConfigError::Invalid {
+                name: "BEELOT_PUBLIC_URL",
+                value: problem,
+            });
+        }
         Ok(Config {
             bind,
             database_url: text("BEELOT_DATABASE_URL", defaults.database_url),
             database_username: text("BEELOT_DATABASE_USERNAME", defaults.database_username),
             database_password: text("BEELOT_DATABASE_PASSWORD", defaults.database_password),
-            public_url: text("BEELOT_PUBLIC_URL", defaults.public_url),
+            public_url,
             privacy: PrivacyConfig {
                 controller: text("BEELOT_PRIVACY_CONTROLLER", String::new()),
                 contact: text("BEELOT_PRIVACY_CONTACT", String::new()),
@@ -197,5 +204,6 @@ mod tests {
     fn invalid_values_are_refused() {
         assert!(from(&[("BEELOT_BIND", "nowhere")]).is_err());
         assert!(from(&[("BEELOT_TRUST_FORWARDED_HEADERS", "maybe")]).is_err());
+        assert!(from(&[("BEELOT_PUBLIC_URL", "beelot.fr")]).is_err());
     }
 }

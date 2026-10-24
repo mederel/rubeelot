@@ -1,6 +1,9 @@
 //! Accounts' sessions and the CSRF rule. Passkeys come with sign-up and sign-in.
 
 pub mod csrf;
+pub mod passkeys;
+pub mod pseudonyms;
+pub mod relying_party;
 pub mod sessions;
 
 use axum::extract::FromRequestParts;

@@ -2,6 +2,7 @@
 
 pub mod account;
 pub mod events;
+pub mod passkeys;
 pub mod tables;
 
 use axum::Router;
@@ -18,6 +19,7 @@ pub fn api() -> Router<AppState> {
     tables::routes()
         .merge(events::routes())
         .merge(account::routes())
+        .merge(passkeys::routes())
 }
 
 /// A JSON body; one that cannot be read is a bad request with the usual error body.

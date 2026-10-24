@@ -2,6 +2,7 @@
 
 pub mod accounts;
 pub mod events;
+pub mod passkeys;
 pub mod sessions;
 
 use sqlx::mysql::{

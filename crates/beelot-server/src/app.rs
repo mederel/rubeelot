@@ -17,6 +17,7 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::auth::csrf;
+use crate::auth::passkeys::Passkeys;
 use crate::clock::Clock;
 use crate::config::Config;
 use crate::error::AppError;
@@ -36,6 +37,7 @@ pub struct AppState {
     pub sink: Arc<dyn MatchSink>,
     /// Lazy until a request needs it: guests' requests never do.
     pub pool: MySqlPool,
+    pub passkeys: Arc<Passkeys>,
 }
 
 impl AppState {
@@ -48,8 +50,11 @@ impl AppState {
                 .username(&config.database_username)
                 .password(&config.database_password),
         );
+        let passkeys = Passkeys::new(&config.public_url, &config.limits, clock.clone())
+            .expect("a public URL checked by the configuration");
         Self {
             pool,
+            passkeys: Arc::new(passkeys),
             rate_limits: Arc::new(RateLimits::new(&config, clock.clone())),
             registry: Arc::new(TableRegistry::new(&config.limits, clock.clone())),
             config: Arc::new(config),

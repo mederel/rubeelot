@@ -28,10 +28,14 @@ tower-http = { version = "0.6", features = ["fs", "trace", "request-id", "set-he
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4", "serde"] }
+url = "2"
+webauthn-rs = { version = "0.5", features = ["conditional-ui"] }
+webauthn-rs-proto = "0.5"
 
 [dev-dependencies]
 futures-util = "0.3"
 http-body-util = "0.1"
+webauthn-authenticator-rs = { version = "0.5", features = ["softpasskey"] }
 testcontainers-modules = { version = "0.15", features = ["mariadb"] }
 tokio = { version = "1", features = ["test-util"] }
 tokio-util = "0.7"
