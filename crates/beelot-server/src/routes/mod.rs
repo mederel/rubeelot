@@ -41,6 +41,15 @@ impl<S: Send + Sync, T: DeserializeOwned> FromRequest<S> for ApiJson<T> {
     }
 }
 
+/// Runs work that locks tables off the async threads: a table's lock may be held for a while by its bots' search.
+pub async fn blocking<T: Send + 'static>(
+    work: impl FnOnce() -> T + Send + 'static,
+) -> Result<T, AppError> {
+    tokio::task::spawn_blocking(work)
+        .await
+        .map_err(|error| AppError::Internal(error.into()))
+}
+
 /// A table id from the path; anything else names no table.
 pub fn table_id(id: &str) -> Result<Uuid, AppError> {
     id.parse().map_err(|_| AppError::NotFound)

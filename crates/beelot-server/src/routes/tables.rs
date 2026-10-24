@@ -9,7 +9,7 @@ use beelot_game::{Difficulty, Variant};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::{ApiJson, bearer, table_id};
+use super::{ApiJson, bearer, blocking, table_id};
 use crate::api::{Snapshot, snapshot};
 use crate::app::AppState;
 use crate::auth::MaybeSession;
@@ -90,18 +90,19 @@ async fn create(
 ) -> Result<impl IntoResponse, AppError> {
     let variant = request.variant.unwrap_or(Variant::Classic);
     let account = session.account();
-    let access = match request.kind {
-        Kind::Local => state.registry.create_local(
+    let registry = state.registry.clone();
+    // Making room may evict idle tables, which locks them.
+    let access = blocking(move || match request.kind {
+        Kind::Local => registry.create_local(
             variant,
             request.difficulty.unwrap_or(Difficulty::Relaxed),
             request.announcements.unwrap_or(true),
             request.seats,
             account,
-        )?,
-        Kind::Private => state
-            .registry
-            .create_private(&request.player_name, variant, account)?,
-    };
+        ),
+        Kind::Private => registry.create_private(&request.player_name, variant, account),
+    })
+    .await??;
     Ok(created(access))
 }
 
@@ -111,9 +112,9 @@ async fn join(
     ApiJson(request): ApiJson<JoinRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let account = session.account();
-    let access = state
-        .registry
-        .join(&request.code, &request.player_name, account)?;
+    let registry = state.registry.clone();
+    let access =
+        blocking(move || registry.join(&request.code, &request.player_name, account)).await??;
     Ok(created(access))
 }
 
@@ -127,9 +128,7 @@ async fn quick_match(
     let registry = state.registry.clone();
     let name = request.player_name;
     // Quick matches wait for each other, and a fourth player's join may start a match with bots.
-    let access = tokio::task::spawn_blocking(move || registry.quick_match(&name, variant, account))
-        .await
-        .map_err(|error| AppError::Internal(error.into()))??;
+    let access = blocking(move || registry.quick_match(&name, variant, account)).await??;
     Ok(created(access))
 }
 
@@ -138,31 +137,38 @@ async fn table(
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> Result<Json<Snapshot>, AppError> {
-    let token = bearer(&headers).ok_or_else(AppError::table_unauthorized)?;
-    let (handle, actor) = state.registry.authorize(table_id(&id)?, token)?;
-    let table = handle.state.lock().unwrap();
-    Ok(Json(snapshot(&table, viewer_of(actor), state.clock.now())))
+    let token = bearer(&headers)
+        .ok_or_else(AppError::table_unauthorized)?
+        .to_owned();
+    let id = table_id(&id)?;
+    let (registry, clock) = (state.registry.clone(), state.clock.clone());
+    let view = blocking(move || {
+        let (handle, actor) = registry.authorize(id, &token)?;
+        let table = handle.state.lock().unwrap();
+        Ok::<_, AppError>(snapshot(&table, viewer_of(actor), clock.now()))
+    })
+    .await??;
+    Ok(Json(view))
 }
 
-/// Applies one action and answers the table as the player now sees it. A Challenging bot's search runs off the
-/// async threads.
+/// Applies one action and answers the table as the player now sees it, off the async threads: the bots may search
+/// before answering.
 async fn act(
     State(state): State<AppState>,
     Path(id): Path<String>,
     headers: HeaderMap,
     ApiJson(action): ApiJson<Action>,
 ) -> Result<Json<Snapshot>, AppError> {
-    let token = bearer(&headers).ok_or_else(AppError::table_unauthorized)?;
-    let (handle, actor) = state.registry.authorize(table_id(&id)?, token)?;
-    let blocking = handle.state.lock().unwrap().needs_blocking_bot();
+    let token = bearer(&headers)
+        .ok_or_else(AppError::table_unauthorized)?
+        .to_owned();
+    let id = table_id(&id)?;
     let registry = state.registry.clone();
-    let (outcome, view) = if blocking {
-        tokio::task::spawn_blocking(move || registry.act(&handle, actor, action))
-            .await
-            .map_err(|error| AppError::Internal(error.into()))??
-    } else {
-        registry.act(&handle, actor, action)?
-    };
+    let (outcome, view) = blocking(move || {
+        let (handle, actor) = registry.authorize(id, &token)?;
+        registry.act(&handle, actor, action)
+    })
+    .await??;
     state.hand_over([outcome]);
     Ok(Json(view))
 }

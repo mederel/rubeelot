@@ -94,6 +94,20 @@ async fn next_event(body: &mut Body) -> (String, Value) {
     }
 }
 
+/// Waits until the seat's connection matches: a stream's end is handled off the async threads.
+async fn wait_for(state: &AppState, table: &str, seat: usize, prefix: &str) {
+    for _ in 0..200 {
+        if connection(state, table, seat).starts_with(prefix) {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    panic!(
+        "seat {seat} never became {prefix}: {}",
+        connection(state, table, seat)
+    );
+}
+
 fn connection(state: &AppState, table: &str, seat: usize) -> String {
     let id = table.parse().unwrap();
     let handle = state.registry.handle(id).unwrap();
@@ -173,7 +187,7 @@ async fn second_stream_keeps_seat_connected() {
     next_event(&mut second).await;
 
     drop(first);
-    tokio::task::yield_now().await;
+    tokio::time::sleep(Duration::from_millis(100)).await;
     assert_eq!(
         connection(&state, &owner.table, 0),
         "Connected",
@@ -181,8 +195,7 @@ async fn second_stream_keeps_seat_connected() {
     );
 
     drop(second);
-    tokio::task::yield_now().await;
-    assert!(connection(&state, &owner.table, 0).starts_with("Disconnected"));
+    wait_for(&state, &owner.table, 0, "Disconnected").await;
 
     let mut again = open(&app, &owner).await.into_body();
     next_event(&mut again).await;
@@ -202,7 +215,7 @@ async fn seat_goes_to_bot_two_minutes_after_last_stream_closes() {
     let mut stream = open(&app, &ben).await.into_body();
     next_event(&mut stream).await;
     drop(stream);
-    tokio::task::yield_now().await;
+    wait_for(&state, &owner.table, 1, "Disconnected").await;
 
     clock.advance(time::Duration::seconds(119));
     state.registry.sweep(clock.now());
@@ -239,7 +252,7 @@ async fn local_tables_have_no_presence() {
     let (_, snapshot) = next_event(&mut stream).await;
     assert_eq!(snapshot["kind"], "LOCAL");
     drop(stream);
-    tokio::task::yield_now().await;
+    tokio::time::sleep(Duration::from_millis(100)).await;
     assert_eq!(connection(&state, &player.table, 0), "Connected");
 }
 

@@ -37,7 +37,15 @@ pub fn spawn_all(state: AppState, cancel: CancellationToken) -> Vec<JoinHandle<(
         ),
         every(limits.idle_sweep_interval, cancel.clone(), move || {
             let state = evicting.clone();
-            async move { state.registry.evict_idle(state.clock.now()) }
+            async move {
+                let (registry, now) = (state.registry.clone(), state.clock.now());
+                // Eviction locks each table, which its bots may hold for a while.
+                if let Err(error) =
+                    tokio::task::spawn_blocking(move || registry.evict_idle(now)).await
+                {
+                    tracing::warn!(%error, "the idle tables could not be evicted");
+                }
+            }
         }),
         every(Duration::from_secs(3600), cancel.clone(), move || {
             let state = expiring.clone();
