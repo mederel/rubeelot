@@ -2,6 +2,7 @@
 
 use beelot_game::scoring::RoundSummary;
 use beelot_game::{Difficulty, Team, Variant};
+use futures_util::future::BoxFuture;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -42,5 +43,21 @@ pub struct FinishedMatch {
 impl FinishedMatch {
     pub fn has_signed_in_player(&self) -> bool {
         self.seats.iter().any(|seat| seat.account.is_some())
+    }
+}
+
+/// Where finished matches go: the history, once it exists.
+pub trait MatchSink: Send + Sync {
+    /// Keeps the match; a failure is the sink's to log, never the caller's.
+    fn record(&self, finished: FinishedMatch) -> BoxFuture<'_, ()>;
+}
+
+/// Forgets every match.
+#[derive(Debug, Default)]
+pub struct NoopSink;
+
+impl MatchSink for NoopSink {
+    fn record(&self, _: FinishedMatch) -> BoxFuture<'_, ()> {
+        Box::pin(async {})
     }
 }

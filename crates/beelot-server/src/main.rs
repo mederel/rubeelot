@@ -4,6 +4,8 @@ use anyhow::Context;
 use beelot_server::app::{AppState, router};
 use beelot_server::clock::SystemClock;
 use beelot_server::config::Config;
+use beelot_server::jobs;
+use tokio_util::sync::CancellationToken;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -17,6 +19,8 @@ async fn main() -> anyhow::Result<()> {
 
     let bind = config.bind;
     let state = AppState::new(config, Arc::new(SystemClock));
+    let cancel = CancellationToken::new();
+    let background = jobs::spawn_all(state.clone(), cancel.clone());
     let listener = tokio::net::TcpListener::bind(bind)
         .await
         .with_context(|| format!("cannot listen on {bind}"))?;
@@ -27,6 +31,10 @@ async fn main() -> anyhow::Result<()> {
     )
     .with_graceful_shutdown(shutdown_signal())
     .await?;
+    cancel.cancel();
+    for job in background {
+        job.await.ok();
+    }
     Ok(())
 }
 

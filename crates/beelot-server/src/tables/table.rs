@@ -20,7 +20,7 @@ use super::actions::Action;
 use super::finished::{DELETED_PLAYER, FinishedMatch, FinishedSeat, Mode};
 use super::messages as msg;
 use super::reactions::{Reaction, Reactions};
-use super::seats::{Lobby, Seat, SeatKind, Status, TableKind};
+use super::seats::{Connection, Lobby, Seat, SeatKind, Status, TableKind};
 use crate::error::AppError;
 
 /// Makes the random source of each new deal.
@@ -689,7 +689,15 @@ impl Table {
         Ok(())
     }
 
+    /// Marks the seat connected again; a seat already connected changes nothing.
     pub fn reconnect(&mut self, position: usize) -> Result<(), AppError> {
+        if self
+            .lobby
+            .seat(position)
+            .is_some_and(|seat| seat.connection == Connection::Connected)
+        {
+            return Ok(());
+        }
         self.lobby.reconnect(position)?;
         self.changed();
         Ok(())

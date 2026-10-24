@@ -18,6 +18,10 @@ use crate::clock::Clock;
 use crate::config::Config;
 use crate::error::AppError;
 use crate::limits::{self, RateLimits};
+use crate::routes;
+use crate::tables::TableRegistry;
+use crate::tables::TableSetup;
+use crate::tables::finished::{MatchSink, NoopSink};
 
 /// What every handler can reach. Cloning it is cheap.
 #[derive(Clone)]
@@ -25,14 +29,42 @@ pub struct AppState {
     pub config: Arc<Config>,
     pub clock: Arc<dyn Clock>,
     pub rate_limits: Arc<RateLimits>,
+    pub registry: Arc<TableRegistry>,
+    pub sink: Arc<dyn MatchSink>,
 }
 
 impl AppState {
     pub fn new(config: Config, clock: Arc<dyn Clock>) -> Self {
         Self {
             rate_limits: Arc::new(RateLimits::new(&config, clock.clone())),
+            registry: Arc::new(TableRegistry::new(&config.limits, clock.clone())),
             config: Arc::new(config),
             clock,
+            sink: Arc::new(NoopSink),
+        }
+    }
+
+    /// Tables are set up by `setup`: tests deal from seeded generators. Call it before any table exists.
+    pub fn with_table_setup(
+        mut self,
+        setup: impl Fn() -> TableSetup + Send + Sync + 'static,
+    ) -> Self {
+        self.registry =
+            Arc::new(TableRegistry::new(&self.config.limits, self.clock.clone()).with_setup(setup));
+        self
+    }
+
+    /// Finished matches go to `sink`.
+    pub fn with_sink(mut self, sink: Arc<dyn MatchSink>) -> Self {
+        self.sink = sink;
+        self
+    }
+
+    /// Hands a finished match to the sink, in the background.
+    pub fn hand_over(&self, outcomes: impl IntoIterator<Item = crate::tables::Outcome>) {
+        for finished in outcomes.into_iter().filter_map(|outcome| outcome.finished) {
+            let sink = self.sink.clone();
+            tokio::spawn(async move { sink.record(finished).await });
         }
     }
 }
@@ -59,7 +91,7 @@ static REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
 pub fn router(state: AppState) -> Router {
     let static_dir = &state.config.static_dir;
     let index = ServeFile::new(static_dir.join("index.html"));
-    let mut router = Router::new().route("/api/{*rest}", axum::routing::any(not_found));
+    let mut router = routes::api().route("/api/{*rest}", axum::routing::any(not_found));
     for path in SPA_PATHS {
         router = router.route_service(path, index.clone());
     }

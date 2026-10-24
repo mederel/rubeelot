@@ -5,5 +5,7 @@ pub mod app;
 pub mod clock;
 pub mod config;
 pub mod error;
+pub mod jobs;
 pub mod limits;
+pub mod routes;
 pub mod tables;

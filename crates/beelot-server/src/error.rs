@@ -11,6 +11,9 @@ use serde_json::json;
 pub enum AppError {
     #[error("not found")]
     NotFound,
+    /// A body or a parameter that cannot be read.
+    #[error("bad request")]
+    BadRequest,
     #[error("{message}")]
     Conflict { code: &'static str, message: String },
     /// A bad player token, a failed passkey, or a guest where an account is needed.
@@ -57,6 +60,7 @@ impl AppError {
     pub fn status(&self) -> StatusCode {
         match self {
             AppError::NotFound => StatusCode::NOT_FOUND,
+            AppError::BadRequest => StatusCode::BAD_REQUEST,
             AppError::Conflict { .. } => StatusCode::CONFLICT,
             AppError::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
             AppError::Forbidden { .. } => StatusCode::FORBIDDEN,
@@ -84,6 +88,11 @@ impl IntoResponse for AppError {
         let status = self.status();
         match self {
             AppError::NotFound => (status, Json(body("not-found", "Not found."))).into_response(),
+            AppError::BadRequest => (
+                status,
+                Json(body("bad-request", "The request is not valid.")),
+            )
+                .into_response(),
             AppError::Conflict { code, message } => {
                 (status, Json(body(code, &message))).into_response()
             }

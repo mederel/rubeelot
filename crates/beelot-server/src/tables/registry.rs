@@ -63,7 +63,7 @@ pub(crate) fn viewer_of(actor: Actor) -> Viewer {
     }
 }
 
-/// One table, and the hashes of the tokens that act at it.
+/// One table, the hashes of the tokens that act at it, and its open event streams.
 #[derive(Debug)]
 pub struct TableHandle {
     pub kind: TableKind,
@@ -71,6 +71,8 @@ pub struct TableHandle {
     /// The table's version after each change.
     pub changes: watch::Sender<u64>,
     tokens: Mutex<HashMap<TokenHash, Actor>>,
+    /// The open event streams of each seat.
+    pub(crate) streams: Mutex<[u32; 4]>,
 }
 
 impl TableHandle {
@@ -81,6 +83,7 @@ impl TableHandle {
             state: Mutex::new(table),
             changes,
             tokens: Mutex::new(HashMap::new()),
+            streams: Mutex::new([0; 4]),
         }
     }
 
