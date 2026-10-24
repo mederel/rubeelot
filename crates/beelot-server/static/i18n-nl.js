@@ -1,0 +1,509 @@
+// Dutch (Nederlands) locale. Registers itself for i18n.js, which must load after this file.
+window.beelotLocales = window.beelotLocales || {};
+
+(() => {
+  const suits = { clubs: "klaveren", diamonds: "ruiten", hearts: "harten", spades: "schoppen" };
+  const rankNames = { A: "aas", K: "heer", Q: "vrouw", J: "boer" };
+  const rankLabels = { A: "A", K: "H", Q: "V", J: "B" };
+  const you = (name) => name === "You";
+
+  const dictionary = {
+    // Document
+    "Beelot — Play Belote": "Beelot — Speel Belote",
+    "Start a game of Belote.": "Start een spelletje Belote.",
+    "Beelot home": "Beelot startpagina",
+    "Settings": "Instellingen",
+    "Game highlights": "Spelhoogtepunten",
+    "Game modes": "Spelmodi",
+
+    // Home
+    "Belote, remixed ✨": "Belote, geremixt ✨",
+    "Deal in.": "Deel uit.",
+    "Good times": "Een gezellige tijd",
+    "await.": "wacht op je.",
+    "Quick games, clever plays and big table energy. Challenge our bots or bring your favourite people.":
+      "Snelle potjes, slimme zetten en een geweldige tafelsfeer. Daag onze bots uit of nodig je favoriete mensen uit.",
+    "⚡ Jump in instantly": "⚡ Speel meteen",
+    "♣ Classic & Contrée": "♣ Klassiek en Contrée",
+    "♥ Better with friends": "♥ Leuker met vrienden",
+    "Quick game": "Snel spel",
+    "Grab a seat and take on three lively bots.": "Ga zitten en neem het op tegen drie levendige bots.",
+    "Bring the crew": "Breng je maten mee",
+    "Open a private table and invite your favourite rivals.": "Open een privétafel en nodig je favoriete rivalen uit.",
+    "Learn the moves": "Leer de basis",
+    "Master trump and tricks without the pressure.": "Beheers troef en slagen zonder druk.",
+    "Table talk": "Tafelpraat",
+    "Everything you need to settle a rules debate.": "Alles wat je nodig hebt om een discussie over de regels te beslechten.",
+    "Shuffle up, team up, and race to 1,000 points.": "Schud de kaarten, vorm een team en race naar 1.000 punten.",
+
+    // Bot setup
+    "Your table is ready ⚡": "Je tafel is klaar ⚡",
+    "Pick your vibe.": "Kies je stijl.",
+    "Choose your flavour of Belote and how spicy you want the competition.":
+      "Kies je variant van Belote en hoe pittig de tegenstand mag zijn.",
+    "Game variant": "Spelvariant",
+    "Classic Belote": "Klassieke Belote",
+    "Contrée": "Contrée",
+    "Traditional upcard bidding.": "Traditioneel bieden op de opengedraaide kaart.",
+    "Contract auction with coinche.": "Contractveiling met coinche.",
+    "Bot difficulty": "Moeilijkheid van de bots",
+    "Relaxed": "Ontspannen",
+    "A gentler game to learn and practise.": "Een rustiger spel om te leren en te oefenen.",
+    "Challenging": "Uitdagend",
+    "More demanding opponents for experienced players.": "Veeleisender tegenstanders voor ervaren spelers.",
+    "Deal the cards": "Deel de kaarten uit",
+    "Back to game modes": "Terug naar spelmodi",
+
+    // Bot game
+    "Bot card room": "Kaartkamer met bots",
+    "Bots ·": "Bots ·",
+    "Team scores": "Teamscores",
+    "North–South": "Noord–Zuid",
+    "East–West": "Oost–West",
+    "VS": "VS",
+    "Game status": "Spelstatus",
+    "Trump": "Troef",
+    "Contract": "Contract",
+    "Turn": "Beurt",
+    "Four-player card table": "Kaarttafel voor vier spelers",
+    "Trick": "Slag",
+    "Play the opening card": "Speel de openingskaart",
+    "Your eight cards": "Je acht kaarten",
+    "Your five cards": "Je vijf kaarten",
+    "Deal next round": "Volgende ronde delen",
+    "Rematch": "Revanche",
+    "Rules reference": "Spelregels",
+    "Leave table": "Tafel verlaten",
+
+    // Bidding
+    "Choose trump": "Kies troef",
+    "Make your call.": "Maak je keuze.",
+    "Bidding table with four players": "Biedtafel met vier spelers",
+    "Upturned card": "Opengedraaide kaart",
+    "Your five-card hand": "Je hand van vijf kaarten",
+    "Your eight-card hand": "Je hand van acht kaarten",
+    "Accept upturned suit": "Opengedraaide kleur nemen",
+    "Pass": "Passen",
+    "Choose a trump suit": "Kies een troefkleur",
+    "Clubs ♣": "Klaveren ♣",
+    "Diamonds ♦": "Ruiten ♦",
+    "Hearts ♥": "Harten ♥",
+    "Spades ♠": "Schoppen ♠",
+    "No contract yet": "Nog geen contract",
+    "Contract value": "Contractwaarde",
+    "Trump suit": "Troefkleur",
+    "Make bid": "Bieden",
+    "Coinche": "Coinche",
+    "Coinche!": "Coinche!",
+    "{0} passes.": "{0} past.",
+    "{0} takes with {1}.": "{0} kiest {1} als troef.",
+    "Contrée auction": "Contrée-veiling",
+    "Current contract: {0} {1} by {2}": "Huidig contract: {0} {1} van {2}",
+
+    // Public matchmaking
+    "Sign in to keep track of your matches.": "Log in om je potjes bij te houden.",
+    "Sign-in did not complete. Please try again.": "Inloggen is niet gelukt. Probeer het opnieuw.",
+    "Sign in with a passkey": "Inloggen met een toegangssleutel",
+    "Create an account": "Account aanmaken",
+    "Your passkey is the only way to sign in. If you lose it, you lose your account: there is no recovery.": "Je toegangssleutel is de enige manier om in te loggen. Raak je hem kwijt, dan raak je je account kwijt: herstel is niet mogelijk.",
+    "I understand, create my passkey": "Begrepen, maak mijn toegangssleutel aan",
+    "Your browser does not support passkeys. You can still play as a guest.": "Je browser ondersteunt geen toegangssleutels. Je kunt nog steeds als gast spelen.",
+    "Too many attempts. Please try again later.": "Te veel pogingen. Probeer het later opnieuw.",
+    "Signed in as {0}": "Ingelogd als {0}",
+    "Last sign-in: {0}": "Laatste aanmelding: {0}",
+    "This is your first sign-in.": "Dit is je eerste aanmelding.",
+    "Sign out": "Uitloggen",
+    "Sign in": "Aanmelden",
+    "Reactions": "Reacties",
+    "Send and see quick reactions at online tables.": "Snelle reacties sturen en zien aan online tafels.",
+    "Well played!": "Goed gespeeld!",
+    "Nice hand!": "Mooie hand!",
+    "Oops!": "Oeps!",
+    "Wow!": "Wauw!",
+    "Let me think…": "Even denken…",
+    "Good game!": "Goed potje!",
+    "{0}: {1}": "{0}: {1}",
+    "Slow down: wait a moment before reacting again.": "Rustig aan: wacht even voordat je opnieuw reageert.",
+    "Reactions open once the game starts.": "Reacties zijn mogelijk zodra het spel begint.",
+    "Choose a reaction.": "Kies een reactie.",
+    "Pass and play": "Samen spelen",
+    "Share one device and take turns with your hand.": "Deel één apparaat en speel om de beurt je hand.",
+    "One device, several players": "Eén apparaat, meerdere spelers",
+    "Write each player's name in the seat they take. Bots take the empty seats; North and South play together against East and West.": "Schrijf de naam van elke speler bij de plaats die hij neemt. Bots nemen de lege plaatsen; Noord en Zuid spelen samen tegen Oost en West.",
+    "Players": "Spelers",
+    "North": "Noord",
+    "East": "Oost",
+    "South": "Zuid",
+    "West": "West",
+    "Bot": "Bot",
+    "Start pass and play": "Het spel starten",
+    "Pass the device to {0}": "Geef het apparaat aan {0}",
+    "Keep your cards hidden from the other players.": "Houd je kaarten verborgen voor de andere spelers.",
+    "I'm ready": "Ik ben klaar",
+    "Pass and play needs at least two players.": "Samen spelen kan pas vanaf twee spelers.",
+    "Each player needs a different name.": "Elke speler heeft een andere naam nodig.",
+    "Fill in the four seats.": "Vul de vier plaatsen in.",
+    "It is not your turn.": "Je bent niet aan de beurt.",
+    "Player names are limited to 30 characters.": "Spelersnamen zijn beperkt tot 30 tekens.",
+    "My statistics": "Mijn statistieken",
+    "Your progress": "Jouw voortgang",
+    "Sign in to see your statistics.": "Log in om je statistieken te zien.",
+    "No finished matches yet. Finish a match while signed in and it will appear here.": "Nog geen afgeronde potjes. Speel een potje uit terwijl je ingelogd bent en het verschijnt hier.",
+    "Match record": "Overzicht van de potjes",
+    "By variant": "Per variant",
+    "Solo games by difficulty": "Potjes tegen bots per moeilijkheid",
+    "Contracts": "Contracten",
+    "Recent matches": "Recente potjes",
+    "Matches played": "Gespeelde potjes",
+    "Played": "Gespeeld",
+    "Won": "Gewonnen",
+    "Lost": "Verloren",
+    "Wins": "Gewonnen",
+    "Losses": "Verloren",
+    "Win rate": "Winstpercentage",
+    "Against bots": "Tegen bots",
+    "Contracts taken by your team": "Contracten genomen door je team",
+    "Contracts made": "Gehaalde contracten",
+    "Coinches by your team": "Coinches door je team",
+    "Coinches against your team": "Coinches tegen je team",
+    "{0}, {1} defeated the contract": "{0}, waarvan {1} het contract lieten vallen",
+    "{0}, {1} defeated your contract": "{0}, waarvan {1} je contract lieten vallen",
+    "Capots": "Capots",
+    "Belotes": "Belotes",
+    "Average points per round": "Gemiddelde punten per ronde",
+    "Date": "Datum",
+    "Mode": "Modus",
+    "Variant": "Variant",
+    "Partner": "Partner",
+    "Opponents": "Tegenstanders",
+    "Score": "Score",
+    "Result": "Resultaat",
+    "Find a game": "Een spel zoeken",
+    "Join an open table — bots fill in if nobody shows up.": "Schuif aan bij een open tafel — bots vullen aan als er niemand komt.",
+    "Strangers welcome ♠": "Onbekenden welkom ♠",
+    "Find a game.": "Zoek een spel.",
+    "Pick a variant and we'll seat you at an open table. If it isn't full within a minute, bots take the empty seats.":
+      "Kies een variant en we zetten je aan een open tafel. Is die niet binnen een minuut vol, dan nemen bots de lege plaatsen in.",
+    "Quick match": "Snelle match",
+    "Looking for players… bots take the empty seats in {0} s.": "Spelers zoeken… bots nemen de lege plaatsen in over {0} s.",
+
+    // Private tables
+    "Friends, rivals, legends ♥": "Vrienden, rivalen, legendes ♥",
+    "Bring the crew.": "Breng je maten mee.",
+    "Make a room in seconds or use a six-character invite to jump into the fun.":
+      "Maak in enkele seconden een kamer aan of gebruik een uitnodigingscode van zes tekens om mee te doen.",
+    "Create a table": "Tafel aanmaken",
+    "Your name": "Je naam",
+    "Player": "Speler",
+    "Create private table": "Privétafel aanmaken",
+    "Join friends": "Bij vrienden aansluiten",
+    "Invitation code": "Uitnodigingscode",
+    "Join table": "Aan tafel aansluiten",
+    "Private table": "Privétafel",
+    "Public table": "Openbare tafel",
+    "Gather your team.": "Verzamel je team.",
+    "Copy": "Kopiëren",
+    "Copied": "Gekopieerd",
+    "Private table seats": "Plaatsen aan de privétafel",
+    "Turn timer": "Beurttimer",
+    "No timer": "Geen timer",
+    "30 seconds": "30 seconden",
+    "60 seconds": "60 seconden",
+    "Save": "Opslaan",
+    "I am ready": "Ik ben klaar",
+    "Not ready": "Niet klaar",
+    "Start game": "Spel starten",
+    "Start now with bots": "Nu starten met bots",
+    "Auction": "Veiling",
+    "Private game status": "Status van het privéspel",
+    "Declaring team": "Biedend team",
+    "Private team scores": "Teamscores van de privétafel",
+    "Four-player private card table": "Privé kaarttafel voor vier spelers",
+    "Your cards": "Je kaarten",
+    "Current trick": "Huidige slag",
+    "Bid": "Bieden",
+    "Game started": "Spel gestart",
+    "(you)": "(jij)",
+    "You": "Jij",
+    "{0} (you)": "{0} (jij)",
+    "Ready": "Klaar",
+    "Waiting": "Wachtend",
+    "Bot takeover": "Overgenomen door een bot",
+    "Disconnected": "Verbinding verbroken",
+    "Connected": "Verbonden",
+    "Partners sit across from each other: pick an empty seat to choose yours. Four players must be ready before the table owner can start the game, or the owner can start now and bots take the empty seats.":
+      "Partners zitten tegenover elkaar: kies een lege plaats om je partner te kiezen. Vier spelers moeten klaar zijn voordat de tafeleigenaar het spel kan starten, of de eigenaar start meteen en bots nemen de lege plaatsen in.",
+    "Empty seat": "Lege plaats",
+    "Sit here": "Hier zitten",
+    "Sit in this 0 seat": "Op deze plaats van 0 zitten",
+    "Turn timer: {0} seconds. A warning appears with 10 seconds remaining; an expired turn is played by a bot.":
+      "Beurttimer: {0} seconden. Bij 10 seconden resterend verschijnt een waarschuwing; een verlopen beurt wordt door een bot gespeeld.",
+    "Turn timer is disabled.": "De beurttimer is uitgeschakeld.",
+    "Variant: {0}": "Variant: {0}",
+    "The game has started. Calls and card play update for every player automatically.":
+      "Het spel is begonnen. Biedingen en gespeelde kaarten worden automatisch bijgewerkt voor alle spelers.",
+    "That table is no longer available.": "Die tafel is niet meer beschikbaar.",
+    "No upturned card in Contrée.": "Geen opengedraaide kaart in Contrée.",
+    "Something went wrong. Please try again.": "Er is iets misgegaan. Probeer het opnieuw.",
+
+    // Tutorial
+    "Learn Belote": "Leer Belote",
+    "Tutorial": "Tutorial",
+    "Next lesson": "Volgende les",
+    "Finish tutorial": "Tutorial afronden",
+    "Replay tutorial": "Tutorial opnieuw spelen",
+    "Lesson {0} of {1}": "Les {0} van {1}",
+    "Choose a card to continue.": "Kies een kaart om verder te gaan.",
+    "Not quite. Look at the highlighted card, then try the next lesson.":
+      "Niet helemaal. Kijk naar de gemarkeerde kaart en probeer dan de volgende les.",
+    "Trump wins": "Troef wint",
+    "Hearts are trump. Which card is strongest?": "Harten is troef. Welke kaart is het sterkst?",
+    "Correct. At trump, the jack is the strongest card.": "Juist. In troef is de boer de sterkste kaart.",
+    "Normal card strength": "Gewone kaartwaarde",
+    "Clubs are not trump. Which card wins this trick?": "Klaveren is geen troef. Welke kaart wint deze slag?",
+    "Correct. Outside trump, ace is stronger than 10.": "Juist. Buiten troef is de aas sterker dan de 10.",
+    "Follow suit": "Kleur bekennen",
+    "Hearts were led. Which card must you play if these are your choices?":
+      "Harten werd uitgespeeld. Welke kaart moet je spelen als dit je keuzes zijn?",
+    "Correct. You must follow the lead suit when you can.": "Juist. Je moet de uitgespeelde kleur bekennen als je kunt.",
+    "Take the trick": "De slag winnen",
+    "Spades are trump and clubs were led. Which card takes this trick?":
+      "Schoppen is troef en klaveren werd uitgespeeld. Welke kaart wint deze slag?",
+    "Correct. A trump card beats cards in the lead suit.": "Juist. Een troefkaart verslaat kaarten van de uitgespeelde kleur.",
+
+    // Rules
+    "Classic suit-trump Belote, played to 1,000 points. Tout-Atout and Sans-Atout are not part of this variant.":
+      "Klassieke Belote met een troefkleur, gespeeld tot 1.000 punten. Tout-Atout en Sans-Atout maken geen deel uit van deze variant.",
+    "Deal and trump": "Delen en troef",
+    "Each player receives five cards and one card is turned face up. First, accept that suit or pass. After all pass, choose another suit; a second all-pass redeals.":
+      "Elke speler krijgt vijf kaarten en één kaart wordt opengedraaid. Neem eerst die kleur of pas. Als iedereen past, kies dan een andere kleur; als iedereen een tweede keer past, wordt er opnieuw gedeeld.",
+    "Card order": "Rangorde van de kaarten",
+    "At trump: jack, 9, ace, 10, king, queen, 8, 7. In other suits: ace, 10, king, queen, jack, 9, 8, 7.":
+      "In troef: boer, 9, aas, 10, heer, vrouw, 8, 7. In andere kleuren: aas, 10, heer, vrouw, boer, 9, 8, 7.",
+    "Playing a card": "Een kaart spelen",
+    "Follow the lead suit when possible. If void and an opponent wins, trump and overtrump when able. If your partner wins, you may discard.":
+      "Bekend de uitgespeelde kleur als dat kan. Heb je die niet en wint een tegenstander, troef dan en overtroef als je kunt. Wint je partner, dan mag je afgooien.",
+    "Scoring": "Puntentelling",
+    "Card points total 162, including 10 points for the last trick (Dix de der). King and queen of trump declare Belote/Rebelote for 20 points. The declaring team must score more than its opponents, counting Belote and announcements.":
+      "De kaartpunten tellen op tot 162, inclusief 10 punten voor de laatste slag (Dix de der). Heer en vrouw van troef melden Belote/Rebelote voor 20 punten. Het biedende team moet meer scoren dan zijn tegenstanders, Belote en meldingen inbegrepen.",
+    "Contrée variant": "Contrée-variant",
+    "All eight cards are dealt before an auction from 80 to 160, in steps of 10. Each call names a trump suit and must raise the current contract. Three passes after a bid close the auction. An opponent may coinche, doubling the round score; Belote/Rebelote remains active.":
+      "Alle acht kaarten worden gedeeld vóór een veiling van 80 tot 160, in stappen van 10. Elk bod noemt een troefkleur en moet het huidige contract verhogen. Drie keer passen na een bod sluit de veiling. Een tegenstander mag coincheren, waarmee de score van de ronde verdubbelt; Belote/Rebelote blijft geldig.",
+
+    // Your data (Settings)
+    "Your data": "Je gegevens",
+    "Download a copy of what Beelot keeps about you, or delete your account.":
+      "Download een kopie van wat Beelot over je bewaart, of verwijder je account.",
+    "Download my data": "Mijn gegevens downloaden",
+    "Delete my account": "Mijn account verwijderen",
+    "Your account, your passkey and your sign-in history will be deleted. Finished matches stay in other players' history, shown as “Deleted player”.":
+      "Je account, je toegangssleutel en je aanmeldgeschiedenis worden verwijderd. Gespeelde potjes blijven in de geschiedenis van de andere spelers, als „Verwijderde speler”.",
+    "Type this word to confirm:": "Typ dit woord om te bevestigen:",
+    "DELETE": "VERWIJDEREN",
+    "Delete my account for good": "Mijn account definitief verwijderen",
+    "Cancel": "Annuleren",
+    "You can download your data again in {0} minutes.": "Je kunt je gegevens over {0} minuten opnieuw downloaden.",
+    "Your account has been deleted.": "Je account is verwijderd.",
+    "For your safety, sign in again to delete your account.":
+      "Meld je voor de veiligheid opnieuw aan om je account te verwijderen.",
+
+
+    // Announcements (US-060)
+    "Announcements": "Aankondigingen",
+    "On": "Aan",
+    "Off": "Uit",
+    "Declare tierce, cinquante, cent and carrés.": "Meld tierce, cinquante, cent en carrés.",
+    "Card points and Belote only.": "Alleen kaartpunten en Belote.",
+    "Declare: {0}": "Melden: {0}",
+    "{0} declares.": "{0} meldt.",
+    "{0} score {1} points of announcements.": "{0} scoren {1} punten aan meldingen.",
+    "Announcements are on.": "Aankondigingen staan aan.",
+    "Announcements are off.": "Aankondigingen staan uit.",
+    "Tierce to the {0}": "Tierce tot {0}",
+    "Cinquante to the {0}": "Cinquante tot {0}",
+    "Cent to the {0}": "Cent tot {0}",
+    "Carré of {0}": "Carré van {0}",
+    "jacks": "boeren",
+    "nines": "negens",
+    "aces": "azen",
+    "tens": "tienen",
+    "kings": "heren",
+    "queens": "vrouwen",
+    "Announcements: {0} {1} ({2}).": "Meldingen: {0} {1} ({2}).",
+    "Announcements: {0} {1} ({2}), which go to {3}.": "Meldingen: {0} {1} ({2}), die naar {3} gaan.",
+    "tierce": "tierce",
+    "cinquante": "cinquante",
+    "cent": "cent",
+    "carré": "carré",
+    "Announcements: none.": "Meldingen: geen.",
+    "Only the table owner can change announcements.": "Alleen de eigenaar van de tafel kan de aankondigingen wijzigen.",
+    "Announcements cannot change after the game starts.":
+      "Aankondigingen kunnen niet meer veranderen nadat het spel is begonnen.",
+    "Public tables always play with announcements.": "Openbare tafels spelen altijd met aankondigingen.",
+    "Declare tierce (three cards in a row, 20), cinquante (four, 50), cent (five or more, 100) and carrés (jacks 200, nines 150, aces, tens, kings or queens 100) when you play your first card. Sequences follow 7, 8, 9, 10, jack, queen, king, ace in one suit; a card counts once, carrés first. Only the team with the best announcement scores, and it scores all of its own: the higher value wins, then the longer run, then the higher card, then trump, then whoever declared first. Belote and announcements count towards the contract.":
+      "Meld tierce (drie opeenvolgende kaarten, 20), cinquante (vier, 50), cent (vijf of meer, 100) en carrés (boeren 200, negens 150, azen, tienen, heren of vrouwen 100) wanneer je je eerste kaart speelt. Reeksen volgen 7, 8, 9, 10, boer, vrouw, heer, aas in één kleur; een kaart telt maar één keer, carrés eerst. Alleen het team met de beste melding scoort, en het scoort al zijn eigen meldingen: de hoogste waarde wint, dan de langste reeks, dan de hoogste kaart, dan troef, dan wie het eerst meldde. Belote en meldingen tellen mee voor het contract.",
+
+    // Privacy policy
+    "How we handle your data": "Hoe we met je gegevens omgaan",
+    "Privacy policy": "Privacybeleid",
+    "This policy explains what Beelot keeps about you, why, for how long, and how to exercise your rights. Guests can play every mode without an account; their games are not recorded.":
+      "Dit beleid legt uit wat Beelot over je bewaart, waarom, hoe lang, en hoe je je rechten uitoefent. Gasten kunnen elke modus spelen zonder account; hun potjes worden niet bewaard.",
+    "Who is responsible": "Wie is verantwoordelijk",
+    "Data controller": "Verwerkingsverantwoordelijke",
+    "Privacy contact": "Privacycontact",
+    "not configured": "niet ingesteld",
+    "Write to the privacy contact with any question about your data or to exercise your rights.":
+      "Schrijf naar het privacycontact met vragen over je gegevens of om je rechten uit te oefenen.",
+    "What we store and why": "Wat we bewaren en waarom",
+    "Your account: a pseudonym, when the account was created, and your last two sign-ins, which are shown to you so that you can spot a sign-in you did not make. It lets you sign in and keep your results. Legal basis: the contract between you and Beelot (GDPR article 6(1)(b)).":
+      "Je account: een pseudoniem, wanneer het account is aangemaakt, en je laatste twee aanmeldingen, die je te zien krijgt zodat je een aanmelding opmerkt die je niet zelf hebt gedaan. Zo kun je je aanmelden en je resultaten bewaren. Rechtsgrond: de overeenkomst tussen jou en Beelot (artikel 6, lid 1, b, AVG).",
+    "Your finished matches: the seats, the final score and every round, so that you can see your statistics. The other players at the table see your pseudonym. Legal basis: the contract.":
+      "Je gespeelde potjes: de plaatsen, de eindscore en elke ronde, zodat je je statistieken kunt bekijken. De andere spelers aan tafel zien je pseudoniem. Rechtsgrond: de overeenkomst.",
+    "Security events: sign-ups, sign-ins and failed sign-ins, sign-outs, expired sessions, refused requests, data downloads and account deletions, each with its time, IP address and outcome. No passkey identifier is ever part of them. They help detect and investigate abuse. Legal basis: our legitimate interest in keeping Beelot secure (GDPR article 6(1)(f)).":
+      "Beveiligingsgebeurtenissen: registraties, geslaagde en mislukte aanmeldingen, afmeldingen, verlopen sessies, geweigerde verzoeken, gegevensdownloads en verwijderde accounts, elk met tijdstip, IP-adres en uitkomst. Er staat nooit een kenmerk van een toegangssleutel in. Ze helpen misbruik op te sporen en te onderzoeken. Rechtsgrond: ons gerechtvaardigd belang bij een veilig Beelot (artikel 6, lid 1, f, AVG).",
+    "Your passkey: its public key, its signature counter, and when it was created and last used. Its private key never leaves your device, and Beelot never asks for your email address. Legal basis: the contract.":
+      "Je toegangssleutel: de publieke sleutel, de handtekeningteller, en wanneer hij is aangemaakt en het laatst is gebruikt. De privésleutel verlaat je apparaat nooit, en Beelot vraagt nooit om je e-mailadres. Rechtsgrond: de overeenkomst.",
+    "Who processes it": "Wie ze verwerkt",
+    "Hosting": "Hosting",
+    "Your data is never sold, shared for advertising or used to profile you.":
+      "Je gegevens worden nooit verkocht, voor reclame gedeeld of gebruikt om een profiel van je te maken.",
+    "How long we keep it": "Hoe lang we ze bewaren",
+    "A passkey made for a sign-up that was never finished: erased within two days.":
+      "Een toegangssleutel van een registratie die nooit is afgerond: binnen twee dagen gewist.",
+    "Accounts: deleted 3 years after the last sign-in, with their passkey and security events.":
+      "Accounts: verwijderd 3 jaar na de laatste aanmelding, samen met hun toegangssleutel en beveiligingsgebeurtenissen.",
+    "Security events: 12 months.": "Beveiligingsgebeurtenissen: 12 maanden.",
+    "Finished matches stay in the other players' history. Once your account is deleted, your seats show “Deleted player” and are no longer linked to you.":
+      "Gespeelde potjes blijven in de geschiedenis van de andere spelers. Zodra je account is verwijderd, tonen je plaatsen „Verwijderde speler” en zijn ze niet meer aan jou gekoppeld.",
+    "Backups: retention period not configured.": "Back-ups: bewaartermijn niet ingesteld.",
+    "Backups: overwritten after {0} days.": "Back-ups: na {0} dagen overschreven.",
+    "Cookies": "Cookies",
+    "Beelot sets only two cookies: the session cookie, which keeps you signed in, and the XSRF-TOKEN cookie, which protects your requests against forgery. Both are strictly necessary, so Beelot asks for no consent. Your settings, such as the language and sound, stay in your browser and are never sent to Beelot.":
+      "Beelot plaatst maar twee cookies: de sessiecookie, die je aangemeld houdt, en de XSRF-TOKEN-cookie, die je verzoeken tegen vervalsing beschermt. Beide zijn strikt noodzakelijk, dus Beelot vraagt geen toestemming. Je instellingen, zoals taal en geluid, blijven in je browser en worden nooit naar Beelot gestuurd.",
+    "Your rights": "Je rechten",
+    "Access and portability: Settings → Download my data gives you a JSON file with your account, your security events and your matches.":
+      "Inzage en overdraagbaarheid: Instellingen → Mijn gegevens downloaden geeft je een JSON-bestand met je account, je beveiligingsgebeurtenissen en je potjes.",
+    "Erasure: Settings → Delete my account deletes your account, your passkey and your security events straight away. Your device may still offer the passkey: remove it in your device's settings.":
+      "Wissing: Instellingen → Mijn account verwijderen verwijdert meteen je account, je toegangssleutel en je beveiligingsgebeurtenissen. Je apparaat kan de toegangssleutel nog aanbieden: verwijder hem in de instellingen van je apparaat.",
+    "Rectification, restriction and objection: write to the privacy contact.":
+      "Rectificatie, beperking en bezwaar: schrijf naar het privacycontact.",
+    "If you think your data is mishandled, you can complain to the CNIL, the French data protection authority:":
+      "Als je vindt dat er verkeerd met je gegevens wordt omgegaan, kun je een klacht indienen bij de CNIL, de Franse privacytoezichthouder:",
+    "Deleted player": "Verwijderde speler",
+
+    // Settings
+    "Preferences": "Voorkeuren",
+    "Language": "Taal",
+    "Choose the language of the interface.": "Kies de taal van de interface.",
+    "Sound effects": "Geluidseffecten",
+    "Enable optional game sounds.": "Optionele spelgeluiden inschakelen.",
+    "Reduce motion": "Minder beweging",
+    "Disable movement and transition effects.": "Beweging en overgangseffecten uitschakelen.",
+    "Cards always use both a suit symbol and colour. Controls support touch and keyboard use.":
+      "Kaarten gebruiken altijd zowel een kleursymbool als een kleur. De bediening werkt met aanraking en toetsenbord.",
+
+    // Game board (client-built)
+    "Contract: {0} {1}{2}": "Contract: {0} {1}{2}",
+    " · coinched": " · gecoinched",
+    "{0} are trump": "{0} is troef",
+    "Contract made": "Contract gehaald",
+    "Contract failed": "Contract mislukt",
+    "Contract made.": "Contract gehaald.",
+    "Contract failed.": "Contract mislukt.",
+    "{0}'s turn · {1} of 8 tricks completed": "{0} is aan de beurt · {1} van 8 slagen gespeeld",
+    "{0} win the match!": "{0} wint de partij!",
+    "Match score — North–South {0} · East–West {1}": "Partijstand — Noord–Zuid {0} · Oost–West {1}",
+    " Belote/Rebelote bonus: {0} points.": " Belote/Rebelote-bonus: {0} punten.",
+    "Dealing the remaining cards…": "De resterende kaarten worden gedeeld…",
+    "Dealer": "Gever",
+    "{0} · You": "{0} · Jij",
+    "{0} · {1} bots": "{0} · bots: {1}",
+    "{0}, {1}, {2}{3}": "{0}, {1}, {2}{3}",
+    ", active player": ", speler aan de beurt",
+    "+{0} pts": "+{0} pnt",
+    "{0} wins the trick for {1} points": "{0} wint de slag voor {1} punten",
+    "Play {0}": "Speel {0}",
+    "{0} of {1}": "{0} van {1}",
+    "Coinche doubles the awarded scores. {0}": "Coinche verdubbelt de toegekende scores. {0}",
+    "A team that takes every trick makes a capot and scores 250 instead of 162; in Contrée, a declaring team that makes a capot also scores its bid.":
+      "Een team dat alle slagen wint, maakt capot en scoort 250 punten in plaats van 162; bij Contrée scoort het biedende team dat capot maakt ook zijn bod.",
+    "The first team to reach 1,000 points wins the match. When both teams pass 1,000 points in the same round, the higher score wins; an exact tie is settled by another round.":
+      "Het eerste team dat 1.000 punten haalt, wint de partij. Halen beide teams in hetzelfde spel 1.000 punten, dan wint de hoogste score; bij een exacte gelijkstand beslist een extra spel.",
+    "Capot! {0} take every trick and score 250.": "Capot! {0} winnen alle slagen en scoren 250 punten.",
+    "Capot! {0} take every trick and score 250 plus their {1} bid.":
+      "Capot! {0} winnen alle slagen en scoren 250 punten plus hun bod van {1}.",
+    "North–South: {0} card points + {1} Dix de der + {2} Belote = {3}. East–West: {4} card points + {5} Dix de der + {6} Belote = {7}.":
+      "Noord–Zuid: {0} kaartpunten + {1} Dix de der + {2} Belote = {3}. Oost–West: {4} kaartpunten + {5} Dix de der + {6} Belote = {7}.",
+
+    // Server messages
+    "Eight cards have been dealt. Bid from 80 to 160 or pass.": "Er zijn acht kaarten gedeeld. Bied van 80 tot 160 of pas.",
+    "Five cards have been dealt. Accept the upturned suit or pass.": "Er zijn vijf kaarten gedeeld. Neem de opengedraaide kleur of pas.",
+    "Everyone passed. The cards have been redealt.": "Iedereen heeft gepast. De kaarten zijn opnieuw gedeeld.",
+    "Everyone passed twice. The cards have been redealt.": "Iedereen heeft twee keer gepast. De kaarten zijn opnieuw gedeeld.",
+    "Bot game not found": "Botpartij niet gevonden",
+    "This match has ended. Start a rematch.": "Deze partij is afgelopen. Start een revanche.",
+    "The auction is still in progress.": "De veiling is nog bezig.",
+    "A Belote table needs four players.": "Een Belote-tafel heeft vier spelers nodig.",
+    "Choose a contract value and suit in Contrée.": "Kies een contractwaarde en kleur in Contrée.",
+    "In the first round, you may only accept the upturned suit.": "In de eerste ronde mag je alleen de opengedraaide kleur nemen.",
+    "Choose a suit other than the upturned suit.": "Kies een andere kleur dan de opengedraaide kleur.",
+    "Choose a trump suit for the contract.": "Kies een troefkleur voor het contract.",
+    "A Contrée bid must be from 80 to 160 in steps of 10.": "Een bod in Contrée moet tussen 80 en 160 liggen, in stappen van 10.",
+    "Your bid must be higher than the current contract.": "Je bod moet hoger zijn dan het huidige contract.",
+    "Only an opponent of the declaring team may coinche.": "Alleen een tegenstander van het biedende team mag coincheren.",
+    "Contract bids are only available in Contrée.": "Contractbiedingen zijn alleen beschikbaar in Contrée.",
+    "The auction has ended.": "De veiling is afgelopen.",
+    "It is not your turn to bid.": "Je bent niet aan de beurt om te bieden.",
+    "The invitation code is invalid.": "De uitnodigingscode is ongeldig.",
+    "The auction has not finished.": "De veiling is nog niet afgelopen.",
+    "You are not authorized for this table.": "Je hebt geen toegang tot deze tafel.",
+    "This game has not started.": "Dit spel is nog niet gestart.",
+    "This table does not exist.": "Deze tafel bestaat niet.",
+    "Enter a player name.": "Vul een spelersnaam in.",
+    "This table has already started.": "Deze tafel is al begonnen.",
+    "This table is full.": "Deze tafel is vol.",
+    "That seat is taken.": "Deze plaats is al bezet.",
+    "That seat does not exist.": "Deze plaats bestaat niet.",
+    "Seats are assigned at public tables.": "Aan openbare tafels worden de plaatsen toegewezen.",
+    "A bot has taken over this seat for the rest of the match.": "Een bot heeft deze plaats overgenomen voor de rest van de partij.",
+    "Only the table owner can start the game.": "Alleen de tafeleigenaar kan het spel starten.",
+    "Four ready players are required to start the game.": "Er zijn vier spelers nodig die klaar zijn om het spel te starten.",
+    "Every seated player must be ready to start with bots.": "Elke gezeten speler moet klaar zijn om met bots te starten.",
+    "Only the table owner can change the turn timer.": "Alleen de tafeleigenaar kan de beurttimer wijzigen.",
+    "The turn timer cannot change after the game starts.": "De beurttimer kan niet meer worden gewijzigd nadat het spel is gestart.",
+    "Choose no timer, 30 seconds, or 60 seconds.": "Kies geen timer, 30 seconden of 60 seconden.",
+    "You are not seated at this table.": "Je zit niet aan deze tafel.",
+    "It is not your turn to play.": "Je bent niet aan de beurt om te spelen.",
+    "That card is not a legal play.": "Die kaart mag niet gespeeld worden.",
+    "This round has ended.": "Deze ronde is afgelopen.",
+    "There is no completed trick to continue from.": "Er is geen afgeronde slag om mee verder te gaan.",
+    "Unknown player": "Onbekende speler"
+  };
+
+  // Server messages that embed names, suits or numbers. Handlers receive the regex captures.
+  const patterns = (suitWord) => [
+    [/^(.+) is deciding\.$/, (name) => (you(name) ? "Jij denkt na." : `${name} denkt na.`)],
+    [new RegExp(`^(.+) bids (\\d+) ${suitWord}\\.$`), (name, value, suit) =>
+      `${you(name) ? "Jij biedt" : `${name} biedt`} ${value} ${suitName(suit, false)}.`],
+    [/^(.+) coinches the contract\.$/, (name) => `${you(name) ? "Jij coincheert" : `${name} coincheert`} het contract.`],
+    [new RegExp(`^The (\\d+) ${suitWord} contract is accepted\\.$`), (value, suit) =>
+      `Het contract van ${value} ${suitName(suit, false)} is aangenomen.`],
+    [new RegExp(`^Everyone passed\\. Choose any trump suit except ${suitWord}\\.$`), (suit) =>
+      `Iedereen heeft gepast. Kies een willekeurige troefkleur behalve ${suitName(suit, false)}.`],
+    [/^(.+) declares Belote\.$/, (name) => `${you(name) ? "Jij meldt" : `${name} meldt`} Belote.`],
+    [/^(.+) declares Rebelote: 20 bonus points\.$/, (name) =>
+      `${you(name) ? "Jij meldt" : `${name} meldt`} Rebelote: 20 bonuspunten.`],
+    [/^Bot game not found: (.+)$/, () => "Botpartij niet gevonden."],
+    [new RegExp(`^(\\d+) ${suitWord}$`), (value, suit) => `${value} ${suitName(suit)}`],
+    [new RegExp(`^${suitWord}$`), (suit) => suitName(suit)],
+    [/^(\d+) cards?$/, (count) => `${count} ${Number(count) <= 1 ? "kaart" : "kaarten"}`]
+  ];
+
+  // Faces read as one word ("Hartenboer"), pip cards as "Harten 10".
+  const cardName = (rank, suit) => {
+    const text = rankNames[rank] ? `${suit}${rankNames[rank]}` : `${suit} ${rank}`;
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  };
+
+  window.beelotLocales.nl = { dictionary, suits, rankNames, rankLabels, cardName, patterns };
+})();

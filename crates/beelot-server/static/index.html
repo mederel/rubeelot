@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Start a game of Belote.">
+    <title>Beelot — Play Belote</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main class="shell">
+    <a class="brand" href="/" aria-label="Beelot home">beelot<span>♠</span></a>
+    <a class="settings-link" href="/settings">Settings</a>
+
+    <section class="home-view" data-view="home">
+        <div class="hero-suits" aria-hidden="true"><span>♥</span><span>♣</span><span>♦</span></div>
+        <p class="eyebrow">Belote, remixed ✨</p>
+        <h1>Deal in.<br><em>Good times</em> await.</h1>
+        <p class="intro">Quick games, clever plays and big table energy. Challenge our bots or bring your favourite people.</p>
+        <div class="welcome-badges" aria-label="Game highlights">
+            <span>⚡ Jump in instantly</span><span>♣ Classic &amp; Contrée</span><span>♥ Better with friends</span>
+        </div>
+
+        <div class="account-bar" id="account-bar" aria-live="polite" hidden>
+            <p class="account-guest" id="account-guest" hidden>
+                <span>Sign in to keep track of your matches.</span>
+                <button class="button secondary-button" id="sign-in-toggle" type="button" aria-controls="sign-in-panel" aria-expanded="false">Sign in</button>
+            </p>
+            <div class="sign-in-panel" id="sign-in-panel" hidden>
+                <div class="passkey-actions" id="passkey-actions">
+                    <button class="button" id="passkey-sign-in" type="button">Sign in with a passkey</button>
+                    <button class="button secondary-button" id="passkey-sign-up" type="button" aria-controls="passkey-warning" aria-expanded="false">Create an account</button>
+                </div>
+                <div class="passkey-warning" id="passkey-warning" hidden>
+                    <p>Your passkey is the only way to sign in. If you lose it, you lose your account: there is no recovery.</p>
+                    <button class="button" id="passkey-confirm" type="button">I understand, create my passkey</button>
+                </div>
+                <p class="sign-in-status" id="passkey-unsupported" hidden>Your browser does not support passkeys. You can still play as a guest.</p>
+                <p class="sign-in-status" id="sign-in-status" role="status"></p>
+                <p class="sign-in-privacy"><a class="text-link" href="/privacy">How we handle your data</a></p>
+            </div>
+            <p class="account-signed-in" id="account-signed-in" hidden>
+                <span id="account-name"></span>
+                <a class="button secondary-button" href="/stats">My statistics</a>
+                <button class="button secondary-button" id="sign-out" type="button">Sign out</button>
+            </p>
+            <p class="account-last-sign-in" id="account-last-sign-in" hidden></p>
+        </div>
+
+        <div class="mode-grid" aria-label="Game modes">
+            <a class="mode-card accent" href="/play/bot">
+                <span class="card-icon" aria-hidden="true">♣</span>
+                <span class="mode-copy"><strong>Quick game</strong><small>Grab a seat and take on three lively bots.</small></span>
+                <span aria-hidden="true">→</span>
+            </a>
+            <a class="mode-card" href="/online/private">
+                <span class="card-icon" aria-hidden="true">♥</span>
+                <span class="mode-copy"><strong>Bring the crew</strong><small>Open a private table and invite your favourite rivals.</small></span>
+                <span aria-hidden="true">→</span>
+            </a>
+            <a class="mode-card" href="/online/public">
+                <span class="card-icon" aria-hidden="true">★</span>
+                <span class="mode-copy"><strong>Find a game</strong><small>Join an open table — bots fill in if nobody shows up.</small></span>
+                <span aria-hidden="true">→</span>
+            </a>
+            <a class="mode-card" href="/play/local">
+                <span class="card-icon" aria-hidden="true">⇆</span>
+                <span class="mode-copy"><strong>Pass and play</strong><small>Share one device and take turns with your hand.</small></span>
+                <span aria-hidden="true">→</span>
+            </a>
+            <a class="mode-card" href="/tutorial">
+                <span class="card-icon" aria-hidden="true">♦</span>
+                <span class="mode-copy"><strong>Learn the moves</strong><small>Master trump and tricks without the pressure.</small></span>
+                <span aria-hidden="true">→</span>
+            </a>
+            <a class="mode-card" href="/rules">
+                <span class="card-icon" aria-hidden="true">♠</span>
+                <span class="mode-copy"><strong>Table talk</strong><small>Everything you need to settle a rules debate.</small></span>
+                <span aria-hidden="true">→</span>
+            </a>
+        </div>
+
+        <p class="rule-note">Shuffle up, team up, and race to 1,000 points.</p>
+        <p class="home-footer"><a class="text-link" href="/privacy">Privacy policy</a></p>
+    </section>
+
+    <section class="destination-view" data-view="bot" hidden>
+        <p class="eyebrow">Your table is ready ⚡</p>
+        <h1>Pick your vibe.</h1>
+        <p>Choose your flavour of Belote and how spicy you want the competition.</p>
+        <form class="difficulty-form" id="bot-game-form">
+            <fieldset>
+                <legend>Game variant</legend>
+                <label class="difficulty-choice" for="variant-classic"><input checked id="variant-classic" name="variant" type="radio" value="CLASSIC"><span><strong>Classic Belote</strong><small>Traditional upcard bidding.</small></span></label>
+                <label class="difficulty-choice" for="variant-contree"><input id="variant-contree" name="variant" type="radio" value="CONTREE"><span><strong>Contrée</strong><small>Contract auction with coinche.</small></span></label>
+            </fieldset>
+            <fieldset>
+                <legend>Announcements</legend>
+                <label class="difficulty-choice" for="announcements-on"><input checked id="announcements-on" name="announcements" type="radio" value="on"><span><strong>On</strong><small>Declare tierce, cinquante, cent and carrés.</small></span></label>
+                <label class="difficulty-choice" for="announcements-off"><input id="announcements-off" name="announcements" type="radio" value="off"><span><strong>Off</strong><small>Card points and Belote only.</small></span></label>
+            </fieldset>
+            <fieldset>
+                <legend>Bot difficulty</legend>
+                <label class="difficulty-choice" for="relaxed">
+                    <input checked id="relaxed" name="difficulty" type="radio" value="RELAXED">
+                    <span><strong>Relaxed</strong><small>A gentler game to learn and practise.</small></span>
+                </label>
+                <label class="difficulty-choice" for="challenging">
+                    <input id="challenging" name="difficulty" type="radio" value="CHALLENGING">
+                    <span><strong>Challenging</strong><small>More demanding opponents for experienced players.</small></span>
+                </label>
+            </fieldset>
+            <button class="button" type="submit">Deal the cards <span aria-hidden="true">→</span></button>
+        </form>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+    <section class="destination-view" data-view="bot-game" hidden>
+        <header class="game-heading">
+            <div><p class="eyebrow">Bot card room</p><h1 id="game-variant-title">Classic Belote</h1></div>
+            <p class="difficulty-summary"><strong id="selected-variant"></strong><span>Bots · <strong id="selected-difficulty"></strong></span></p>
+        </header>
+        <div class="game-hud">
+            <div class="scoreboard" aria-label="Team scores">
+                <span><small>North–South</small><strong id="north-south-score">0</strong></span>
+                <i>VS</i>
+                <span><small>East–West</small><strong id="east-west-score">0</strong></span>
+            </div>
+            <div class="game-status" aria-label="Game status">
+                <span>Trump <strong id="trump-suit"></strong></span>
+                <span>Contract <strong id="declaring-team"></strong></span>
+                <span class="turn-pill">Turn <strong id="active-player"></strong></span>
+            </div>
+        </div>
+        <p class="contract-summary" id="contract-summary"></p>
+        <p class="match-score" id="match-score"></p>
+        <div class="card-table" id="bot-card-table" aria-label="Four-player card table">
+            <div class="player-station station-top" id="bot-player-top"></div>
+            <div class="player-station station-left" id="bot-player-left"></div>
+            <div class="player-station station-right" id="bot-player-right"></div>
+            <div class="table-center">
+                <span class="trick-progress">Trick <strong id="completed-tricks">0</strong> / 8</span>
+                <div class="current-trick" id="current-trick">Play the opening card</div>
+            </div>
+            <div class="player-station station-bottom" id="bot-player-bottom"></div>
+            <div class="card-hand table-hand" aria-label="Your eight cards" id="card-hand"></div>
+        </div>
+        <label class="declare-option" id="declare-option" hidden><input checked id="declare-announcements" type="checkbox"> <span id="declare-label"></span></label>
+        <div class="table-feedback" aria-live="polite">
+            <p class="declaration-message" id="declaration-message" role="status"></p>
+            <p class="declarers-note" id="declarers-note" hidden></p>
+        </div>
+        <section class="announcements-panel" id="announcements-panel" hidden aria-live="polite">
+            <h3>Announcements</h3>
+            <ul id="announcements-list"></ul>
+        </section>
+        <section class="round-result" hidden id="round-result">
+            <h2 id="contract-result"></h2>
+            <p id="round-score-breakdown"></p>
+            <button class="button" id="next-round-button" type="button">Deal next round</button>
+            <button class="button" hidden id="rematch-button" type="button">Rematch</button>
+        </section>
+        <div class="game-footer"><a class="text-link" href="/rules">Rules reference</a><a class="text-link" href="/play/bot">Leave table</a></div>
+    </section>
+    <section class="destination-view" data-view="bidding" hidden>
+        <header class="game-heading bidding-heading">
+            <div><p class="eyebrow" id="bidding-eyebrow">Choose trump</p><h1>Make your call.</h1></div>
+            <p class="bidding-variant" id="bidding-variant"></p>
+        </header>
+        <div class="card-table bidding-card-table" id="bidding-card-table" aria-label="Bidding table with four players">
+            <div class="player-station station-top" id="bidding-player-top"></div>
+            <div class="player-station station-left" id="bidding-player-left"></div>
+            <div class="player-station station-right" id="bidding-player-right"></div>
+            <div class="table-center bidding-center">
+                <p class="bidding-message" id="bidding-message" role="status"></p>
+                <div class="upturned-card" id="upturned-card" aria-label="Upturned card"></div>
+            </div>
+            <div class="player-station station-bottom" id="bidding-player-bottom"></div>
+            <div class="card-hand table-hand" aria-label="Your five cards" id="bidding-hand"></div>
+        </div>
+        <p class="trick-label bidding-hand-caption" id="bidding-hand-label">Your five-card hand</p>
+        <div class="auction-dock">
+            <div class="table-actions">
+                <button class="button" id="accept-upturned-button" type="button">Accept upturned suit</button>
+                <button class="button secondary-button" id="pass-bid-button" type="button">Pass</button>
+            </div>
+            <div class="trump-options" id="trump-options" hidden>
+                <p class="trick-label">Choose a trump suit</p>
+                <button type="button" data-suit="CLUBS">Clubs ♣</button>
+                <button type="button" data-suit="DIAMONDS">Diamonds ♦</button>
+                <button type="button" data-suit="HEARTS">Hearts ♥</button>
+                <button type="button" data-suit="SPADES">Spades ♠</button>
+            </div>
+            <div class="contree-options" id="contree-options" hidden>
+                <p class="trick-label" id="current-contract">No contract yet</p>
+                <div class="choice-field" id="contract-value-field"><span class="choice-label" id="contract-value-label">Contract value</span><div class="choice-group" role="radiogroup" aria-labelledby="contract-value-label"><label class="choice"><input checked name="contract-value" type="radio" value="80"><span>80</span></label><label class="choice"><input name="contract-value" type="radio" value="90"><span>90</span></label><label class="choice"><input name="contract-value" type="radio" value="100"><span>100</span></label><label class="choice"><input name="contract-value" type="radio" value="110"><span>110</span></label><label class="choice"><input name="contract-value" type="radio" value="120"><span>120</span></label><label class="choice"><input name="contract-value" type="radio" value="130"><span>130</span></label><label class="choice"><input name="contract-value" type="radio" value="140"><span>140</span></label><label class="choice"><input name="contract-value" type="radio" value="150"><span>150</span></label><label class="choice"><input name="contract-value" type="radio" value="160"><span>160</span></label></div></div>
+                <div class="choice-field" id="contract-suit-field"><span class="choice-label" id="contract-suit-label">Trump suit</span><div class="choice-group" role="radiogroup" aria-labelledby="contract-suit-label"><label class="choice suit-choice"><input checked name="contract-suit" type="radio" value="CLUBS"><span>Clubs ♣</span></label><label class="choice suit-choice red-suit"><input name="contract-suit" type="radio" value="DIAMONDS"><span>Diamonds ♦</span></label><label class="choice suit-choice red-suit"><input name="contract-suit" type="radio" value="HEARTS"><span>Hearts ♥</span></label><label class="choice suit-choice"><input name="contract-suit" type="radio" value="SPADES"><span>Spades ♠</span></label></div></div>
+                <div class="table-actions">
+                    <button class="button" id="contract-bid-button" type="button">Make bid</button>
+                    <button class="button" id="coinche-button" hidden type="button">Coinche</button>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="destination-view" data-view="private" hidden>
+        <p class="eyebrow">Friends, rivals, legends ♥</p>
+        <h1>Bring the crew.</h1>
+        <p>Make a room in seconds or use a six-character invite to jump into the fun.</p>
+        <div class="private-options">
+            <form class="private-form" id="create-private-table-form">
+                <h2>Create a table</h2>
+                <label for="owner-name">Your name</label>
+                <input autocomplete="name" id="owner-name" maxlength="30" name="playerName" required type="text" value="Player">
+                <div class="choice-field" id="private-variant-field"><span class="choice-label" id="private-variant-label">Game variant</span><div class="choice-group" role="radiogroup" aria-labelledby="private-variant-label"><label class="choice"><input checked name="private-variant" type="radio" value="CLASSIC"><span>Classic Belote</span></label><label class="choice"><input name="private-variant" type="radio" value="CONTREE"><span>Contrée</span></label></div></div>
+                <button class="button" type="submit">Create private table</button>
+            </form>
+            <form class="private-form" id="join-private-table-form">
+                <h2>Join friends</h2>
+                <label for="join-name">Your name</label>
+                <input autocomplete="name" id="join-name" maxlength="30" name="playerName" required type="text" value="Player">
+                <label for="invitation-code">Invitation code</label>
+                <input autocapitalize="characters" autocomplete="off" id="invitation-code" maxlength="6" name="invitationCode" placeholder="ABC123" required type="text">
+                <button class="button" type="submit">Join table</button>
+            </form>
+        </div>
+        <p class="form-message" id="private-form-message" role="alert"></p>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+    <section class="destination-view" data-view="public" hidden>
+        <p class="eyebrow">Strangers welcome ♠</p>
+        <h1>Find a game.</h1>
+        <p>Pick a variant and we'll seat you at an open table. If it isn't full within a minute, bots take the empty seats.</p>
+        <div class="private-options">
+            <form class="private-form" id="quick-match-form">
+                <h2>Quick match</h2>
+                <label for="public-name">Your name</label>
+                <input autocomplete="name" id="public-name" maxlength="30" name="playerName" required type="text" value="Player">
+                <div class="choice-field" id="public-variant-field"><span class="choice-label" id="public-variant-label">Game variant</span><div class="choice-group" role="radiogroup" aria-labelledby="public-variant-label"><label class="choice"><input checked name="public-variant" type="radio" value="CLASSIC"><span>Classic Belote</span></label><label class="choice"><input name="public-variant" type="radio" value="CONTREE"><span>Contrée</span></label></div></div>
+                <button class="button" type="submit">Find a game</button>
+            </form>
+        </div>
+        <p class="form-message" id="public-form-message" role="alert"></p>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+    <section class="destination-view" data-view="private-table" hidden>
+        <p class="eyebrow" id="private-table-status">Private table</p>
+        <h1>Gather your team.</h1>
+        <div class="invitation-panel">
+            <span>Invitation code</span>
+            <strong id="private-invitation-code"></strong>
+            <button class="text-button" id="copy-invitation-code" type="button">Copy</button>
+        </div>
+        <div class="seat-list" aria-label="Private table seats" id="private-seat-list"></div>
+        <div class="public-waiting" id="public-waiting" hidden>
+            <p id="public-waiting-message" role="status"></p>
+            <button class="button secondary-button" id="leave-table-button" type="button">Leave table</button>
+        </div>
+        <div class="timer-settings" id="timer-settings" hidden>
+            <span class="choice-label" id="turn-timer-label">Turn timer</span><div class="choice-group" role="radiogroup" aria-labelledby="turn-timer-label"><label class="choice"><input checked name="turn-timer" type="radio" value="0"><span>No timer</span></label><label class="choice"><input name="turn-timer" type="radio" value="30"><span>30 seconds</span></label><label class="choice"><input name="turn-timer" type="radio" value="60"><span>60 seconds</span></label></div>
+            <button class="text-button" id="save-turn-timer-button" type="button">Save</button>
+        </div>
+        <p class="timer-policy" id="timer-policy"></p>
+        <div class="timer-settings" id="announcement-settings" hidden>
+            <span class="choice-label" id="table-announcements-label">Announcements</span><div class="choice-group" role="radiogroup" aria-labelledby="table-announcements-label"><label class="choice"><input checked name="table-announcements" type="radio" value="on"><span>On</span></label><label class="choice"><input name="table-announcements" type="radio" value="off"><span>Off</span></label></div>
+        </div>
+        <p class="timer-policy" id="announcements-summary"></p>
+        <p class="variant-summary" id="private-variant-summary"></p>
+        <p class="form-message" id="private-table-message" role="alert"></p>
+        <div class="table-actions">
+            <button class="button" id="ready-button" type="button">I am ready</button>
+            <button class="button" id="start-private-game-button" type="button">Start game</button>
+            <button class="button" id="start-with-bots-button" type="button">Start now with bots</button>
+        </div>
+        <section class="private-game-panel" id="private-game-panel" hidden>
+            <div class="private-game-title"><span class="live-dot"></span><h2 id="private-game-heading">Auction</h2></div>
+            <p id="private-game-message" role="status"></p>
+            <p class="match-score" id="private-match-score"></p>
+            <div class="game-status" id="private-play-status" hidden aria-label="Private game status">
+                <span>Trump <strong id="private-trump"></strong></span>
+                <span>Declaring team <strong id="private-declaring-team"></strong></span>
+                <span>Turn <strong id="private-active-player"></strong></span>
+            </div>
+            <div class="scoreboard" id="private-scoreboard" hidden aria-label="Private team scores">
+                <span>North–South <strong id="private-north-south-score">0</strong></span>
+                <span>East–West <strong id="private-east-west-score">0</strong></span>
+            </div>
+            <div class="card-table private-card-table" id="private-card-table" hidden aria-label="Four-player private card table">
+                <div class="player-station station-top" id="private-player-top"></div>
+                <div class="player-station station-left" id="private-player-left"></div>
+                <div class="player-station station-right" id="private-player-right"></div>
+                <div class="table-center"><div class="current-trick" id="private-current-trick" aria-label="Current trick"></div></div>
+                <div class="player-station station-bottom" id="private-player-bottom"></div>
+                <div class="card-hand table-hand" id="private-game-hand" aria-label="Your cards"></div>
+                <div class="reaction-layer" id="private-reaction-layer" aria-live="polite"></div>
+            </div>
+            <div class="reaction-bar" id="private-reaction-bar" role="group" aria-label="Reactions" hidden>
+                <button class="reaction-button" data-reaction="WELL_PLAYED" type="button"><span aria-hidden="true">👏</span> Well played!</button>
+                <button class="reaction-button" data-reaction="NICE_HAND" type="button"><span aria-hidden="true">😎</span> Nice hand!</button>
+                <button class="reaction-button" data-reaction="OOPS" type="button"><span aria-hidden="true">😅</span> Oops!</button>
+                <button class="reaction-button" data-reaction="WOW" type="button"><span aria-hidden="true">😮</span> Wow!</button>
+                <button class="reaction-button" data-reaction="THINKING" type="button"><span aria-hidden="true">🤔</span> Let me think…</button>
+                <button class="reaction-button" data-reaction="GOOD_GAME" type="button"><span aria-hidden="true">🤝</span> Good game!</button>
+                <p class="reaction-message" id="private-reaction-message" role="status"></p>
+            </div>
+            <label class="declare-option" id="private-declare-option" hidden><input checked id="private-declare-announcements" type="checkbox"> <span id="private-declare-label"></span></label>
+            <div class="table-feedback" aria-live="polite">
+                <p class="declaration-message" id="private-declaration-message"></p>
+                <p class="declarers-note" id="private-declarers-note" hidden></p>
+            </div>
+            <section class="announcements-panel" id="private-announcements-panel" hidden aria-live="polite">
+                <h3>Announcements</h3>
+                <ul id="private-announcements-list"></ul>
+            </section>
+            <div id="private-auction-actions">
+                <p id="private-current-contract"></p>
+                <div class="choice-field" id="private-contract-value-field"><span class="choice-label" id="private-contract-value-label">Contract value</span><div class="choice-group" role="radiogroup" aria-labelledby="private-contract-value-label"><label class="choice"><input checked name="private-contract-value" type="radio" value="80"><span>80</span></label><label class="choice"><input name="private-contract-value" type="radio" value="90"><span>90</span></label><label class="choice"><input name="private-contract-value" type="radio" value="100"><span>100</span></label><label class="choice"><input name="private-contract-value" type="radio" value="110"><span>110</span></label><label class="choice"><input name="private-contract-value" type="radio" value="120"><span>120</span></label><label class="choice"><input name="private-contract-value" type="radio" value="130"><span>130</span></label><label class="choice"><input name="private-contract-value" type="radio" value="140"><span>140</span></label><label class="choice"><input name="private-contract-value" type="radio" value="150"><span>150</span></label><label class="choice"><input name="private-contract-value" type="radio" value="160"><span>160</span></label></div></div>
+                <div class="choice-field" id="private-contract-suit-field"><span class="choice-label" id="private-contract-suit-label">Trump suit</span><div class="choice-group" role="radiogroup" aria-labelledby="private-contract-suit-label"><label class="choice suit-choice"><input checked name="private-contract-suit" type="radio" value="CLUBS"><span>Clubs ♣</span></label><label class="choice suit-choice red-suit"><input name="private-contract-suit" type="radio" value="DIAMONDS"><span>Diamonds ♦</span></label><label class="choice suit-choice red-suit"><input name="private-contract-suit" type="radio" value="HEARTS"><span>Hearts ♥</span></label><label class="choice suit-choice"><input name="private-contract-suit" type="radio" value="SPADES"><span>Spades ♠</span></label></div></div>
+                <div class="table-actions">
+                    <button class="button" id="private-bid-button" type="button">Bid</button>
+                    <button class="button" id="private-coinche-button" type="button">Coinche</button>
+                    <button class="button" id="private-trump-button" type="button">Choose trump</button>
+                    <button class="button" id="private-pass-button" type="button">Pass</button>
+                </div>
+            </div>
+            <section class="round-result" id="private-round-result" hidden>
+                <h3 id="private-contract-result"></h3>
+                <p id="private-score-breakdown"></p>
+                <button class="button" id="private-next-round-button" type="button">Deal next round</button>
+                <button class="button" hidden id="private-rematch-button" type="button">Rematch</button>
+            </section>
+        </section>
+        <p id="private-lobby-help">Partners sit across from each other: pick an empty seat to choose yours. Four players must be ready before the table owner can start the game, or the owner can start now and bots take the empty seats.</p>
+        <a class="button" href="/online/private" id="leave-table-link">Leave table</a>
+    </section>
+    <section class="destination-view" data-view="tutorial" hidden>
+        <p class="eyebrow">Learn Belote</p>
+        <h1>Tutorial</h1>
+        <p id="tutorial-progress"></p>
+        <h2 id="tutorial-title"></h2>
+        <p id="tutorial-prompt"></p>
+        <div class="tutorial-cards" id="tutorial-cards"></div>
+        <p class="tutorial-feedback" id="tutorial-feedback" role="status"></p>
+        <div class="table-actions">
+            <button class="button" disabled id="tutorial-next-button" type="button">Next lesson</button>
+            <button class="text-button" id="tutorial-replay-button" type="button">Replay tutorial</button>
+        </div>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+    <section class="destination-view" data-view="rules" hidden>
+        <p class="eyebrow">Classic Belote</p>
+        <h1>Rules reference</h1>
+        <p>Classic suit-trump Belote, played to 1,000 points. Tout-Atout and Sans-Atout are not part of this variant.</p>
+        <div class="rules-grid">
+            <section><h2>Deal and trump</h2><p>Each player receives five cards and one card is turned face up. First, accept that suit or pass. After all pass, choose another suit; a second all-pass redeals.</p></section>
+            <section><h2>Announcements</h2><p>Declare tierce (three cards in a row, 20), cinquante (four, 50), cent (five or more, 100) and carrés (jacks 200, nines 150, aces, tens, kings or queens 100) when you play your first card. Sequences follow 7, 8, 9, 10, jack, queen, king, ace in one suit; a card counts once, carrés first. Only the team with the best announcement scores, and it scores all of its own: the higher value wins, then the longer run, then the higher card, then trump, then whoever declared first. Belote and announcements count towards the contract.</p></section>
+            <section><h2>Card order</h2><p>At trump: jack, 9, ace, 10, king, queen, 8, 7. In other suits: ace, 10, king, queen, jack, 9, 8, 7.</p></section>
+            <section><h2>Playing a card</h2><p>Follow the lead suit when possible. If void and an opponent wins, trump and overtrump when able. If your partner wins, you may discard.</p></section>
+            <section><h2>Scoring</h2><p>Card points total 162, including 10 points for the last trick (Dix de der). King and queen of trump declare Belote/Rebelote for 20 points. The declaring team must score more than its opponents, counting Belote and announcements.</p><p>A team that takes every trick makes a capot and scores 250 instead of 162; in Contrée, a declaring team that makes a capot also scores its bid.</p><p>The first team to reach 1,000 points wins the match. When both teams pass 1,000 points in the same round, the higher score wins; an exact tie is settled by another round.</p></section>
+        </div>
+        <h2>Contrée variant</h2>
+        <p>All eight cards are dealt before an auction from 80 to 160, in steps of 10. Each call names a trump suit and must raise the current contract. Three passes after a bid close the auction. An opponent may coinche, doubling the round score; Belote/Rebelote remains active.</p>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+    <section class="destination-view" data-view="local" hidden>
+        <p class="eyebrow">One device, several players</p>
+        <h1>Pass and play</h1>
+        <p>Write each player's name in the seat they take. Bots take the empty seats; North and South play together against East and West.</p>
+        <form class="difficulty-form" id="pass-and-play-form">
+            <fieldset class="local-seats">
+                <legend>Players</legend>
+                <label for="local-north">North</label>
+                <input autocomplete="off" id="local-north" maxlength="30" name="north" placeholder="Bot" type="text">
+                <label for="local-east">East</label>
+                <input autocomplete="off" id="local-east" maxlength="30" name="east" placeholder="Bot" type="text">
+                <label for="local-south">South</label>
+                <input autocomplete="off" id="local-south" maxlength="30" name="south" placeholder="Bot" type="text">
+                <label for="local-west">West</label>
+                <input autocomplete="off" id="local-west" maxlength="30" name="west" placeholder="Bot" type="text">
+            </fieldset>
+            <fieldset>
+                <legend>Game variant</legend>
+                <label class="difficulty-choice" for="local-variant-classic"><input checked id="local-variant-classic" name="local-variant" type="radio" value="CLASSIC"><span><strong>Classic Belote</strong><small>Traditional upcard bidding.</small></span></label>
+                <label class="difficulty-choice" for="local-variant-contree"><input id="local-variant-contree" name="local-variant" type="radio" value="CONTREE"><span><strong>Contrée</strong><small>Contract auction with coinche.</small></span></label>
+            </fieldset>
+            <fieldset>
+                <legend>Announcements</legend>
+                <label class="difficulty-choice" for="local-announcements-on"><input checked id="local-announcements-on" name="local-announcements" type="radio" value="on"><span><strong>On</strong><small>Declare tierce, cinquante, cent and carrés.</small></span></label>
+                <label class="difficulty-choice" for="local-announcements-off"><input id="local-announcements-off" name="local-announcements" type="radio" value="off"><span><strong>Off</strong><small>Card points and Belote only.</small></span></label>
+            </fieldset>
+            <fieldset>
+                <legend>Bot difficulty</legend>
+                <label class="difficulty-choice" for="local-relaxed"><input checked id="local-relaxed" name="local-difficulty" type="radio" value="RELAXED"><span><strong>Relaxed</strong><small>A gentler game to learn and practise.</small></span></label>
+                <label class="difficulty-choice" for="local-challenging"><input id="local-challenging" name="local-difficulty" type="radio" value="CHALLENGING"><span><strong>Challenging</strong><small>More demanding opponents for experienced players.</small></span></label>
+            </fieldset>
+            <p class="form-message" id="local-form-message" role="alert"></p>
+            <button class="button" type="submit">Start pass and play <span aria-hidden="true">→</span></button>
+        </form>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+
+    <section class="destination-view" data-view="stats" hidden>
+        <p class="eyebrow">Your progress</p>
+        <h1>My statistics</h1>
+        <div class="stats-message" id="stats-guest" hidden>
+            <p>Sign in to see your statistics.</p>
+            <p id="stats-sign-in"><button class="button secondary-button" id="stats-sign-in-button" type="button">Sign in</button></p>
+        </div>
+        <p class="stats-message" id="stats-empty" hidden>No finished matches yet. Finish a match while signed in and it will appear here.</p>
+        <p class="stats-message" id="stats-error" hidden></p>
+        <div class="stats-content" id="stats-content" hidden>
+            <div class="stats-tiles" id="stats-overall" aria-label="Match record"></div>
+            <div class="stats-columns">
+                <section class="stats-panel">
+                    <h2>By variant</h2>
+                    <div class="stats-scroll"><table class="stats-table" id="stats-variants"></table></div>
+                </section>
+                <section class="stats-panel">
+                    <h2>Solo games by difficulty</h2>
+                    <div class="stats-scroll"><table class="stats-table" id="stats-difficulties"></table></div>
+                </section>
+            </div>
+            <section class="stats-panel">
+                <h2>Contracts</h2>
+                <dl class="stats-facts" id="stats-contracts"></dl>
+            </section>
+            <section class="stats-panel">
+                <h2>Recent matches</h2>
+                <div class="stats-scroll"><table class="stats-table stats-recent" id="stats-recent"></table></div>
+            </section>
+        </div>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+
+    <section class="destination-view privacy-view" data-view="privacy" hidden>
+        <p class="eyebrow">How we handle your data</p>
+        <h1>Privacy policy</h1>
+        <p>This policy explains what Beelot keeps about you, why, for how long, and how to exercise your rights. Guests can play every mode without an account; their games are not recorded.</p>
+        <section>
+            <h2>Who is responsible</h2>
+            <dl class="privacy-facts">
+                <dt>Data controller</dt><dd id="privacy-controller">not configured</dd>
+                <dt>Privacy contact</dt><dd id="privacy-contact">not configured</dd>
+            </dl>
+            <p>Write to the privacy contact with any question about your data or to exercise your rights.</p>
+        </section>
+        <section>
+            <h2>What we store and why</h2>
+            <ul>
+                <li>Your account: a pseudonym, when the account was created, and your last two sign-ins, which are shown to you so that you can spot a sign-in you did not make. It lets you sign in and keep your results. Legal basis: the contract between you and Beelot (GDPR article 6(1)(b)).</li>
+                <li>Your passkey: its public key, its signature counter, and when it was created and last used. Its private key never leaves your device, and Beelot never asks for your email address. Legal basis: the contract.</li>
+                <li>Your finished matches: the seats, the final score and every round, so that you can see your statistics. The other players at the table see your pseudonym. Legal basis: the contract.</li>
+                <li>Security events: sign-ups, sign-ins and failed sign-ins, sign-outs, expired sessions, refused requests, data downloads and account deletions, each with its time, IP address and outcome. No passkey identifier is ever part of them. They help detect and investigate abuse. Legal basis: our legitimate interest in keeping Beelot secure (GDPR article 6(1)(f)).</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Who processes it</h2>
+            <dl class="privacy-facts">
+                <dt>Hosting</dt><dd id="privacy-hosting">not configured</dd>
+            </dl>
+            <p>Your data is never sold, shared for advertising or used to profile you.</p>
+        </section>
+        <section>
+            <h2>How long we keep it</h2>
+            <ul>
+                <li>A passkey made for a sign-up that was never finished: erased within two days.</li>
+                <li>Accounts: deleted 3 years after the last sign-in, with their passkey and security events.</li>
+                <li>Security events: 12 months.</li>
+                <li>Finished matches stay in the other players' history. Once your account is deleted, your seats show “Deleted player” and are no longer linked to you.</li>
+                <li id="privacy-backup-days">Backups: retention period not configured.</li>
+            </ul>
+        </section>
+        <section>
+            <h2>Cookies</h2>
+            <p>Beelot sets only two cookies: the session cookie, which keeps you signed in, and the XSRF-TOKEN cookie, which protects your requests against forgery. Both are strictly necessary, so Beelot asks for no consent. Your settings, such as the language and sound, stay in your browser and are never sent to Beelot.</p>
+        </section>
+        <section>
+            <h2>Your rights</h2>
+            <ul>
+                <li>Access and portability: Settings → Download my data gives you a JSON file with your account, your security events and your matches.</li>
+                <li>Erasure: Settings → Delete my account deletes your account, your passkey and your security events straight away. Your device may still offer the passkey: remove it in your device's settings.</li>
+                <li>Rectification, restriction and objection: write to the privacy contact.</li>
+            </ul>
+            <p>If you think your data is mishandled, you can complain to the CNIL, the French data protection authority:</p>
+            <p><a class="text-link" href="https://www.cnil.fr/fr/plaintes" rel="noopener" target="_blank">cnil.fr/fr/plaintes</a></p>
+        </section>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+
+    <section class="destination-view" data-view="settings" hidden>
+        <p class="eyebrow">Preferences</p>
+        <h1>Settings</h1>
+        <div class="settings-panel">
+            <div class="setting-choice"><span><strong>Language</strong><small>Choose the language of the interface.</small></span><div class="choice-group" role="radiogroup" aria-label="Language"><label class="choice"><input name="language" type="radio" value="en"><span>English</span></label><label class="choice"><input name="language" type="radio" value="fr"><span>Français</span></label><label class="choice"><input name="language" type="radio" value="nl"><span>Nederlands</span></label></div></div>
+            <label class="setting-choice" for="reactions-enabled"><input checked id="reactions-enabled" type="checkbox"><span><strong>Reactions</strong><small>Send and see quick reactions at online tables.</small></span></label>
+            <label class="setting-choice" for="sound-enabled"><input checked id="sound-enabled" type="checkbox"><span><strong>Sound effects</strong><small>Enable optional game sounds.</small></span></label>
+            <label class="setting-choice" for="reduced-motion"><input id="reduced-motion" type="checkbox"><span><strong>Reduce motion</strong><small>Disable movement and transition effects.</small></span></label>
+        </div>
+        <p>Cards always use both a suit symbol and colour. Controls support touch and keyboard use.</p>
+        <section class="settings-panel your-data" id="your-data" hidden>
+            <h2>Your data</h2>
+            <p>Download a copy of what Beelot keeps about you, or delete your account.</p>
+            <div class="your-data-actions">
+                <a class="button secondary-button" download href="/api/account/export" id="export-data">Download my data</a>
+                <button class="button secondary-button" id="delete-account" type="button">Delete my account</button>
+            </div>
+            <p class="form-message" id="export-message" role="status"></p>
+            <div class="delete-confirm" id="delete-confirm" hidden>
+                <p>Your account, your passkey and your sign-in history will be deleted. Finished matches stay in other players' history, shown as “Deleted player”.</p>
+                <label for="delete-confirm-word"><span>Type this word to confirm:</span> <strong class="delete-word">DELETE</strong></label>
+                <input autocapitalize="characters" autocomplete="off" id="delete-confirm-word" spellcheck="false" type="text">
+                <div class="your-data-actions">
+                    <button class="button danger-button" disabled id="delete-confirm-button" type="button">Delete my account for good</button>
+                    <button class="text-button" id="delete-cancel" type="button">Cancel</button>
+                </div>
+            </div>
+            <p class="form-message" id="delete-message" role="alert"></p>
+        </section>
+        <a class="button" href="/">Back to game modes</a>
+    </section>
+</main>
+<div class="handoff" id="handoff" role="dialog" aria-modal="true" aria-labelledby="handoff-title" hidden>
+    <div class="handoff-card">
+        <p class="eyebrow">Pass and play</p>
+        <h2 id="handoff-title"></h2>
+        <p>Keep your cards hidden from the other players.</p>
+        <button class="button" id="handoff-ready" type="button">I'm ready</button>
+    </div>
+</div>
+<script src="/i18n-nl.js"></script>
+<script src="/i18n.js"></script>
+<script src="/sounds.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
