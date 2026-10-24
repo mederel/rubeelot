@@ -17,17 +17,20 @@ use tower_http::trace::TraceLayer;
 use crate::clock::Clock;
 use crate::config::Config;
 use crate::error::AppError;
+use crate::limits::{self, RateLimits};
 
 /// What every handler can reach. Cloning it is cheap.
 #[derive(Clone)]
 pub struct AppState {
     pub config: Arc<Config>,
     pub clock: Arc<dyn Clock>,
+    pub rate_limits: Arc<RateLimits>,
 }
 
 impl AppState {
     pub fn new(config: Config, clock: Arc<dyn Clock>) -> Self {
         Self {
+            rate_limits: Arc::new(RateLimits::new(&config, clock.clone())),
             config: Arc::new(config),
             clock,
         }
@@ -62,6 +65,8 @@ pub fn router(state: AppState) -> Router {
     }
     let files = ServeDir::new(static_dir).not_found_service(axum::routing::any(not_found));
     let max_header_bytes = state.config.limits.max_header_bytes;
+    let max_request_bytes = state.config.limits.max_request_bytes;
+    let rate_limits = state.rate_limits.clone();
 
     router.fallback_service(files).with_state(state).layer(
         ServiceBuilder::new()
@@ -74,7 +79,12 @@ pub fn router(state: AppState) -> Router {
             .layer(PropagateRequestIdLayer::new(REQUEST_ID.clone()))
             .layer(middleware::from_fn(move |request, next| {
                 limit_headers(max_header_bytes, request, next)
-            })),
+            }))
+            .layer(middleware::from_fn_with_state(
+                rate_limits,
+                limits::rate::rate_limit,
+            ))
+            .layer(limits::size::layer(max_request_bytes)),
     )
 }
 

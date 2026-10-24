@@ -16,8 +16,13 @@ pub fn test_state() -> AppState {
 }
 
 pub fn test_state_with_clock() -> (AppState, Arc<FakeClock>) {
+    state_with(Config::default())
+}
+
+/// A state with this configuration and a fake clock set to a fixed instant.
+pub fn state_with(config: Config) -> (AppState, Arc<FakeClock>) {
     let clock = Arc::new(FakeClock::new(datetime!(2026-10-24 12:00 UTC)));
-    (AppState::new(Config::default(), clock.clone()), clock)
+    (AppState::new(config, clock.clone()), clock)
 }
 
 pub async fn body_bytes(response: Response<Body>) -> Vec<u8> {

@@ -21,9 +21,12 @@ async fn main() -> anyhow::Result<()> {
         .await
         .with_context(|| format!("cannot listen on {bind}"))?;
     tracing::info!(%bind, "listening");
-    axum::serve(listener, router(state))
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    axum::serve(
+        listener,
+        router(state).into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
     Ok(())
 }
 
