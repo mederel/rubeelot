@@ -1,0 +1,150 @@
+{
+  "bidding": {
+    "activePlayer": "You",
+    "auction": [
+      {
+        "call": "Pass",
+        "playerName": "You"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Camille"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Luc"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Manon"
+      }
+    ],
+    "auctionId": "<auction-id>",
+    "calls": [
+      {
+        "active": true,
+        "call": "Pass",
+        "playerName": "You"
+      },
+      {
+        "active": false,
+        "call": "Pass",
+        "playerName": "Camille"
+      },
+      {
+        "active": false,
+        "call": "Pass",
+        "playerName": "Luc"
+      },
+      {
+        "active": false,
+        "call": "Pass",
+        "playerName": "Manon"
+      }
+    ],
+    "coincheAllowed": false,
+    "complete": false,
+    "currentPlayerIndex": 0,
+    "dealerIndex": 3,
+    "hand": [
+      {
+        "rank": "7",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "Q",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "8",
+        "suit": "HEARTS",
+        "symbol": "♥"
+      },
+      {
+        "rank": "Q",
+        "suit": "HEARTS",
+        "symbol": "♥"
+      },
+      {
+        "rank": "J",
+        "suit": "SPADES",
+        "symbol": "♠"
+      }
+    ],
+    "highestBid": 0,
+    "highestBidSuit": "",
+    "highestBidder": "",
+    "message": "Everyone passed. Choose any trump suit except CLUBS.",
+    "playerTurn": true,
+    "round": 2,
+    "upturnedCard": {
+      "rank": "7",
+      "suit": "CLUBS",
+      "symbol": "♣"
+    },
+    "variant": "CLASSIC"
+  },
+  "kind": "LOCAL",
+  "match": {
+    "complete": false,
+    "eastWest": 0,
+    "northSouth": 0,
+    "winner": null
+  },
+  "reactions": [],
+  "table": {
+    "announcements": true,
+    "botFillAt": null,
+    "difficulty": "RELAXED",
+    "difficultyLabel": "Relaxed",
+    "id": "01234567-89ab-cdef-0123-456789abcdef",
+    "invitationCode": null,
+    "kind": "LOCAL",
+    "ownerPosition": 0,
+    "passAndPlay": false,
+    "publicTable": false,
+    "seats": [
+      {
+        "connectionState": "CONNECTED",
+        "name": "You",
+        "position": 0,
+        "ready": false,
+        "type": "HUMAN",
+        "you": true
+      },
+      {
+        "connectionState": "BOT_TAKEOVER",
+        "name": "Camille",
+        "position": 1,
+        "ready": true,
+        "type": "BOT",
+        "you": false
+      },
+      {
+        "connectionState": "BOT_TAKEOVER",
+        "name": "Luc",
+        "position": 2,
+        "ready": true,
+        "type": "BOT",
+        "you": false
+      },
+      {
+        "connectionState": "BOT_TAKEOVER",
+        "name": "Manon",
+        "position": 3,
+        "ready": true,
+        "type": "BOT",
+        "you": false
+      }
+    ],
+    "status": "IN_PROGRESS",
+    "turnTimerSeconds": 0,
+    "variant": "CLASSIC",
+    "variantLabel": "Classic Belote"
+  },
+  "tableId": "01234567-89ab-cdef-0123-456789abcdef",
+  "version": 1,
+  "you": 0
+}

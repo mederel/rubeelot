@@ -1,0 +1,41 @@
+{
+  "kind": "PRIVATE",
+  "reactions": [],
+  "table": {
+    "announcements": true,
+    "botFillAt": null,
+    "difficulty": null,
+    "difficultyLabel": null,
+    "id": "01234567-89ab-cdef-0123-456789abcdef",
+    "invitationCode": "ABC234",
+    "kind": "PRIVATE",
+    "ownerPosition": 0,
+    "passAndPlay": false,
+    "publicTable": false,
+    "seats": [
+      {
+        "connectionState": "CONNECTED",
+        "name": "Ana",
+        "position": 0,
+        "ready": true,
+        "type": "HUMAN",
+        "you": false
+      },
+      {
+        "connectionState": "CONNECTED",
+        "name": "Ben",
+        "position": 1,
+        "ready": false,
+        "type": "HUMAN",
+        "you": true
+      }
+    ],
+    "status": "WAITING_FOR_PLAYERS",
+    "turnTimerSeconds": 0,
+    "variant": "CLASSIC",
+    "variantLabel": "Classic Belote"
+  },
+  "tableId": "01234567-89ab-cdef-0123-456789abcdef",
+  "version": 2,
+  "you": 1
+}

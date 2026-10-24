@@ -1,0 +1,335 @@
+{
+  "bidding": {
+    "activePlayer": "Luc",
+    "auction": [
+      {
+        "call": "80 Spades",
+        "playerName": "You"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Camille"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Luc"
+      },
+      {
+        "call": "100 Clubs",
+        "playerName": "Manon"
+      },
+      {
+        "call": "Pass",
+        "playerName": "You"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Camille"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Luc"
+      }
+    ],
+    "auctionId": "<auction-id>",
+    "calls": [
+      {
+        "active": false,
+        "call": "Pass",
+        "playerName": "You"
+      },
+      {
+        "active": false,
+        "call": "Pass",
+        "playerName": "Camille"
+      },
+      {
+        "active": true,
+        "call": "Pass",
+        "playerName": "Luc"
+      },
+      {
+        "active": false,
+        "call": "100 Clubs",
+        "playerName": "Manon"
+      }
+    ],
+    "coincheAllowed": false,
+    "complete": true,
+    "currentPlayerIndex": 0,
+    "dealerIndex": 3,
+    "hand": [
+      {
+        "rank": "8",
+        "suit": "CLUBS",
+        "symbol": "♣"
+      },
+      {
+        "rank": "K",
+        "suit": "CLUBS",
+        "symbol": "♣"
+      },
+      {
+        "rank": "10",
+        "suit": "CLUBS",
+        "symbol": "♣"
+      },
+      {
+        "rank": "7",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "8",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "9",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "K",
+        "suit": "HEARTS",
+        "symbol": "♥"
+      },
+      {
+        "rank": "9",
+        "suit": "SPADES",
+        "symbol": "♠"
+      }
+    ],
+    "highestBid": 100,
+    "highestBidSuit": "CLUBS",
+    "highestBidder": "Manon",
+    "message": "The 100 Clubs contract is accepted.",
+    "playerTurn": false,
+    "round": 1,
+    "upturnedCard": null,
+    "variant": "CONTREE"
+  },
+  "board": {
+    "activePlayer": "Luc",
+    "activePlayerIndex": 2,
+    "announcements": true,
+    "beloteBonusPoints": 0,
+    "coinched": false,
+    "completedTricks": 8,
+    "contractValue": 100,
+    "currentPlayer": "You",
+    "currentPlayerIndex": 0,
+    "currentTrick": [
+      {
+        "rank": "A",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "10",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "8",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "J",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      }
+    ],
+    "dealerIndex": 3,
+    "declarationMessage": "",
+    "declarers": [],
+    "declaringPlayerIndex": 3,
+    "declaringTeam": "East–West",
+    "eastWestScore": 108,
+    "hand": [],
+    "legalCards": [],
+    "northSouthScore": 74,
+    "ownAnnouncements": [],
+    "revealedAnnouncements": [
+      {
+        "announcements": [
+          {
+            "cards": [
+              {
+                "rank": "7",
+                "suit": "DIAMONDS",
+                "symbol": "♦"
+              },
+              {
+                "rank": "8",
+                "suit": "DIAMONDS",
+                "symbol": "♦"
+              },
+              {
+                "rank": "9",
+                "suit": "DIAMONDS",
+                "symbol": "♦"
+              }
+            ],
+            "kind": "TIERCE",
+            "suit": "DIAMONDS",
+            "topCard": {
+              "rank": "9",
+              "suit": "DIAMONDS",
+              "symbol": "♦"
+            },
+            "value": 20
+          }
+        ],
+        "player": "You",
+        "scored": true,
+        "seat": 0,
+        "team": "North–South"
+      }
+    ],
+    "reviewingCompletedTrick": true,
+    "roundResult": {
+      "announcements": [
+        {
+          "announcements": [
+            {
+              "cards": [
+                {
+                  "rank": "7",
+                  "suit": "DIAMONDS",
+                  "symbol": "♦"
+                },
+                {
+                  "rank": "8",
+                  "suit": "DIAMONDS",
+                  "symbol": "♦"
+                },
+                {
+                  "rank": "9",
+                  "suit": "DIAMONDS",
+                  "symbol": "♦"
+                }
+              ],
+              "kind": "TIERCE",
+              "suit": "DIAMONDS",
+              "topCard": {
+                "rank": "9",
+                "suit": "DIAMONDS",
+                "symbol": "♦"
+              },
+              "value": 20
+            }
+          ],
+          "player": "You",
+          "scored": true,
+          "seat": 0,
+          "team": "North–South"
+        }
+      ],
+      "capotTeam": null,
+      "contractMade": true,
+      "eastWestAnnouncements": 0,
+      "eastWestAwarded": 108,
+      "eastWestBeloteBonus": 0,
+      "eastWestCardPoints": 108,
+      "eastWestDixDeDer": 0,
+      "northSouthAnnouncements": 20,
+      "northSouthAwarded": 74,
+      "northSouthBeloteBonus": 0,
+      "northSouthCardPoints": 44,
+      "northSouthDixDeDer": 10
+    },
+    "seats": [
+      {
+        "active": false,
+        "cardCount": 0,
+        "name": "You",
+        "team": "North–South"
+      },
+      {
+        "active": false,
+        "cardCount": 0,
+        "name": "Camille",
+        "team": "East–West"
+      },
+      {
+        "active": true,
+        "cardCount": 0,
+        "name": "Luc",
+        "team": "North–South"
+      },
+      {
+        "active": false,
+        "cardCount": 0,
+        "name": "Manon",
+        "team": "East–West"
+      }
+    ],
+    "trickPoints": 23,
+    "trickWinner": "Luc",
+    "trump": "Clubs",
+    "variant": "CONTREE"
+  },
+  "kind": "LOCAL",
+  "match": {
+    "complete": false,
+    "eastWest": 108,
+    "northSouth": 74,
+    "winner": null
+  },
+  "reactions": [],
+  "table": {
+    "announcements": true,
+    "botFillAt": null,
+    "difficulty": "RELAXED",
+    "difficultyLabel": "Relaxed",
+    "id": "01234567-89ab-cdef-0123-456789abcdef",
+    "invitationCode": null,
+    "kind": "LOCAL",
+    "ownerPosition": 0,
+    "passAndPlay": false,
+    "publicTable": false,
+    "seats": [
+      {
+        "connectionState": "CONNECTED",
+        "name": "You",
+        "position": 0,
+        "ready": false,
+        "type": "HUMAN",
+        "you": true
+      },
+      {
+        "connectionState": "BOT_TAKEOVER",
+        "name": "Camille",
+        "position": 1,
+        "ready": true,
+        "type": "BOT",
+        "you": false
+      },
+      {
+        "connectionState": "BOT_TAKEOVER",
+        "name": "Luc",
+        "position": 2,
+        "ready": true,
+        "type": "BOT",
+        "you": false
+      },
+      {
+        "connectionState": "BOT_TAKEOVER",
+        "name": "Manon",
+        "position": 3,
+        "ready": true,
+        "type": "BOT",
+        "you": false
+      }
+    ],
+    "status": "IN_PROGRESS",
+    "turnTimerSeconds": 0,
+    "variant": "CONTREE",
+    "variantLabel": "Contrée"
+  },
+  "tableId": "01234567-89ab-cdef-0123-456789abcdef",
+  "version": 16,
+  "you": 0
+}

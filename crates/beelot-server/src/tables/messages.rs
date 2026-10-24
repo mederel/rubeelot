@@ -1,6 +1,10 @@
 //! Every English string the tables send, copied verbatim from the Java source: the frontend translates them with
 //! the English text as the key.
 
+use beelot_game::Variant;
+use beelot_game::bidding::{BiddingState, CallType, SeatCall};
+use beelot_game::board::GameBoard;
+
 pub const TABLE_CLOSED: &str = "This table does not exist.";
 pub const ALREADY_STARTED: &str = "This table has already started.";
 pub const TABLE_FULL: &str = "This table is full.";
@@ -48,3 +52,95 @@ pub const AUCTION_NOT_FINISHED: &str = "The auction has not finished.";
 pub const ROUND_NOT_FINISHED: &str = "The current round is not finished.";
 pub const MATCH_ENDED: &str = "This match has ended. Start a rematch.";
 pub const REACTIONS_CLOSED: &str = "Reactions open once the game starts.";
+
+/// A call as players read it: `Pass`, `90 Hearts`, `Hearts` for a chosen trump, or `Coinche!`.
+pub fn call_label(call: &SeatCall) -> String {
+    match call.r#type {
+        CallType::Pass => "Pass".into(),
+        CallType::Bid => format!(
+            "{} {}",
+            call.value,
+            call.suit.map_or("", |suit| suit.display_name())
+        ),
+        CallType::Trump => call.suit.map_or("", |suit| suit.display_name()).into(),
+        CallType::Coinche => "Coinche!".into(),
+    }
+}
+
+/// What the auction says now, as Java's `BiddingState` set it after each call. Choosing a trump leaves the message
+/// as it was.
+pub fn auction_message(
+    bidding: &BiddingState,
+    variant: Variant,
+    name: impl Fn(usize) -> String,
+) -> String {
+    let auction = bidding.auction();
+    let Some(index) = auction
+        .iter()
+        .rposition(|call| call.r#type != CallType::Trump)
+    else {
+        return match (bidding.deals() > 1, variant) {
+            (false, Variant::Contree) => {
+                "Eight cards have been dealt. Bid from 80 to 160 or pass.".into()
+            }
+            (false, Variant::Classic) => {
+                "Five cards have been dealt. Accept the upturned suit or pass.".into()
+            }
+            (true, Variant::Contree) => "Everyone passed. The cards have been redealt.".into(),
+            (true, Variant::Classic) => {
+                "Everyone passed twice. The cards have been redealt.".into()
+            }
+        };
+    };
+    let call = &auction[index];
+    let deciding = || format!("{} is deciding.", name((call.seat + 1) % 4));
+    match call.r#type {
+        CallType::Bid => format!(
+            "{} bids {} {}.",
+            name(call.seat),
+            call.value,
+            call.suit.map_or("", |suit| suit.display_name())
+        ),
+        CallType::Coinche => format!("{} coinches the contract.", name(call.seat)),
+        CallType::Pass if variant == Variant::Classic && index == 3 => {
+            let upturned = bidding
+                .upturned_card()
+                .expect("Classic Belote turns a card up");
+            format!(
+                "Everyone passed. Choose any trump suit except {}.",
+                suit_name(upturned.suit)
+            )
+        }
+        CallType::Pass if variant == Variant::Contree && bidding.completed_board().is_some() => {
+            format!(
+                "The {} {} contract is accepted.",
+                bidding.highest_bid(),
+                bidding
+                    .highest_bid_suit()
+                    .map_or("", |suit| suit.display_name())
+            )
+        }
+        CallType::Pass | CallType::Trump => deciding(),
+    }
+}
+
+/// Java's `Suit.name()`: `HEARTS`.
+pub fn suit_name(suit: beelot_game::Suit) -> &'static str {
+    match suit {
+        beelot_game::Suit::Clubs => "CLUBS",
+        beelot_game::Suit::Diamonds => "DIAMONDS",
+        beelot_game::Suit::Hearts => "HEARTS",
+        beelot_game::Suit::Spades => "SPADES",
+    }
+}
+
+/// The Belote announcement of the round, once its first card is played.
+pub fn declaration_message(board: &GameBoard, name: impl Fn(usize) -> String) -> String {
+    match (board.belote_seat(), board.belote_cards_played()) {
+        (Some(seat), 1) => format!("{} declares Belote.", name(seat)),
+        (Some(seat), played) if played >= 2 && board.belote_bonus_awarded() => {
+            format!("{} declares Rebelote: 20 bonus points.", name(seat))
+        }
+        _ => String::new(),
+    }
+}
