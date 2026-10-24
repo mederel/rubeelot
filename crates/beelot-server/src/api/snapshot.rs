@@ -278,7 +278,8 @@ fn connection_name(connection: Connection) -> &'static str {
     }
 }
 
-pub fn snapshot(table: &Table, viewer: Viewer) -> Snapshot {
+/// The table as `viewer` sees it at `now`.
+pub fn snapshot(table: &Table, viewer: Viewer, now: OffsetDateTime) -> Snapshot {
     let you = match viewer {
         Viewer::Seat(position) => position,
         Viewer::Device => table.viewer(),
@@ -306,7 +307,15 @@ pub fn snapshot(table: &Table, viewer: Viewer) -> Snapshot {
             complete: score.complete(),
             winner: score.winner(),
         }),
-        reactions: Vec::new(),
+        reactions: table
+            .reactions(now)
+            .into_iter()
+            .map(|reaction| ReactionView {
+                sequence: reaction.sequence,
+                position: reaction.position,
+                reaction: reaction.reaction,
+            })
+            .collect(),
     }
 }
 

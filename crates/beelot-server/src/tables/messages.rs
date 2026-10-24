@@ -144,3 +144,5 @@ pub fn declaration_message(board: &GameBoard, name: impl Fn(usize) -> String) ->
         _ => String::new(),
     }
 }
+pub const SLOW_DOWN: &str = "Slow down: wait a moment before reacting again.";
+pub const INVALID_CODE: &str = "The invitation code is invalid.";

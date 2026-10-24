@@ -4,7 +4,7 @@
 //! Ports the game flow of Java's `BotGameService` and `PrivateTableService`.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::time::Duration;
 
 use beelot_game::bidding::BiddingState;
@@ -19,6 +19,7 @@ use super::OsRandom;
 use super::actions::Action;
 use super::finished::{DELETED_PLAYER, FinishedMatch, FinishedSeat, Mode};
 use super::messages as msg;
+use super::reactions::{Reaction, Reactions};
 use super::seats::{Lobby, Seat, SeatKind, Status, TableKind};
 use crate::error::AppError;
 
@@ -30,6 +31,7 @@ pub type RngFactory = Arc<dyn Fn() -> Box<dyn RandomSource + Send> + Send + Sync
 pub struct TableSetup {
     rng: RngFactory,
     strategy: Option<&'static dyn BotStrategy>,
+    reactions: Arc<AtomicU64>,
 }
 
 impl Default for TableSetup {
@@ -37,6 +39,7 @@ impl Default for TableSetup {
         Self {
             rng: Arc::new(|| Box::new(OsRandom)),
             strategy: None,
+            reactions: Arc::default(),
         }
     }
 }
@@ -53,7 +56,14 @@ impl TableSetup {
                 ))
             }),
             strategy: None,
+            reactions: Arc::default(),
         }
+    }
+
+    /// Reactions take their sequence numbers from this counter, shared by every table.
+    pub fn with_reaction_sequence(mut self, sequence: Arc<AtomicU64>) -> Self {
+        self.reactions = sequence;
+        self
     }
 
     /// The bots play this strategy instead of the table's own.
@@ -103,6 +113,7 @@ pub struct Table {
     last_activity: OffsetDateTime,
     rng: RngFactory,
     strategy: &'static dyn BotStrategy,
+    reactions: Reactions,
     pending: Outcome,
 }
 
@@ -189,6 +200,7 @@ impl Table {
             last_activity: now,
             rng: setup.rng,
             strategy,
+            reactions: Reactions::new(setup.reactions),
             pending: Outcome::default(),
         }
     }
@@ -257,6 +269,11 @@ impl Table {
 
     pub fn last_activity(&self) -> OffsetDateTime {
         self.last_activity
+    }
+
+    /// The reactions sent at the table in the last 30 seconds, oldest first.
+    pub fn reactions(&self, now: OffsetDateTime) -> Vec<Reaction> {
+        self.reactions.recent(now)
     }
 
     pub fn strategy(&self) -> &'static dyn BotStrategy {
@@ -429,12 +446,12 @@ impl Table {
                 self.match_id = Uuid::new_v4();
                 self.deal_next_round(now)?;
             }
-            Action::React { .. } => {
-                self.seat_of(actor)?;
-                if self.lobby.status() != Status::InProgress {
+            Action::React { reaction } => {
+                let seat = self.seat_of(actor)?;
+                if self.kind == TableKind::Local || self.lobby.status() != Status::InProgress {
                     return Err(conflict("reactions-closed", msg::REACTIONS_CLOSED));
                 }
-                return Ok(false);
+                self.reactions.send(seat, reaction, now)?;
             }
             Action::Leave => {
                 let seat = self.seat_of(actor)?;

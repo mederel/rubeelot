@@ -60,7 +60,7 @@ fn card(table: &Table, seat: usize) -> Action {
 
 /// The serialized snapshot, with the random auction id replaced so the files stay stable.
 fn json(table: &Table, viewer: Viewer) -> Value {
-    let mut value = serde_json::to_value(snapshot(table, viewer)).unwrap();
+    let mut value = serde_json::to_value(snapshot(table, viewer, T0)).unwrap();
     if let Some(bidding) = value.get_mut("bidding") {
         bidding["auctionId"] = "<auction-id>".into();
     }
@@ -434,7 +434,7 @@ fn hands_are_shown_only_to_their_player() {
             assert_ne!(hand, other);
         }
     }
-    let text = serde_json::to_string(&snapshot(&table, Viewer::Seat(1))).unwrap();
+    let text = serde_json::to_string(&snapshot(&table, Viewer::Seat(1), T0)).unwrap();
     for card in table.bidding().unwrap().hand(0) {
         let shown = format!(
             "{{\"rank\":\"{}\",\"suit\":\"{:?}\"",
