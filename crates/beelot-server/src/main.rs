@@ -19,6 +19,13 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let bind = config.bind;
+    let unset = beelot_server::privacy::unset_policy_values(&config.privacy);
+    if !unset.is_empty() {
+        tracing::warn!(
+            "the privacy policy shows \"not configured\" until these are set: {}",
+            unset.join(", ")
+        );
+    }
     let pool = beelot_server::db::connect(&config)
         .await
         .context("cannot reach the database: is `docker compose up -d --wait` running?")?;

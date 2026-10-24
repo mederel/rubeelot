@@ -22,6 +22,7 @@ use crate::clock::Clock;
 use crate::config::Config;
 use crate::error::AppError;
 use crate::limits::{self, RateLimits};
+use crate::privacy::events::SecurityEvents;
 use crate::routes;
 use crate::tables::TableRegistry;
 use crate::tables::TableSetup;
@@ -38,6 +39,7 @@ pub struct AppState {
     /// Lazy until a request needs it: guests' requests never do.
     pub pool: MySqlPool,
     pub passkeys: Arc<Passkeys>,
+    pub events: Arc<SecurityEvents>,
 }
 
 impl AppState {
@@ -53,6 +55,11 @@ impl AppState {
         let passkeys = Passkeys::new(&config.public_url, &config.limits, clock.clone())
             .expect("a public URL checked by the configuration");
         Self {
+            events: Arc::new(SecurityEvents::new(
+                pool.clone(),
+                &config.limits,
+                clock.clone(),
+            )),
             pool,
             passkeys: Arc::new(passkeys),
             rate_limits: Arc::new(RateLimits::new(&config, clock.clone())),
@@ -74,6 +81,11 @@ impl AppState {
     }
 
     pub fn with_pool(mut self, pool: MySqlPool) -> Self {
+        self.events = Arc::new(SecurityEvents::new(
+            pool.clone(),
+            &self.config.limits,
+            self.clock.clone(),
+        ));
         self.pool = pool;
         self
     }

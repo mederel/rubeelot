@@ -15,7 +15,7 @@ use crate::auth::{csrf, pseudonyms, sessions};
 use crate::db::{accounts, passkeys};
 use crate::error::AppError;
 use crate::limits::ClientIp;
-use crate::privacy::events::{self, EventType, Outcome};
+use crate::privacy::events::{EventType, Outcome};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -45,15 +45,10 @@ async fn limited(state: &AppState, ip: std::net::IpAddr) -> Option<Response> {
     if state.passkeys.limiter.try_acquire(&ip.to_string()) {
         return None;
     }
-    events::record(
-        &state.pool,
-        EventType::RateLimited,
-        Outcome::Refused,
-        None,
-        Some(ip),
-        state.clock.now(),
-    )
-    .await;
+    state
+        .events
+        .record(EventType::RateLimited, Outcome::Refused, None, Some(ip))
+        .await;
     let mut refused = StatusCode::TOO_MANY_REQUESTS.into_response();
     refused
         .headers_mut()
@@ -108,15 +103,10 @@ async fn signed_in(
 ) -> Result<Response, AppError> {
     let now = state.clock.now();
     let token = sessions::start(&state.pool, account, now).await?;
-    events::record(
-        &state.pool,
-        EventType::SignIn,
-        Outcome::Success,
-        Some(account),
-        Some(ip),
-        now,
-    )
-    .await;
+    state
+        .events
+        .record(EventType::SignIn, Outcome::Success, Some(account), Some(ip))
+        .await;
     let mut response = StatusCode::NO_CONTENT.into_response();
     set_cookie(
         &mut response,
@@ -136,15 +126,10 @@ async fn refused(
     status: StatusCode,
     ip: std::net::IpAddr,
 ) -> Response {
-    events::record(
-        &state.pool,
-        r#type,
-        Outcome::Failure,
-        None,
-        Some(ip),
-        state.clock.now(),
-    )
-    .await;
+    state
+        .events
+        .record(r#type, Outcome::Failure, None, Some(ip))
+        .await;
     status.into_response()
 }
 
@@ -179,15 +164,10 @@ async fn sign_up(
         return Ok(refused(&state, EventType::SignUp, StatusCode::BAD_REQUEST, ip).await);
     }
     transaction.commit().await?;
-    events::record(
-        &state.pool,
-        EventType::SignUp,
-        Outcome::Success,
-        Some(account),
-        Some(ip),
-        now,
-    )
-    .await;
+    state
+        .events
+        .record(EventType::SignUp, Outcome::Success, Some(account), Some(ip))
+        .await;
     signed_in(&state, account, ip).await
 }
 

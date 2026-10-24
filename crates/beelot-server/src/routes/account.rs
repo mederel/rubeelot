@@ -13,7 +13,7 @@ use crate::auth::{MaybeSession, csrf, sessions};
 use crate::db::accounts;
 use crate::error::AppError;
 use crate::limits::ClientIp;
-use crate::privacy::events::{self, EventType, Outcome};
+use crate::privacy::events::{EventType, Outcome};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -73,15 +73,15 @@ async fn sign_out(
 ) -> Result<Response, AppError> {
     if let Some(session) = session.0 {
         sessions::end(&state.pool, &session.token_hash).await?;
-        events::record(
-            &state.pool,
-            EventType::SignOut,
-            Outcome::Success,
-            Some(session.account_id),
-            Some(ip),
-            state.clock.now(),
-        )
-        .await;
+        state
+            .events
+            .record(
+                EventType::SignOut,
+                Outcome::Success,
+                Some(session.account_id),
+                Some(ip),
+            )
+            .await;
     }
     let mut response = StatusCode::NO_CONTENT.into_response();
     let cookies = response.headers_mut();

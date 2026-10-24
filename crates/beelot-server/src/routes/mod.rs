@@ -3,6 +3,7 @@
 pub mod account;
 pub mod events;
 pub mod passkeys;
+pub mod privacy;
 pub mod statistics;
 pub mod tables;
 
@@ -22,6 +23,7 @@ pub fn api() -> Router<AppState> {
         .merge(account::routes())
         .merge(passkeys::routes())
         .merge(statistics::routes())
+        .merge(privacy::routes())
 }
 
 /// A JSON body; one that cannot be read is a bad request with the usual error body.
