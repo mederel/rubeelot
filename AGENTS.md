@@ -5,8 +5,13 @@
 This repository holds the Rust rewrite of the Beelot backend. The design is in
 `docs/superpowers/specs/2026-10-23-rust-backend-design.md`. The Java backend it
 replaces lives in https://github.com/mederel/beelot. The Cargo workspace is in
-`crates/`; `fixtures/` holds data recorded from the Java implementation
-(see `fixtures/SOURCE`).
+`crates/`: `beelot-game` (rules and bots), `beelot-arena` (the bot arena CLI) and
+`beelot-server` (the axum server, which serves the frontend in its `static/`
+folder). `fixtures/` holds data recorded from the Java implementation (see
+`fixtures/SOURCE`).
+
+Run the server with `docker compose up -d --wait && cargo run -p beelot-server`;
+its configuration variables are listed in the README.
 
 ## Build, test and format
 
@@ -16,7 +21,8 @@ cargo clippy --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-CI (`.github/workflows/build.yml`) runs the same three commands.
+CI (`.github/workflows/build.yml`) runs the same three commands. The server's
+database tests start MariaDB with Testcontainers: Docker must be running.
 
 ## Working conventions
 
