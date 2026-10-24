@@ -95,9 +95,155 @@ function tableHomePath() {
   return window.location.pathname.startsWith("/online/public") ? "/online/public" : "/online/private";
 }
 
+// The online table this browser tab plays at: its id and player token.
 function getPrivateSession() {
   const stored = window.sessionStorage.getItem(privateSessionKey);
   return stored ? JSON.parse(stored) : null;
+}
+
+// One table API for solo, pass-and-play and online tables. Each table answers a snapshot: {version, tableId, kind,
+// you, table, bidding?, board?, match?, reactions}, whose parts keep the shapes the renderers below were written for
+// (examples in crates/beelot-server/tests/contract/*.json). The player token of each table the tab has created or
+// joined is kept for the tab only.
+const tableTokensKey = "beelot.table-tokens";
+
+function tableTokens() {
+  try {
+    return JSON.parse(window.sessionStorage.getItem(tableTokensKey) ?? "{}");
+  } catch (_) {
+    return {};
+  }
+}
+
+function tableSession(tableId) {
+  const playerToken = tableTokens()[tableId];
+  return playerToken ? { tableId, playerToken } : null;
+}
+
+function saveTableSession({ tableId, playerToken }) {
+  const tokens = tableTokens();
+  tokens[tableId] = playerToken;
+  window.sessionStorage.setItem(tableTokensKey, JSON.stringify(tokens));
+}
+
+function forgetTableSession(tableId) {
+  const tokens = tableTokens();
+  delete tokens[tableId];
+  window.sessionStorage.setItem(tableTokensKey, JSON.stringify(tokens));
+}
+
+// The newest snapshot of each table, from the API's answers and the table's event stream.
+const latestSnapshots = new Map();
+
+function rememberSnapshot(snapshot) {
+  const known = latestSnapshots.get(snapshot.tableId);
+  if (!known || known.version <= snapshot.version) latestSnapshots.set(snapshot.tableId, snapshot);
+  return snapshot;
+}
+
+function jsonRequest(method, value, tableId) {
+  const session = tableId ? tableSession(tableId) : null;
+  return {
+    method,
+    headers: {
+      ...(value === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(session ? { Authorization: `Bearer ${session.playerToken}` } : {})
+    },
+    body: value === undefined ? undefined : JSON.stringify(value)
+  };
+}
+
+const api = {
+  async createTable(body) {
+    const access = await apiJson("/api/tables", jsonRequest("POST", body));
+    saveTableSession(access);
+    return access;
+  },
+  async join(code, playerName) {
+    const access = await apiJson("/api/tables/join", jsonRequest("POST", { code, playerName }));
+    saveTableSession(access);
+    return access;
+  },
+  async quickMatch(variant, playerName) {
+    const access = await apiJson("/api/matchmaking/quick-match", jsonRequest("POST", { variant, playerName }));
+    saveTableSession(access);
+    return access;
+  },
+  async table(tableId) {
+    return rememberSnapshot(await apiJson(`/api/tables/${tableId}`, jsonRequest("GET", undefined, tableId)));
+  },
+  async act(tableId, action) {
+    return rememberSnapshot(await apiJson(`/api/tables/${tableId}/actions`, jsonRequest("POST", action, tableId)));
+  }
+};
+
+// The newest snapshot known, or a fresh one.
+async function currentSnapshot(tableId) {
+  return latestSnapshots.get(tableId) ?? api.table(tableId);
+}
+
+// A local table as the solo screens show it.
+function localGame(snapshot) {
+  const table = snapshot.table;
+  return {
+    id: snapshot.tableId,
+    difficulty: table.difficulty,
+    difficultyLabel: table.difficultyLabel,
+    variant: table.variant,
+    variantLabel: table.variantLabel,
+    seats: table.seats.map((seat) => ({ name: seat.name, type: seat.type })),
+    passAndPlay: table.passAndPlay,
+    announcements: table.announcements
+  };
+}
+
+// The online table's event stream: a snapshot for each change, and the seat's presence while it is open. When the
+// stream drops and the browser has not reopened it within 10 s, it is opened again after 1, 2, 4… up to 30 s.
+let tableStream = null;
+
+function closeTableStream() {
+  if (!tableStream) return;
+  window.clearTimeout(tableStream.timer);
+  tableStream.source.close();
+  tableStream = null;
+}
+
+function openTableStream(tableId, retry = 1000) {
+  if (tableStream?.tableId === tableId) return;
+  closeTableStream();
+  const session = tableSession(tableId);
+  if (!session) return;
+  const source = new EventSource(`/api/tables/${tableId}/events?token=${encodeURIComponent(session.playerToken)}`);
+  const stream = { tableId, source, retry, timer: null, refused: false };
+  tableStream = stream;
+  const reopen = () => {
+    if (tableStream !== stream || stream.refused) return;
+    closeTableStream();
+    openTableStream(tableId, Math.min(stream.retry * 2, 30000));
+  };
+  source.addEventListener("open", () => {
+    window.clearTimeout(stream.timer);
+    stream.retry = 1000;
+  });
+  source.addEventListener("snapshot", (event) => {
+    rememberSnapshot(JSON.parse(event.data));
+    if (viewForPath(window.location.pathname) === "private-table" && privateTableId() === tableId) {
+      loadPrivateTable(tableId);
+    }
+  });
+  source.addEventListener("error", (event) => {
+    if (event.data) {
+      // The server refused the stream: a bot keeps the seat.
+      stream.refused = true;
+      source.close();
+      document.querySelector("#private-table-message").textContent = t(JSON.parse(event.data).message);
+      return;
+    }
+    window.clearTimeout(stream.timer);
+    stream.timer = window.setTimeout(() => {
+      if (source.readyState !== EventSource.OPEN) reopen();
+    }, source.readyState === EventSource.CLOSED ? stream.retry : 10000);
+  });
 }
 
 function renderView() {
@@ -109,6 +255,7 @@ function renderView() {
     ? t("Beelot — Play Belote")
     : `${document.querySelector(`[data-view="${activeView}"] :is(h1, h2)`).textContent} — Beelot`;
 
+  if (activeView !== "private-table") closeTableStream();
   if (activeView === "bot-game") loadBotGame(window.location.pathname.split("/").at(-1));
   if (activeView === "bidding") loadBidding(window.location.pathname.split("/").at(-1));
   if (activeView === "private-table") loadPrivateTable(privateTableId());
@@ -174,10 +321,10 @@ function seatHeader(position, label) {
   return header;
 }
 
-function createSeat(seat, currentPlayerId) {
+function createSeat(seat) {
   const item = document.createElement("div");
   item.className = "seat";
-  const label = seat.playerId === currentPlayerId ? t("{0} (you)", playerName(seat.name)) : playerName(seat.name);
+  const label = seat.you ? t("{0} (you)", playerName(seat.name)) : playerName(seat.name);
   const state = document.createElement("span");
   const connection = seat.connectionState === "BOT_TAKEOVER" ? t("Bot takeover") : seat.connectionState === "DISCONNECTED" ? t("Disconnected") : t("Connected");
   state.textContent = `${t(seat.ready ? "Ready" : "Waiting")} · ${connection}`;
@@ -206,11 +353,7 @@ async function chooseSeat(tableId, position) {
   const session = getPrivateSession();
   if (!session || session.tableId !== tableId) return;
   try {
-    showPrivateTable(await apiJson(`/api/private-tables/${tableId}/seat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerToken: session.playerToken, position })
-    }));
+    showPrivateTable((await api.act(tableId, { type: "seat", position })).table);
   } catch (error) {
     document.querySelector("#private-table-message").textContent = error.message;
   }
@@ -221,10 +364,8 @@ function showPrivateTable(table) {
   if (snapshot === lastRenderedPrivateTableJson) return;
   lastRenderedPrivateTableJson = snapshot;
   privateTableSnapshot = table;
-  const session = getPrivateSession();
-  const currentPlayerId = session?.tableId === table.id ? session.playerId : null;
-  const currentSeat = table.seats.find((seat) => seat.playerId === currentPlayerId);
-  const isOwner = currentPlayerId === table.ownerPlayerId;
+  const currentSeat = table.seats.find((seat) => seat.you);
+  const isOwner = Boolean(currentSeat) && table.ownerPosition === currentSeat.position;
   const allReady = table.seats.length === 4 && table.seats.every((seat) => seat.ready);
   const allSeatedReady = table.seats.every((seat) => seat.ready);
 
@@ -237,7 +378,7 @@ function showPrivateTable(table) {
   const canChooseSeat = Boolean(currentSeat) && !table.publicTable && table.status === "WAITING_FOR_PLAYERS";
   document.querySelector("#private-seat-list").replaceChildren(...[0, 1, 2, 3].map((position) => {
     const seat = table.seats.find((candidate) => candidate.position === position);
-    return seat ? createSeat(seat, currentPlayerId) : createEmptySeat(table.id, position, canChooseSeat);
+    return seat ? createSeat(seat) : createEmptySeat(table.id, position, canChooseSeat);
   }));
   const readyButton = document.querySelector("#ready-button");
   readyButton.hidden = !currentSeat || table.status === "IN_PROGRESS";
@@ -281,7 +422,7 @@ function showPrivateTable(table) {
       name: seat.name, cardCount: startingCards, active: false,
       team: index % 2 === 0 ? "North–South" : "East–West"
     }));
-    renderTableSeats("private", seats, table.seats.findIndex((seat) => seat.playerId === currentPlayerId));
+    renderTableSeats("private", seats, table.seats.findIndex((seat) => seat.you));
     // The seats were redrawn: an auction in progress must be drawn again over them.
     lastRenderedPrivateBiddingJson = "";
   }
@@ -311,9 +452,16 @@ function withCsrfToken(options = {}) {
 async function apiJson(url, options) {
   const response = await fetch(url, withCsrfToken(options));
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(t(body.message ?? "Something went wrong. Please try again."));
+  if (!response.ok) {
+    const error = new Error(t(body.message ?? "Something went wrong. Please try again."));
+    error.status = response.status;
+    throw error;
+  }
   return body;
 }
+
+// The version of the online table on screen; a newer snapshot is drawn once the calls being revealed are shown.
+let renderedPrivateVersion = { tableId: null, version: -1 };
 
 async function loadPrivateTable(tableId) {
   // Calls are revealed one by one; the next refresh picks up whatever happened meanwhile.
@@ -321,20 +469,16 @@ async function loadPrivateTable(tableId) {
   const requestId = ++privateTableRequestId;
   try {
     const session = getPrivateSession();
-    if (session?.tableId === tableId) {
-      await apiJson(`/api/private-tables/${tableId}/reconnect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerToken: session.playerToken })
-      });
-    }
-    const table = await apiJson(`/api/private-tables/${tableId}`);
+    const snapshot = await currentSnapshot(tableId);
     if (requestId !== privateTableRequestId) return;
+    openTableStream(tableId);
+    const table = snapshot.table;
     showPrivateTable(table);
-    if (table.status === "IN_PROGRESS") await loadPrivateGame(tableId, table.variant, requestId);
+    if (table.status === "IN_PROGRESS") await loadPrivateGame(tableId, table.variant, requestId, snapshot);
     document.querySelector("#private-reaction-bar").hidden = table.status !== "IN_PROGRESS" || !reactionsEnabled()
       || session?.tableId !== tableId;
-    if (table.status === "IN_PROGRESS") loadReactions(tableId);
+    if (table.status === "IN_PROGRESS") loadReactions(tableId, snapshot.reactions);
+    if (requestId === privateTableRequestId) renderedPrivateVersion = { tableId, version: snapshot.version };
   } catch (error) {
     if (requestId !== privateTableRequestId) return;
     const home = tableHomePath();
@@ -345,32 +489,25 @@ async function loadPrivateTable(tableId) {
   }
 }
 
-async function loadPrivateGame(tableId, variant, requestId = ++privateTableRequestId) {
+async function loadPrivateGame(tableId, variant, requestId = ++privateTableRequestId, known = null) {
   const session = getPrivateSession();
   if (!session) return;
   const panel = document.querySelector("#private-game-panel");
   panel.hidden = false;
-  // The match score is shown during the auction too. It is fetched after the board or bidding, whose request may
-  // finish the round on the server.
-  const fetchMatch = () => apiJson(`/api/private-tables/${tableId}/match?playerToken=${session.playerToken}`)
-    .catch(() => null);
-  try {
-    const board = await apiJson(`/api/private-tables/${tableId}/board?playerToken=${session.playerToken}`);
-    const match = await fetchMatch();
-    if (requestId !== privateTableRequestId) return;
+  const snapshot = known ?? await currentSnapshot(tableId);
+  if (requestId !== privateTableRequestId) return;
+  // The match score is shown during the auction too.
+  const match = snapshot.match ?? null;
+  if (snapshot.board) {
     // The auction ended since the last refresh: reveal its closing calls before the cards are played.
-    if (privateGameStage === "bidding") {
-      const bidding = await apiJson(`/api/private-tables/${tableId}/bidding?playerToken=${session.playerToken}`);
+    if (privateGameStage === "bidding" && snapshot.bidding) {
+      await renderPrivateBidding(snapshot.bidding, variant);
       if (requestId !== privateTableRequestId) return;
-      await renderPrivateBidding(bidding, variant);
     }
-    renderPrivateBoard(tableId, board, match);
-  } catch (_) {
-    const bidding = await apiJson(`/api/private-tables/${tableId}/bidding?playerToken=${session.playerToken}`);
-    const match = await fetchMatch();
-    if (requestId !== privateTableRequestId) return;
+    renderPrivateBoard(tableId, snapshot.board, match);
+  } else if (snapshot.bidding) {
     renderPrivateMatchScore(match);
-    await renderPrivateBidding(bidding, variant);
+    await renderPrivateBidding(snapshot.bidding, variant);
   }
 }
 
@@ -385,8 +522,7 @@ function unrevealedPrivateCalls(bidding) {
 
 function renderPrivateBiddingSeats(bidding, revealedCount) {
   if (!privateTableSnapshot) return;
-  const session = getPrivateSession();
-  const currentPlayerIndex = privateTableSnapshot.seats.findIndex((seat) => seat.playerId === session?.playerId);
+  const currentPlayerIndex = privateTableSnapshot.seats.findIndex((seat) => seat.you);
   const ownName = privateTableSnapshot.seats[currentPlayerIndex]?.name;
   const revealed = bidding.auction.slice(0, revealedCount);
   const seats = privateTableSnapshot.seats.map((seat, index) => ({
@@ -556,23 +692,20 @@ function renderPrivateBoard(tableId, board, match) {
   }
 }
 
-async function privateAction(path, payload = {}) {
+async function privateAction(action) {
   const session = getPrivateSession();
   if (!session) return;
-  const auctionAction = path.startsWith("bids/");
+  const auctionAction = ["pass", "contract", "coinche", "trump"].includes(action.type);
   const privatePanel = document.querySelector("#private-game-panel");
   if (auctionAction) privatePanel.classList.add("auction-waiting-view");
   try {
     if (auctionAction) {
-      callStation("private", session.playerId, true)?.querySelector(".player-call:not(.player-thinking)")?.remove();
-      showPlayerCall("private", session.playerId, callLabel(path.split("/").at(-1), payload), true);
+      callStation("private", null, true)?.querySelector(".player-call:not(.player-thinking)")?.remove();
+      showPlayerCall("private", null, callLabel(action.type, action), true);
       privateOwnCallShown = true;
       await pause(ownCallDelay);
     }
-    await apiJson(`/api/private-tables/${session.tableId}/${path}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerToken: session.playerToken, ...payload })
-    });
+    await api.act(session.tableId, action);
     await loadPrivateTable(session.tableId);
   } catch (error) {
     privateOwnCallShown = false;
@@ -583,7 +716,7 @@ async function privateAction(path, payload = {}) {
 }
 
 function privatePlayCard(tableId, card) {
-  privateAction("cards", { rank: card.rank, suit: card.suit, declare: declareChoice("private-") });
+  privateAction({ type: "card", rank: card.rank, suit: card.suit, declare: declareChoice("private-") });
 }
 
 function roundScoreText(round, board) {
@@ -665,14 +798,12 @@ function announcementsLine(round, board) {
     : t("Announcements: {0} {1} ({2}), which go to {3}.", t(team), points, kinds.join(" + "), t(defence));
 }
 
-function enterPrivateTable(session, basePath = "/online/private") {
+function enterPrivateTable(access, basePath = "/online/private") {
   window.sessionStorage.setItem(privateSessionKey, JSON.stringify({
-    tableId: session.table.id,
-    playerId: session.playerId,
-    playerToken: session.playerToken
+    tableId: access.tableId,
+    playerToken: access.playerToken
   }));
-  window.history.pushState({}, "", `${basePath}/table/${session.table.id}`);
-  showPrivateTable(session.table);
+  window.history.pushState({}, "", `${basePath}/table/${access.tableId}`);
   renderView();
 }
 
@@ -704,9 +835,10 @@ document.querySelector("#handoff-ready").addEventListener("click", () => {
 
 async function loadBotGame(gameId) {
   try {
-    const game = await apiJson(`/api/bot-games/${gameId}`);
-    const board = await apiJson(`/api/bot-games/${gameId}/board`);
-    const match = await apiJson(`/api/bot-games/${gameId}/match`);
+    const snapshot = await api.table(gameId);
+    const game = localGame(snapshot);
+    const { board, match } = snapshot;
+    if (!board) throw new Error("The auction has not finished.");
     const handedOff = handOff(game, board.currentPlayer);
     document.querySelector("#selected-difficulty").textContent = t(game.difficultyLabel);
     document.querySelector("#selected-variant").textContent = t(game.variantLabel);
@@ -809,11 +941,7 @@ async function playSecondDeal(board, previousHand, seatsForBoard, showTrick) {
 
 async function playCard(gameId, card) {
   try {
-    await apiJson(`/api/bot-games/${gameId}/cards`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rank: card.rank, suit: card.suit, declare: declareChoice("") })
-    });
+    await api.act(gameId, { type: "card", rank: card.rank, suit: card.suit, declare: declareChoice("") });
     loadBotGame(gameId);
   } catch (error) {
     document.querySelector("#current-trick").textContent = error.message;
@@ -829,7 +957,7 @@ function collectBotTrickLater(gameId, completedTricks, container) {
     if (pendingTrickCollection !== key || window.location.pathname !== `/play/bot/game/${gameId}`) return;
     pendingTrickCollection = "";
     try {
-      await apiJson(`/api/bot-games/${gameId}/tricks/continue`, { method: "POST" });
+      await api.act(gameId, { type: "continueTrick" });
       loadBotGame(gameId);
     } catch (_) {
       // The trick was already collected; the table is up to date.
@@ -839,7 +967,7 @@ function collectBotTrickLater(gameId, completedTricks, container) {
 
 document.querySelector("#next-round-button").addEventListener("click", async () => {
   const gameId = window.location.pathname.split("/").at(-1);
-  await apiJson(`/api/bot-games/${gameId}/rounds/next`, { method: "POST" });
+  await api.act(gameId, { type: "nextRound" });
   lastDealKey = "";
   window.history.pushState({}, "", `/play/bot/bidding/${gameId}`);
   renderView();
@@ -847,7 +975,7 @@ document.querySelector("#next-round-button").addEventListener("click", async () 
 
 document.querySelector("#rematch-button").addEventListener("click", async () => {
   const gameId = window.location.pathname.split("/").at(-1);
-  await apiJson(`/api/bot-games/${gameId}/rematch`, { method: "POST" });
+  await api.act(gameId, { type: "rematch" });
   lastDealKey = "";
   window.history.pushState({}, "", `/play/bot/bidding/${gameId}`);
   renderView();
@@ -1325,10 +1453,9 @@ async function playOpeningDeal(game, bidding, humanIndex) {
 
 async function loadBidding(gameId) {
   try {
-    const [game, bidding] = await Promise.all([
-      apiJson(`/api/bot-games/${gameId}`),
-      apiJson(`/api/bot-games/${gameId}/bidding`)
-    ]);
+    const snapshot = await api.table(gameId);
+    const game = localGame(snapshot);
+    const { bidding } = snapshot;
     document.querySelector("#bidding-message").textContent = t(bidding.message);
     const isContree = bidding.variant === "CONTREE";
     document.querySelector("#bidding-eyebrow").textContent = t(isContree ? "Contrée auction" : "Choose trump");
@@ -1394,12 +1521,9 @@ async function submitBid(action, body) {
     const humanName = document.querySelector("#bidding-player-bottom").dataset.playerName;
     showPlayerCall("bidding", humanName, callLabel(action, body));
     await pause(ownCallDelay);
-    const response = await apiJson(`/api/bot-games/${gameId}/bids/${action}`, {
-      method: "POST",
-      headers: body ? { "Content-Type": "application/json" } : {},
-      body: body ? JSON.stringify(body) : undefined
-    });
-    if (response.calls) await revealCalls("bidding", response.calls, humanName);
+    const response = (await api.act(gameId, { type: action, ...body })).bidding;
+    // Taking a trump or coinching ends the auction: the card table follows at once.
+    if (action !== "trump" && action !== "coinche") await revealCalls("bidding", response.calls, humanName);
     if (action === "trump" || action === "coinche" || response.complete) {
       window.history.pushState({}, "", `/play/bot/game/${gameId}`);
       renderView();
@@ -1417,16 +1541,13 @@ async function submitBid(action, body) {
 document.querySelector("#bot-game-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  const game = await apiJson("/api/bot-games", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      difficulty: form.get("difficulty"),
-      variant: form.get("variant"),
-      announcements: form.get("announcements") !== "off"
-    })
+  const game = await api.createTable({
+    kind: "LOCAL",
+    difficulty: form.get("difficulty"),
+    variant: form.get("variant"),
+    announcements: form.get("announcements") !== "off"
   });
-  window.history.pushState({}, "", `/play/bot/bidding/${game.id}`);
+  window.history.pushState({}, "", `/play/bot/bidding/${game.tableId}`);
   renderView();
 });
 
@@ -1436,17 +1557,14 @@ document.querySelector("#pass-and-play-form").addEventListener("submit", async (
   const message = document.querySelector("#local-form-message");
   message.textContent = "";
   try {
-    const game = await apiJson("/api/bot-games", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        difficulty: form.get("local-difficulty"),
-        variant: form.get("local-variant"),
-        announcements: form.get("local-announcements") !== "off",
-        seats: ["north", "east", "south", "west"].map((seat) => form.get(seat).trim() || null)
-      })
+    const game = await api.createTable({
+      kind: "LOCAL",
+      difficulty: form.get("local-difficulty"),
+      variant: form.get("local-variant"),
+      announcements: form.get("local-announcements") !== "off",
+      seats: ["north", "east", "south", "west"].map((seat) => form.get(seat).trim() || null)
     });
-    window.history.pushState({}, "", `/play/bot/bidding/${game.id}`);
+    window.history.pushState({}, "", `/play/bot/bidding/${game.tableId}`);
     renderView();
   } catch (error) {
     message.textContent = error.message;
@@ -1470,12 +1588,12 @@ document.querySelectorAll("#trump-options button").forEach((button) => {
 document.querySelector("#create-private-table-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
-    const session = await apiJson("/api/private-tables", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerName: new FormData(event.currentTarget).get("playerName"), variant: choiceValue("private-variant") })
+    const access = await api.createTable({
+      kind: "PRIVATE",
+      playerName: new FormData(event.currentTarget).get("playerName"),
+      variant: choiceValue("private-variant")
     });
-    enterPrivateTable(session);
+    enterPrivateTable(access);
   } catch (error) {
     document.querySelector("#private-form-message").textContent = error.message;
   }
@@ -1485,12 +1603,7 @@ document.querySelector("#join-private-table-form").addEventListener("submit", as
   event.preventDefault();
   try {
     const form = new FormData(event.currentTarget);
-    const session = await apiJson("/api/private-tables/join", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerName: form.get("playerName"), invitationCode: form.get("invitationCode") })
-    });
-    enterPrivateTable(session);
+    enterPrivateTable(await api.join(form.get("invitationCode"), form.get("playerName")));
   } catch (error) {
     document.querySelector("#private-form-message").textContent = error.message;
   }
@@ -1506,20 +1619,13 @@ document.querySelector("#quick-match-form").addEventListener("submit", async (ev
     // A seat still held from an earlier visit would never be played; give it up before taking a new one.
     const previous = getPrivateSession();
     if (previous) {
-      await apiJson(`/api/private-tables/${previous.tableId}/leave`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerToken: previous.playerToken })
-      }).catch(() => {});
+      await api.act(previous.tableId, { type: "leave" }).catch(() => {});
+      forgetTableSession(previous.tableId);
       window.sessionStorage.removeItem(privateSessionKey);
     }
-    const session = await apiJson("/api/matchmaking/quick-match", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerName: new FormData(form).get("playerName"), variant: choiceValue("public-variant") })
-    });
+    const access = await api.quickMatch(choiceValue("public-variant"), new FormData(form).get("playerName"));
     document.querySelector("#public-form-message").textContent = "";
-    enterPrivateTable(session, "/online/public");
+    enterPrivateTable(access, "/online/public");
   } catch (error) {
     document.querySelector("#public-form-message").textContent = error.message;
   } finally {
@@ -1532,11 +1638,9 @@ document.querySelector("#leave-table-button").addEventListener("click", async ()
   const tableId = privateTableId();
   if (!session || session.tableId !== tableId) return;
   try {
-    await apiJson(`/api/private-tables/${tableId}/leave`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerToken: session.playerToken })
-    });
+    await api.act(tableId, { type: "leave" });
+    closeTableStream();
+    forgetTableSession(tableId);
     window.sessionStorage.removeItem(privateSessionKey);
     window.history.pushState({}, "", "/online/public");
     renderView();
@@ -1552,11 +1656,7 @@ document.querySelector("#ready-button").addEventListener("click", async () => {
   if (!session || session.tableId !== tableId || !seat) return;
   const currentReady = document.querySelector("#ready-button").textContent === t("Not ready");
   try {
-    showPrivateTable(await apiJson(`/api/private-tables/${tableId}/ready`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerToken: session.playerToken, ready: !currentReady })
-    }));
+    showPrivateTable((await api.act(tableId, { type: "ready", ready: !currentReady })).table);
   } catch (error) {
     document.querySelector("#private-table-message").textContent = error.message;
   }
@@ -1567,13 +1667,8 @@ document.querySelector("#start-private-game-button").addEventListener("click", a
   const tableId = privateTableId();
   if (!session || session.tableId !== tableId) return;
   try {
-    const table = await apiJson(`/api/private-tables/${tableId}/start`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerToken: session.playerToken })
-    });
-    showPrivateTable(table);
-    await loadPrivateGame(tableId, table.variant);
+    await api.act(tableId, { type: "start", fillWithBots: false });
+    await loadPrivateTable(tableId);
   } catch (error) {
     document.querySelector("#private-table-message").textContent = error.message;
   }
@@ -1584,39 +1679,30 @@ document.querySelector("#start-with-bots-button").addEventListener("click", asyn
   const tableId = privateTableId();
   if (!session || session.tableId !== tableId) return;
   try {
-    const table = await apiJson(`/api/private-tables/${tableId}/start-with-bots`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerToken: session.playerToken })
-    });
-    showPrivateTable(table);
-    await loadPrivateGame(tableId, table.variant);
+    await api.act(tableId, { type: "start", fillWithBots: true });
+    await loadPrivateTable(tableId);
   } catch (error) {
     document.querySelector("#private-table-message").textContent = error.message;
   }
 });
 
-document.querySelector("#private-pass-button").addEventListener("click", () => privateAction("bids/pass"));
-document.querySelector("#private-bid-button").addEventListener("click", () => privateAction("bids/contract", {
-  value: Number(choiceValue("private-contract-value")), suit: choiceValue("private-contract-suit")
+document.querySelector("#private-pass-button").addEventListener("click", () => privateAction({ type: "pass" }));
+document.querySelector("#private-bid-button").addEventListener("click", () => privateAction({
+  type: "contract", value: Number(choiceValue("private-contract-value")), suit: choiceValue("private-contract-suit")
 }));
-document.querySelector("#private-coinche-button").addEventListener("click", () => privateAction("bids/coinche"));
-document.querySelector("#private-trump-button").addEventListener("click", () => privateAction("bids/trump", {
-  suit: choiceValue("private-contract-suit")
+document.querySelector("#private-coinche-button").addEventListener("click", () => privateAction({ type: "coinche" }));
+document.querySelector("#private-trump-button").addEventListener("click", () => privateAction({
+  type: "trump", suit: choiceValue("private-contract-suit")
 }));
-document.querySelector("#private-next-round-button").addEventListener("click", () => privateAction("rounds/next"));
-document.querySelector("#private-rematch-button").addEventListener("click", () => privateAction("rematch"));
+document.querySelector("#private-next-round-button").addEventListener("click", () => privateAction({ type: "nextRound" }));
+document.querySelector("#private-rematch-button").addEventListener("click", () => privateAction({ type: "rematch" }));
 
 document.querySelector("#save-turn-timer-button").addEventListener("click", async () => {
   const session = getPrivateSession();
   const tableId = privateTableId();
   if (!session || session.tableId !== tableId) return;
   try {
-    showPrivateTable(await apiJson(`/api/private-tables/${tableId}/turn-timer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerToken: session.playerToken, seconds: Number(choiceValue("turn-timer")) })
-    }));
+    showPrivateTable((await api.act(tableId, { type: "settings", turnTimer: Number(choiceValue("turn-timer")) })).table);
   } catch (error) {
     document.querySelector("#private-table-message").textContent = error.message;
   }
@@ -1627,11 +1713,8 @@ choiceInputs("table-announcements").forEach((input) => input.addEventListener("c
   const tableId = privateTableId();
   if (!session || session.tableId !== tableId) return;
   try {
-    showPrivateTable(await apiJson(`/api/private-tables/${tableId}/announcements`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerToken: session.playerToken, enabled: choiceValue("table-announcements") === "on" })
-    }));
+    const announcements = choiceValue("table-announcements") === "on";
+    showPrivateTable((await api.act(tableId, { type: "settings", announcements })).table);
   } catch (error) {
     document.querySelector("#private-table-message").textContent = error.message;
   }
@@ -1690,10 +1773,8 @@ function showReaction(position, reaction) {
 }
 
 // Shows the reactions sent since the last refresh; a table opened anew starts after the reactions already sent.
-async function loadReactions(tableId) {
-  if (!reactionsEnabled()) return;
-  const reactions = await apiJson(`/api/private-tables/${tableId}/reactions`).catch(() => null);
-  if (!reactions) return;
+function loadReactions(tableId, reactions) {
+  if (!reactionsEnabled() || !reactions) return;
   const firstLoad = reactionsSeen.tableId !== tableId;
   if (firstLoad) reactionsSeen = { tableId, sequence: 0 };
   reactions.filter((item) => item.sequence > reactionsSeen.sequence).forEach((item) => {
@@ -1709,11 +1790,9 @@ document.querySelectorAll("#private-reaction-bar .reaction-button").forEach((but
     message.textContent = "";
     if (!session) return;
     try {
-      const sent = await apiJson(`/api/private-tables/${session.tableId}/reactions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerToken: session.playerToken, reaction: button.dataset.reaction })
-      });
+      const snapshot = await api.act(session.tableId, { type: "react", reaction: button.dataset.reaction });
+      const sent = snapshot.reactions.filter((item) => item.position === snapshot.you).at(-1);
+      if (!sent) return;
       showReaction(sent.position, sent.reaction);
       if (reactionsSeen.tableId === session.tableId) reactionsSeen.sequence = Math.max(reactionsSeen.sequence, sent.sequence);
     } catch (error) {
@@ -1753,19 +1832,14 @@ document.querySelector("#sound-enabled").addEventListener("change", (event) => {
   window.localStorage.setItem("beelot.sound-enabled", event.target.checked);
   playSound("bid");
 });
-window.addEventListener("pagehide", () => {
-  const session = getPrivateSession();
-  if (!session || viewForPath(window.location.pathname) !== "private-table") return;
-  fetch(`/api/private-tables/${session.tableId}/disconnect`, withCsrfToken({
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ playerToken: session.playerToken }),
-    keepalive: true
-  }));
-});
+// The event stream carries the changes; a snapshot that arrived while calls were being revealed is drawn after them.
 window.setInterval(() => {
-  if (viewForPath(window.location.pathname) === "private-table") loadPrivateTable(privateTableId());
-}, 3000);
+  if (viewForPath(window.location.pathname) !== "private-table") return;
+  const tableId = privateTableId();
+  const latest = latestSnapshots.get(tableId);
+  const rendered = renderedPrivateVersion.tableId === tableId ? renderedPrivateVersion.version : -1;
+  if (latest && latest.version > rendered && !privateAuctionRevealing) loadPrivateTable(tableId);
+}, 500);
 window.setInterval(() => {
   if (!document.querySelector("#public-waiting").hidden) updatePublicCountdown();
 }, 1000);
@@ -1957,8 +2031,8 @@ document.querySelector("#stats-sign-in-button").addEventListener("click", () => 
   openSignInPanel(document.querySelector("#stats-guest"));
 });
 
-// Passkeys (US-084). WebAuthn's binary fields travel as base64url text, in the shapes Spring Security's own client
-// sends.
+// Passkeys (US-084). WebAuthn's binary fields travel as base64url text, in the JSON of webauthn-rs: options come in
+// a "publicKey" wrapper, and answers carry their extension results as "extensions".
 function fromBase64url(text) {
   const binary = window.atob(text.replace(/-/g, "+").replace(/_/g, "/"));
   return Uint8Array.from(binary, (character) => character.charCodeAt(0)).buffer;
@@ -2002,8 +2076,9 @@ function ceremonyFailure(error) {
 // Creates the account's one passkey; the server then signs the browser in. The pseudonym is in the interface's
 // language.
 async function signUpWithPasskey() {
-  const options = await (await ceremonyStep("/api/sign-up/options", { body: new URLSearchParams({ language }) }))
-    .json();
+  const { publicKey: options } = await (await ceremonyStep("/api/passkeys/sign-up/options", {
+    body: new URLSearchParams({ language })
+  })).json();
   const credential = await navigator.credentials.create({
     publicKey: {
       ...options,
@@ -2013,26 +2088,22 @@ async function signUpWithPasskey() {
     }
   });
   const { response } = credential;
-  await ceremonyStep("/api/sign-up", jsonBody({
-    credential: {
-      id: credential.id,
-      rawId: toBase64url(credential.rawId),
-      response: {
-        attestationObject: toBase64url(response.attestationObject),
-        clientDataJSON: toBase64url(response.clientDataJSON),
-        transports: response.getTransports ? response.getTransports() : []
-      },
-      type: credential.type,
-      clientExtensionResults: credential.getClientExtensionResults(),
-      authenticatorAttachment: credential.authenticatorAttachment
+  await ceremonyStep("/api/passkeys/sign-up", jsonBody({
+    id: credential.id,
+    rawId: toBase64url(credential.rawId),
+    response: {
+      attestationObject: toBase64url(response.attestationObject),
+      clientDataJSON: toBase64url(response.clientDataJSON)
     },
-    label: "Beelot"
+    type: credential.type,
+    extensions: credential.getClientExtensionResults()
   }));
 }
 
 // Signs in with a passkey. A signed-in player is offered only their own account's passkey.
 async function signInWithPasskey() {
-  const options = await (await ceremonyStep("/webauthn/authenticate/options")).json();
+  // The passkey says whose it is: no credential is named, and the browser shows its own passkey dialog.
+  const { publicKey: options } = await (await ceremonyStep("/api/passkeys/sign-in/options")).json();
   const credential = await navigator.credentials.get({
     publicKey: {
       ...options,
@@ -2041,7 +2112,7 @@ async function signInWithPasskey() {
     }
   });
   const { response } = credential;
-  await ceremonyStep("/login/webauthn", jsonBody({
+  await ceremonyStep("/api/passkeys/sign-in", jsonBody({
     id: credential.id,
     rawId: toBase64url(credential.rawId),
     response: {
@@ -2050,9 +2121,8 @@ async function signInWithPasskey() {
       signature: toBase64url(response.signature),
       userHandle: response.userHandle ? toBase64url(response.userHandle) : undefined
     },
-    credType: credential.type,
-    clientExtensionResults: credential.getClientExtensionResults(),
-    authenticatorAttachment: credential.authenticatorAttachment
+    type: credential.type,
+    extensions: credential.getClientExtensionResults()
   }));
 }
 
@@ -2180,7 +2250,7 @@ deleteButton.addEventListener("click", async () => {
 
 document.querySelector("#sign-out").addEventListener("click", async () => {
   try {
-    await fetch("/logout", withCsrfToken({ method: "POST" }));
+    await fetch("/api/sign-out", withCsrfToken({ method: "POST" }));
   } catch (_) {
     // The session may already be gone; return home.
   }

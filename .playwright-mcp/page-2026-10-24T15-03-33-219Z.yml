@@ -1,0 +1,51 @@
+- main [ref=e2]:
+  - link "Accueil Beelot" [ref=e3] [cursor=pointer]:
+    - /url: /
+    - text: B beelot
+    - generic [ref=e4]: ♠
+  - link "Paramètres" [ref=e5] [cursor=pointer]:
+    - /url: /settings
+  - generic [ref=e6]:
+    - paragraph [ref=e7]: Votre table est prête ⚡
+    - heading "Choisissez votre style." [level=1] [ref=e8]
+    - paragraph [ref=e9]: Choisissez votre belote et le niveau de piquant de l'adversaire.
+    - generic [ref=e10]:
+      - group "Variante" [ref=e11]:
+        - generic [ref=e13] [cursor=pointer]:
+          - radio "Belote classique Enchères traditionnelles sur la carte retournée." [checked] [ref=e14]
+          - generic [ref=e15]:
+            - strong [ref=e16]: Belote classique
+            - generic [ref=e17]: Enchères traditionnelles sur la carte retournée.
+        - generic [ref=e18] [cursor=pointer]:
+          - radio "Contrée Enchères de contrat avec coinche." [ref=e19]
+          - generic [ref=e20]:
+            - strong [ref=e21]: Contrée
+            - generic [ref=e22]: Enchères de contrat avec coinche.
+      - group "Annonces" [ref=e23]:
+        - generic [ref=e25] [cursor=pointer]:
+          - radio "Activées Annoncez tierce, cinquante, cent et carrés." [checked] [ref=e26]
+          - generic [ref=e27]:
+            - strong [ref=e28]: Activées
+            - generic [ref=e29]: Annoncez tierce, cinquante, cent et carrés.
+        - generic [ref=e30] [cursor=pointer]:
+          - radio "Désactivées Seulement les points des cartes et la Belote." [ref=e31]
+          - generic [ref=e32]:
+            - strong [ref=e33]: Désactivées
+            - generic [ref=e34]: Seulement les points des cartes et la Belote.
+      - group "Difficulté des bots" [ref=e35]:
+        - generic [ref=e37] [cursor=pointer]:
+          - radio "Détendu Une partie plus douce pour apprendre et s'entraîner." [checked] [ref=e38]
+          - generic [ref=e39]:
+            - strong [ref=e40]: Détendu
+            - generic [ref=e41]: Une partie plus douce pour apprendre et s'entraîner.
+        - generic [ref=e42] [cursor=pointer]:
+          - radio "Exigeant Des adversaires plus coriaces pour les joueurs expérimentés." [ref=e43]
+          - generic [ref=e44]:
+            - strong [ref=e45]: Exigeant
+            - generic [ref=e46]: Des adversaires plus coriaces pour les joueurs expérimentés.
+      - button "Distribuer les cartes" [ref=e47] [cursor=pointer]:
+        - text: Distribuer les cartes
+        - generic [aria-hidden] [ref=e48]: →
+    - link "Retour aux modes de jeu" [ref=e49] [cursor=pointer]:
+      - /url: /
+  - text: ♠ BEELOT ♣ ♠ BEELOT ♣ ♠ BEELOT ♣

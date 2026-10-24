@@ -257,6 +257,13 @@ const fr = {
   "That table is no longer available.": "Cette table n'est plus disponible.",
   "No upturned card in Contrée.": "Pas de carte retournée en Contrée.",
   "Something went wrong. Please try again.": "Une erreur est survenue. Veuillez réessayer.",
+  "Sign in again to delete your account.": "Reconnectez-vous pour supprimer votre compte.",
+  "Sign in first.": "Connectez-vous d'abord.",
+  "The request is not valid.": "La requête n'est pas valide.",
+  "The request is too large.": "La requête est trop volumineuse.",
+  "Not found.": "Introuvable.",
+  "The server is busy. Please try again later.": "Le serveur est occupé. Veuillez réessayer plus tard.",
+  "Too many requests. Please slow down.": "Trop de requêtes. Veuillez ralentir.",
 
   // Tutorial
   "Learn Belote": "Apprendre la belote",

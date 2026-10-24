@@ -245,6 +245,13 @@ window.beelotLocales = window.beelotLocales || {};
     "That table is no longer available.": "Die tafel is niet meer beschikbaar.",
     "No upturned card in Contrée.": "Geen opengedraaide kaart in Contrée.",
     "Something went wrong. Please try again.": "Er is iets misgegaan. Probeer het opnieuw.",
+    "Sign in again to delete your account.": "Meld je opnieuw aan om je account te verwijderen.",
+    "Sign in first.": "Meld je eerst aan.",
+    "The request is not valid.": "Het verzoek is ongeldig.",
+    "The request is too large.": "Het verzoek is te groot.",
+    "Not found.": "Niet gevonden.",
+    "The server is busy. Please try again later.": "De server is bezet. Probeer het later opnieuw.",
+    "Too many requests. Please slow down.": "Te veel verzoeken. Doe het wat rustiger aan.",
 
     // Tutorial
     "Learn Belote": "Leer Belote",
