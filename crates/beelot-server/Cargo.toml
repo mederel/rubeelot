@@ -17,6 +17,7 @@ getrandom = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls-ring-webpki", "mysql", "uuid", "time", "migrate", "macros"] }
 thiserror = "2"
 time = { version = "0.3", features = ["serde", "formatting", "macros"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal", "sync", "time"] }
@@ -31,6 +32,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 [dev-dependencies]
 futures-util = "0.3"
 http-body-util = "0.1"
+testcontainers-modules = { version = "0.15", features = ["mariadb"] }
 tokio = { version = "1", features = ["test-util"] }
 tokio-util = "0.7"
 tower = { version = "0.5", features = ["util"] }

@@ -1,0 +1,20 @@
+# Local services for development: `docker compose up -d --wait`. The app's defaults point at them.
+#
+# - MariaDB: Beelot's database.
+#
+# Every secret below is a fixed development value, for local use only.
+services:
+  mariadb:
+    image: mariadb:12.3
+    environment:
+      MARIADB_DATABASE: beelot
+      MARIADB_USER: beelot
+      MARIADB_PASSWORD: beelot
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    ports:
+      - "3306:3306"
+    volumes:
+      - beelot-mariadb:/var/lib/mysql
+
+volumes:
+  beelot-mariadb:
