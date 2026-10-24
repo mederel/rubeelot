@@ -24,3 +24,27 @@ pub const NAME_TOO_LONG: &str = "Player names are limited to 30 characters.";
 pub const FOUR_SEATS: &str = "Fill in the four seats.";
 pub const TWO_PLAYERS: &str = "Pass and play needs at least two players.";
 pub const DIFFERENT_NAMES: &str = "Each player needs a different name.";
+
+pub const NOT_YOUR_TURN_TO_BID: &str = "It is not your turn to bid.";
+pub const NOT_YOUR_TURN_TO_PLAY: &str = "It is not your turn to play.";
+/// At a local table, when a bot is to act.
+pub const NOT_YOUR_TURN: &str = "It is not your turn.";
+pub const ILLEGAL_CARD: &str = "That card is not a legal play.";
+pub const ROUND_ENDED: &str = "This round has ended.";
+pub const NO_COMPLETED_TRICK: &str = "There is no completed trick to continue from.";
+pub const CONTRACT_ONLY_IN_CONTREE: &str = "Contract bids are only available in Contrée.";
+pub const TRUMP_CHOICE_ONLY_IN_CLASSIC: &str = "Choose a contract value and suit in Contrée.";
+pub const AUCTION_ENDED: &str = "The auction has ended.";
+pub const MUST_TAKE_UPTURNED_SUIT: &str =
+    "In the first round, you may only accept the upturned suit.";
+pub const MUST_CHOOSE_ANOTHER_SUIT: &str = "Choose a suit other than the upturned suit.";
+pub const INVALID_BID: &str = "A Contrée bid must be from 80 to 160 in steps of 10.";
+pub const BID_TOO_LOW: &str = "Your bid must be higher than the current contract.";
+pub const COINCHE_NOT_ALLOWED: &str = "Only an opponent of the declaring team may coinche.";
+pub const SUIT_REQUIRED: &str = "Choose a trump suit for the contract.";
+
+pub const NOT_STARTED: &str = "This game has not started.";
+pub const AUCTION_NOT_FINISHED: &str = "The auction has not finished.";
+pub const ROUND_NOT_FINISHED: &str = "The current round is not finished.";
+pub const MATCH_ENDED: &str = "This match has ended. Start a rematch.";
+pub const REACTIONS_CLOSED: &str = "Reactions open once the game starts.";
