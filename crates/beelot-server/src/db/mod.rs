@@ -2,6 +2,7 @@
 
 pub mod accounts;
 pub mod events;
+pub mod matches;
 pub mod passkeys;
 pub mod sessions;
 

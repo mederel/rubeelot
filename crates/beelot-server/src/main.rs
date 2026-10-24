@@ -4,6 +4,7 @@ use anyhow::Context;
 use beelot_server::app::{AppState, router};
 use beelot_server::clock::SystemClock;
 use beelot_server::config::Config;
+use beelot_server::history::HistoryRecorder;
 use beelot_server::jobs;
 use tokio_util::sync::CancellationToken;
 use tracing_subscriber::EnvFilter;
@@ -21,7 +22,10 @@ async fn main() -> anyhow::Result<()> {
     let pool = beelot_server::db::connect(&config)
         .await
         .context("cannot reach the database: is `docker compose up -d --wait` running?")?;
-    let state = AppState::new(config, Arc::new(SystemClock)).with_pool(pool);
+    let history = Arc::new(HistoryRecorder::new(pool.clone()));
+    let state = AppState::new(config, Arc::new(SystemClock))
+        .with_pool(pool)
+        .with_sink(history);
     let cancel = CancellationToken::new();
     let background = jobs::spawn_all(state.clone(), cancel.clone());
     let listener = tokio::net::TcpListener::bind(bind)
