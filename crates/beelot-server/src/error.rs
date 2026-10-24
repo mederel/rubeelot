@@ -40,6 +40,12 @@ pub const RATE_LIMITED_MESSAGE: &str = "Too many requests. Please slow down.";
 pub const TABLE_UNAUTHORIZED_MESSAGE: &str = "You are not authorized for this table.";
 pub const REAUTHENTICATE_MESSAGE: &str = "Sign in again to delete your account.";
 
+impl From<sqlx::Error> for AppError {
+    fn from(error: sqlx::Error) -> Self {
+        AppError::Internal(error.into())
+    }
+}
+
 impl AppError {
     /// A conflict carrying Java's message.
     pub fn conflict(code: &'static str, message: impl Into<String>) -> Self {

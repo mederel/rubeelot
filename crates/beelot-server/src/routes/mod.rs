@@ -1,5 +1,6 @@
 //! The HTTP API, one module per area.
 
+pub mod account;
 pub mod events;
 pub mod tables;
 
@@ -14,7 +15,9 @@ use crate::app::AppState;
 use crate::error::AppError;
 
 pub fn api() -> Router<AppState> {
-    tables::routes().merge(events::routes())
+    tables::routes()
+        .merge(events::routes())
+        .merge(account::routes())
 }
 
 /// A JSON body; one that cannot be read is a bad request with the usual error body.

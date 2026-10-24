@@ -2,6 +2,7 @@
 
 pub mod accounts;
 pub mod events;
+pub mod sessions;
 
 use sqlx::mysql::{
     MySql, MySqlConnectOptions, MySqlPool, MySqlPoolOptions, MySqlTypeInfo, MySqlValueRef,

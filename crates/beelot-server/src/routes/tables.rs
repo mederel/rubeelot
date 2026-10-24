@@ -12,6 +12,7 @@ use uuid::Uuid;
 use super::{ApiJson, bearer, table_id};
 use crate::api::{Snapshot, snapshot};
 use crate::app::AppState;
+use crate::auth::MaybeSession;
 use crate::error::AppError;
 use crate::tables::registry::viewer_of;
 use crate::tables::{Access, Action};
@@ -84,10 +85,11 @@ fn created(access: Access) -> impl IntoResponse {
 
 async fn create(
     State(state): State<AppState>,
+    session: MaybeSession,
     ApiJson(request): ApiJson<CreateRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let variant = request.variant.unwrap_or(Variant::Classic);
-    let account = None;
+    let account = session.account();
     let access = match request.kind {
         Kind::Local => state.registry.create_local(
             variant,
@@ -105,9 +107,10 @@ async fn create(
 
 async fn join(
     State(state): State<AppState>,
+    session: MaybeSession,
     ApiJson(request): ApiJson<JoinRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let account = None;
+    let account = session.account();
     let access = state
         .registry
         .join(&request.code, &request.player_name, account)?;
@@ -116,9 +119,10 @@ async fn join(
 
 async fn quick_match(
     State(state): State<AppState>,
+    session: MaybeSession,
     ApiJson(request): ApiJson<QuickMatchRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let account = None;
+    let account = session.account();
     let variant = request.variant.unwrap_or(Variant::Classic);
     let registry = state.registry.clone();
     let name = request.player_name;

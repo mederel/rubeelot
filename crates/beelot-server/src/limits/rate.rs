@@ -3,12 +3,14 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
-use axum::extract::{ConnectInfo, Request, State};
-use axum::http::{HeaderMap, Method};
+use axum::extract::{ConnectInfo, FromRequestParts, Request, State};
+use axum::http::request::Parts;
+use axum::http::{Extensions, HeaderMap, Method};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 
 use super::window::{FixedWindowLimiter, MAX_TRACKED};
+use crate::app::AppState;
 use crate::clock::Clock;
 use crate::config::Config;
 use crate::error::AppError;
@@ -60,12 +62,30 @@ pub fn client_ip(headers: &HeaderMap, peer: SocketAddr, trust_forwarded: bool) -
 }
 
 /// The peer's address, or the unspecified address when the server runs without connection info (tests).
-pub fn peer(request: &Request) -> SocketAddr {
-    request
-        .extensions()
+pub fn peer(extensions: &Extensions) -> SocketAddr {
+    extensions
         .get::<ConnectInfo<SocketAddr>>()
         .map(|info| info.0)
         .unwrap_or(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)))
+}
+
+/// The client's address, as the rate limits count it.
+#[derive(Debug, Clone, Copy)]
+pub struct ClientIp(pub IpAddr);
+
+impl FromRequestParts<AppState> for ClientIp {
+    type Rejection = std::convert::Infallible;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(ClientIp(client_ip(
+            &parts.headers,
+            peer(&parts.extensions),
+            state.config.trust_forwarded_headers,
+        )))
+    }
 }
 
 fn is_creation(method: &Method, path: &str) -> bool {
@@ -85,7 +105,12 @@ pub async fn rate_limit(
     if !path.starts_with("/api/") {
         return next.run(request).await;
     }
-    let client = client_ip(request.headers(), peer(&request), limits.trust_forwarded).to_string();
+    let client = client_ip(
+        request.headers(),
+        peer(request.extensions()),
+        limits.trust_forwarded,
+    )
+    .to_string();
     let general = limits.general.consume(&client).err().unwrap_or(0);
     let creation = if is_creation(request.method(), path) {
         limits.creation.consume(&client).err().unwrap_or(0)

@@ -4,5 +4,5 @@ pub mod rate;
 pub mod size;
 pub mod window;
 
-pub use rate::{RateLimits, client_ip};
+pub use rate::{ClientIp, RateLimits, client_ip};
 pub use window::FixedWindowLimiter;

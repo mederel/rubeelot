@@ -8,12 +8,15 @@ use axum::extract::Request;
 use axum::http::{HeaderName, HeaderValue, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
+use sqlx::MySqlPool;
+use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use tower::ServiceBuilder;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::TraceLayer;
 
+use crate::auth::csrf;
 use crate::clock::Clock;
 use crate::config::Config;
 use crate::error::AppError;
@@ -31,11 +34,22 @@ pub struct AppState {
     pub rate_limits: Arc<RateLimits>,
     pub registry: Arc<TableRegistry>,
     pub sink: Arc<dyn MatchSink>,
+    /// Lazy until a request needs it: guests' requests never do.
+    pub pool: MySqlPool,
 }
 
 impl AppState {
     pub fn new(config: Config, clock: Arc<dyn Clock>) -> Self {
+        let pool = MySqlPoolOptions::new().connect_lazy_with(
+            config
+                .database_url
+                .parse::<MySqlConnectOptions>()
+                .unwrap_or_default()
+                .username(&config.database_username)
+                .password(&config.database_password),
+        );
         Self {
+            pool,
             rate_limits: Arc::new(RateLimits::new(&config, clock.clone())),
             registry: Arc::new(TableRegistry::new(&config.limits, clock.clone())),
             config: Arc::new(config),
@@ -52,6 +66,16 @@ impl AppState {
         self.registry =
             Arc::new(TableRegistry::new(&self.config.limits, self.clock.clone()).with_setup(setup));
         self
+    }
+
+    pub fn with_pool(mut self, pool: MySqlPool) -> Self {
+        self.pool = pool;
+        self
+    }
+
+    /// Whether cookies are only sent over HTTPS: when players reach Beelot through it.
+    pub fn secure_cookies(&self) -> bool {
+        self.config.public_url.starts_with("https://")
     }
 
     /// Finished matches go to `sink`.
@@ -116,6 +140,7 @@ pub fn router(state: AppState) -> Router {
                 rate_limits,
                 limits::rate::rate_limit,
             ))
+            .layer(middleware::from_fn(csrf::protect))
             .layer(limits::size::layer(max_request_bytes)),
     )
 }

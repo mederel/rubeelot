@@ -18,7 +18,10 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let bind = config.bind;
-    let state = AppState::new(config, Arc::new(SystemClock));
+    let pool = beelot_server::db::connect(&config)
+        .await
+        .context("cannot reach the database: is `docker compose up -d --wait` running?")?;
+    let state = AppState::new(config, Arc::new(SystemClock)).with_pool(pool);
     let cancel = CancellationToken::new();
     let background = jobs::spawn_all(state.clone(), cancel.clone());
     let listener = tokio::net::TcpListener::bind(bind)
