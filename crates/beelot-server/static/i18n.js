@@ -247,7 +247,7 @@ const fr = {
     "Les partenaires sont assis face à face : choisissez une place libre pour choisir le vôtre. Quatre joueurs doivent être prêts pour que le propriétaire de la table lance la partie, ou bien il peut démarrer tout de suite et les bots prennent les places libres.",
   "Empty seat": "Place libre",
   "Sit here": "S'asseoir ici",
-  "Sit in this 0 seat": "S'asseoir à cette place 0",
+  "Sit in this {0} seat": "S'asseoir à cette place {0}",
   "Turn timer: {0} seconds. A warning appears with 10 seconds remaining; an expired turn is played by a bot.":
     "Minuteur de tour : {0} secondes. Un avertissement apparaît à 10 secondes de la fin ; un tour expiré est joué par un bot.",
   "Turn timer is disabled.": "Le minuteur de tour est désactivé.",

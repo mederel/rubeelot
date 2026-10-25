@@ -235,7 +235,7 @@ window.beelotLocales = window.beelotLocales || {};
       "Partners zitten tegenover elkaar: kies een lege plaats om je partner te kiezen. Vier spelers moeten klaar zijn voordat de tafeleigenaar het spel kan starten, of de eigenaar start meteen en bots nemen de lege plaatsen in.",
     "Empty seat": "Lege plaats",
     "Sit here": "Hier zitten",
-    "Sit in this 0 seat": "Op deze plaats van 0 zitten",
+    "Sit in this {0} seat": "Op deze plaats van {0} zitten",
     "Turn timer: {0} seconds. A warning appears with 10 seconds remaining; an expired turn is played by a bot.":
       "Beurttimer: {0} seconden. Bij 10 seconden resterend verschijnt een waarschuwing; een verlopen beurt wordt door een bot gespeeld.",
     "Turn timer is disabled.": "De beurttimer is uitgeschakeld.",
