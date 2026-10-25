@@ -623,3 +623,45 @@ async fn a_finished_match_is_handed_to_the_sink() {
     }
     assert_eq!(recorded.0.lock().unwrap().len(), 1);
 }
+
+#[tokio::test]
+async fn two_players_and_two_bots_play_a_private_round_to_its_end() {
+    let (app, _) = app();
+    let (ana, code) = private(&app, "Ana", "CLASSIC").await;
+    let ben = join(&app, &code, "Ben").await;
+    for player in [&ana, &ben] {
+        accepted(&app, player, json!({"type": "ready", "ready": true})).await;
+    }
+    accepted(&app, &ana, json!({"type": "start", "fillWithBots": true})).await;
+
+    for _ in 0..200 {
+        let mut acted = false;
+        for player in [&ana, &ben] {
+            let view = snapshot(&app, player).await;
+            if view["board"]["roundResult"].is_object() {
+                return;
+            }
+            let action = if view["board"]["reviewingCompletedTrick"] == true {
+                json!({"type": "continueTrick"})
+            } else if view["board"].is_object() {
+                let Some(card) = view["board"]["legalCards"].get(0) else {
+                    continue;
+                };
+                json!({"type": "card", "rank": card["rank"], "suit": card["suit"]})
+            } else if view["bidding"]["playerTurn"] == true {
+                let suit = &view["bidding"]["upturnedCard"]["suit"];
+                json!({"type": "trump", "suit": suit})
+            } else {
+                continue;
+            };
+            accepted(&app, player, action).await;
+            acted = true;
+            break;
+        }
+        if !acted {
+            let view = snapshot(&app, &ana).await;
+            panic!("neither human can act: {view:#}");
+        }
+    }
+    panic!("the round did not end");
+}
