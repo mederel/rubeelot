@@ -8,7 +8,7 @@ use testcontainers_modules::mariadb::Mariadb;
 use testcontainers_modules::testcontainers::ImageExt;
 use testcontainers_modules::testcontainers::runners::AsyncRunner;
 
-/// The container's id and its host port. testcontainers' reaper removes the container once the binary exits.
+/// The container's id and its host port. The container is never dropped: [`remove_on_exit`] removes it.
 static SERVER: OnceLock<(String, u16)> = OnceLock::new();
 
 fn server() -> &'static (String, u16) {
@@ -23,6 +23,7 @@ fn server() -> &'static (String, u16) {
                 .block_on(container.get_host_port_ipv4(3306))
                 .unwrap();
             let id = container.id().to_owned();
+            remove_on_exit(&id);
             std::mem::forget(container);
             std::mem::forget(runtime);
             (id, port)
@@ -30,6 +31,27 @@ fn server() -> &'static (String, u16) {
         .join()
         .unwrap()
     })
+}
+
+/// Starts a shell that removes the container once this process has exited, however it exits. It has a process
+/// group of its own, so a Ctrl-C in the terminal does not stop it too.
+#[allow(clippy::zombie_processes)] // The shell outlives this process, so nothing waits on it.
+fn remove_on_exit(id: &str) {
+    use std::os::unix::process::CommandExt;
+    use std::process::{Command, Stdio};
+
+    let pid = std::process::id();
+    Command::new("sh")
+        .arg("-c")
+        .arg(format!(
+            "while kill -0 {pid} 2>/dev/null; do sleep 1; done; docker rm -f {id}"
+        ))
+        .process_group(0)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("a shell to remove the container");
 }
 
 fn options(port: u16) -> MySqlConnectOptions {
