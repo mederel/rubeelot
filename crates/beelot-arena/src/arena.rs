@@ -3,12 +3,17 @@
 //! once with it as East–West. A deal where everyone passes counts as a redeal worth no points; the
 //! cards are not dealt again. Bots always declare their announcements (US-061). Contrée deals
 //! play with all trumps and no trumps when asked, as public tables do (US-064); Classic ignores
-//! the option. Port of the Java `BotArena`.
+//! the option. By default every deal pair starts from its own shuffled deck, so that the deals are
+//! independent and bot strength is measured on uniformly random hands. With [`Dealing::Table`],
+//! each pair is dealt from the cards of the previous pair's first deal, gathered without a shuffle
+//! and cut as at a real table (US-085); a redeal or the first pair starts from a shuffled deck.
+//! Port of the Java `BotArena`.
 
 use std::time::Instant;
 
 use beelot_game::bidding::BiddingState;
 use beelot_game::bot::arena::ArenaBot;
+use beelot_game::deck::Deck;
 use beelot_game::match_score::MatchScore;
 use beelot_game::scoring::RoundResult;
 use beelot_game::{JavaRandom, Seat, SplitMix64, Team, Variant};
@@ -18,14 +23,37 @@ use crate::report::{ArenaReport, Rate, Timing};
 
 const SEATS: usize = 4;
 
+/// How each deal pair gets its cards.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Dealing {
+    /// From its own shuffled deck.
+    #[default]
+    Shuffled,
+    /// From the previous pair's cards, gathered and cut.
+    Table,
+}
+
 pub struct BotArena {
     first: Box<dyn ArenaBot>,
     second: Box<dyn ArenaBot>,
+    dealing: Dealing,
 }
 
 impl BotArena {
     pub fn new(first: Box<dyn ArenaBot>, second: Box<dyn ArenaBot>) -> Self {
-        Self { first, second }
+        Self::with_dealing(first, second, Dealing::Shuffled)
+    }
+
+    pub fn with_dealing(
+        first: Box<dyn ArenaBot>,
+        second: Box<dyn ArenaBot>,
+        dealing: Dealing,
+    ) -> Self {
+        Self {
+            first,
+            second,
+            dealing,
+        }
     }
 
     /// Plays `deal_pairs` deal pairs, dealt from `seed`, with or without announcements, and with or
@@ -47,6 +75,7 @@ impl BotArena {
         let mut deal_seeds = SplitMix64::new(seed);
         let mut first_north_south_match = MatchScore::new();
         let mut first_east_west_match = MatchScore::new();
+        let mut deck: Option<Deck> = None;
         for pair in 0..deal_pairs {
             let deal_seed = deal_seeds.next_long();
             let dealer = pair % SEATS;
@@ -57,8 +86,13 @@ impl BotArena {
                 seed: deal_seed,
                 dealer,
             };
-            let first_north_south = self.play(options, true, &mut tally);
-            let first_east_west = self.play(options, false, &mut tally);
+            let first_north_south = self.play(options, deck.clone(), true, &mut tally);
+            let first_east_west = self.play(options, deck.take(), false, &mut tally);
+            if self.dealing == Dealing::Table
+                && let Deal::Played { gathered, .. } = &first_north_south
+            {
+                deck = Some(gathered.clone());
+            }
             tally.pair(&first_north_south, &first_east_west);
             tally.record_match(&mut first_north_south_match, &first_north_south, true);
             tally.record_match(&mut first_east_west_match, &first_east_west, false);
@@ -73,11 +107,18 @@ impl BotArena {
         tally.report(setup, self.first.name(), self.second.name())
     }
 
-    fn play(&self, options: DealOptions, first_is_north_south: bool, tally: &mut Tally) -> Deal {
-        let mut bidding = BiddingState::new(
+    fn play(
+        &self,
+        options: DealOptions,
+        deck: Option<Deck>,
+        first_is_north_south: bool,
+        tally: &mut Tally,
+    ) -> Deal {
+        let mut bidding = BiddingState::dealt_from(
             options.variant,
             options.dealer,
             Box::new(JavaRandom::new(options.seed)),
+            deck,
         )
         .with_announcements(options.announcements)
         .with_all_trumps(options.all_trumps);
@@ -118,6 +159,9 @@ impl BotArena {
             north_south_declared: Team::of(board.declarer()) == Team::NorthSouth,
             coinched: board.coinched(),
             all_trumps_contract,
+            gathered: board
+                .gathered_deck((options.dealer + 1) % SEATS)
+                .expect("the round is played"),
         }
     }
 
@@ -157,6 +201,8 @@ enum Deal {
         coinched: bool,
         /// Whether the contract is all trumps or no trumps.
         all_trumps_contract: bool,
+        /// The cards gathered for the next deal.
+        gathered: Deck,
     },
 }
 
@@ -232,6 +278,7 @@ impl Tally {
             north_south_declared,
             coinched,
             all_trumps_contract,
+            ..
         } = deal
         else {
             self.redeals += 1;

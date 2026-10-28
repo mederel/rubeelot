@@ -1,11 +1,11 @@
 Bot arena — Contrée
 current vs no-all-trumps-bidding, 100 duplicate deal pairs, seed 1, announcements on, tout-atout and sans-atout on
 
-Point difference per deal (current − no-all-trumps-bidding): +1.41 ± 7.81 (95% CI -6.40 to +9.22)
+Point difference per deal (current − no-all-trumps-bidding): +6.62 ± 7.13 (95% CI -0.51 to +13.75)
 Matches to 1,000 won by current: 54.2% (13/24), 95% CI 35.1%–72.1%
-Contract success: current 86.9% (93/107); no-all-trumps-bidding 90.3% (84/93)
-Tout-atout and sans-atout contracts: current 72.2% (13/18); no-all-trumps-bidding n/a (0/0)
-Coinche success: current 40.0% (2/5); no-all-trumps-bidding 33.3% (2/6)
+Contract success: current 86.7% (91/105); no-all-trumps-bidding 84.2% (80/95)
+Tout-atout and sans-atout contracts: current 90.0% (18/20); no-all-trumps-bidding n/a (0/0)
+Coinche success: current 50.0% (1/2); no-all-trumps-bidding 0.0% (0/3)
 Redeal rate: 0.0% (0/200)
-Rounds with announcements: 64.0% (128/200)
-Decision time per card: current avg 4.4 µs, p99 9.8 µs; no-all-trumps-bidding avg 4.2 µs, p99 10.4 µs
+Rounds with announcements: 54.0% (108/200)
+Decision time per card: current avg 4.5 µs, p99 10.0 µs; no-all-trumps-bidding avg 4.2 µs, p99 9.7 µs

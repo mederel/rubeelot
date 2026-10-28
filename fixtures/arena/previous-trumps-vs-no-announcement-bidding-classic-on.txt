@@ -1,11 +1,11 @@
 Bot arena — Classic Belote
 previous-trumps vs no-announcement-bidding, 100 duplicate deal pairs, seed 1, announcements on, tout-atout and sans-atout on
 
-Point difference per deal (previous-trumps − no-announcement-bidding): -7.96 ± 6.70 (95% CI -14.66 to -1.26)
-Matches to 1,000 won by previous-trumps: 45.0% (9/20), 95% CI 25.8%–65.8%
-Contract success: previous-trumps 81.9% (77/94); no-announcement-bidding 81.9% (77/94)
+Point difference per deal (previous-trumps − no-announcement-bidding): -6.62 ± 5.48 (95% CI -12.10 to -1.14)
+Matches to 1,000 won by previous-trumps: 38.9% (7/18), 95% CI 20.3%–61.4%
+Contract success: previous-trumps 82.1% (78/95); no-announcement-bidding 86.0% (80/93)
 Tout-atout and sans-atout contracts: previous-trumps n/a (0/0); no-announcement-bidding n/a (0/0)
 Coinche success: previous-trumps n/a (0/0); no-announcement-bidding n/a (0/0)
 Redeal rate: 6.0% (12/200)
-Rounds with announcements: 66.0% (124/188)
-Decision time per card: previous-trumps avg 4.0 µs, p99 9.8 µs; no-announcement-bidding avg 4.4 µs, p99 11.1 µs
+Rounds with announcements: 62.8% (118/188)
+Decision time per card: previous-trumps avg 3.9 µs, p99 8.7 µs; no-announcement-bidding avg 4.4 µs, p99 9.4 µs

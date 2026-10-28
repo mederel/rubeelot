@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::announcements::{self, Declared};
 use crate::card::{Card, Rank, Seat, Suit, Team, Trump, Variant};
+use crate::deck::{self, Deck};
 use crate::error::GameError;
 use crate::rules;
 use crate::scoring::{self, Declaration, RoundResult, RoundSummary, Totals};
@@ -71,6 +72,9 @@ pub struct GameBoard {
     current_trick: Vec<SeatCard>,
     completed_trick: Vec<SeatCard>,
     tricks: Vec<Vec<SeatCard>>,
+    /// Each team's tricks as a face-down pile, top card first (US-085).
+    north_south_pile: Vec<Card>,
+    east_west_pile: Vec<Card>,
     active: Seat,
     completed_tricks: usize,
     next_leader: Seat,
@@ -189,6 +193,8 @@ impl GameBoard {
             current_trick: Vec::new(),
             completed_trick: Vec::new(),
             tricks: Vec::new(),
+            north_south_pile: Vec::new(),
+            east_west_pile: Vec::new(),
             active: (dealer + 1) % 4,
             completed_tricks: 0,
             next_leader: 0,
@@ -323,6 +329,28 @@ impl GameBoard {
         self.reviewing
     }
 
+    /// The tricks a team has won, as a face-down pile listed from its top card: each trick goes on
+    /// top of the earlier ones, its first card on top (US-085).
+    pub fn trick_pile(&self, north_south: bool) -> &[Card] {
+        if north_south {
+            &self.north_south_pile
+        } else {
+            &self.east_west_pile
+        }
+    }
+
+    /// The cards of the finished deal, gathered for the next one without a shuffle: each team
+    /// counts its pile, then the next dealer's team puts its counted pile on top of the other.
+    /// `None` until the round is played.
+    pub fn gathered_deck(&self, next_dealer: Seat) -> Option<Deck> {
+        self.round_result.as_ref()?;
+        Some(Deck::gathered_piles(
+            &self.north_south_pile,
+            &self.east_west_pile,
+            next_dealer.is_multiple_of(2),
+        ))
+    }
+
     pub fn round_result(&self) -> Option<&RoundResult> {
         self.round_result.as_ref()
     }
@@ -423,6 +451,12 @@ impl GameBoard {
         }
         let card_points = points - if last_trick { 10 } else { 0 };
         self.next_leader = winner.seat;
+        let pile = if self.next_leader.is_multiple_of(2) {
+            &mut self.north_south_pile
+        } else {
+            &mut self.east_west_pile
+        };
+        *pile = deck::pile_trick(pile, &cards);
         if self.next_leader.is_multiple_of(2) {
             self.north_south_tricks += 1;
             self.north_south_score += points;

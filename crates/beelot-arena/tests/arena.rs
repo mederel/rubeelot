@@ -1,7 +1,7 @@
 //! A short arena run, checking that the arena still works. Port of the Java `BotArenaTest`;
 //! longer runs use the `beelot-arena` command.
 
-use beelot_arena::{ArenaReport, BotArena, Rate};
+use beelot_arena::{ArenaReport, BotArena, Dealing, Rate};
 use beelot_game::Variant;
 use beelot_game::bot::arena::arena_bot;
 
@@ -33,6 +33,32 @@ fn the_same_seed_gives_the_same_results() {
     assert_eq!(first_run.point_difference, second_run.point_difference);
     assert_eq!(first_run.first_match_wins, second_run.first_match_wins);
     assert_eq!(first_run.first_contracts, second_run.first_contracts);
+}
+
+#[test]
+fn table_dealing_is_an_explicit_option_that_stays_fair_and_repeatable() {
+    let table = |first: &str, second: &str| {
+        BotArena::with_dealing(
+            arena_bot(first).unwrap(),
+            arena_bot(second).unwrap(),
+            Dealing::Table,
+        )
+    };
+    let even = table("random", "random").run(Variant::Classic, DEAL_PAIRS, 7, true, true);
+    let arena = table("current", "random");
+    let first_run = arena.run(Variant::Contree, DEAL_PAIRS, 42, true, true);
+    let second_run = arena.run(Variant::Contree, DEAL_PAIRS, 42, true, true);
+    let shuffled = run("current", "random", Variant::Contree, 42);
+
+    assert_eq!(
+        even.point_difference, 0.0,
+        "both seatings of a pair get the same cards"
+    );
+    assert_eq!(first_run.point_difference, second_run.point_difference);
+    assert_ne!(
+        shuffled.point_difference, first_run.point_difference,
+        "the deals differ from shuffled ones"
+    );
 }
 
 #[test]
