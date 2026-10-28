@@ -204,6 +204,68 @@ async fn a_local_table_plays_to_the_chosen_target_or_to_one_thousand() {
 }
 
 #[tokio::test]
+async fn a_contree_table_bids_and_plays_all_trumps() {
+    let (app, _) = app();
+    let player = solo(&app, "CONTREE").await;
+    assert_eq!(snapshot(&app, &player).await["table"]["allTrumps"], true);
+    // No bot can overcall 160, so the contract stands.
+    let mut view = accepted(
+        &app,
+        &player,
+        json!({"type": "contract", "value": 160, "suit": "ALL_TRUMPS"}),
+    )
+    .await;
+    assert_eq!(view["bidding"]["highestBidSuit"], "ALL_TRUMPS");
+    while view["bidding"]["complete"] != true {
+        view = accepted(&app, &player, json!({"type": "pass"})).await;
+    }
+    assert_eq!(view["board"]["trump"], "All trumps");
+    assert_eq!(view["board"]["contractValue"], 160);
+}
+
+#[tokio::test]
+async fn a_table_without_all_trumps_refuses_them() {
+    let (app, _) = app();
+    let player = create(
+        &app,
+        json!({"kind": "LOCAL", "variant": "CONTREE", "difficulty": "RELAXED", "allTrumps": false}),
+    )
+    .await;
+    assert_eq!(snapshot(&app, &player).await["table"]["allTrumps"], false);
+    let (status, error) = act(
+        &app,
+        &player,
+        json!({"type": "contract", "value": 100, "suit": "NO_TRUMPS"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(
+        error["message"],
+        "Tout-atout and sans-atout are not played at this table."
+    );
+}
+
+#[tokio::test]
+async fn the_owner_turns_all_trumps_off() {
+    let (app, _) = app();
+    let (owner, code) = private(&app, "Ana", "CONTREE").await;
+    let guest = join(&app, &code, "Benoit").await;
+    let off = accepted(
+        &app,
+        &owner,
+        json!({"type": "settings", "allTrumps": false}),
+    )
+    .await;
+    assert_eq!(off["table"]["allTrumps"], false);
+    let (status, error) = act(&app, &guest, json!({"type": "settings", "allTrumps": true})).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(
+        error["message"],
+        "Only the table owner can change tout-atout and sans-atout."
+    );
+}
+
+#[tokio::test]
 async fn a_target_that_is_not_offered_is_refused() {
     let (app, _) = app();
     let (status, _) = call(

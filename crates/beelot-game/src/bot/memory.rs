@@ -8,7 +8,7 @@
 //! (`unseen_cards`, `known_cards`) come out by suit, then rank.
 
 use crate::board::{PlayView, SeatCard};
-use crate::card::{Card, Seat, Suit};
+use crate::card::{Card, Seat, Suit, Trump};
 use crate::rules;
 
 /// A set of cards, one bit per card.
@@ -41,7 +41,7 @@ impl CardSet {
 }
 
 pub(crate) struct CardMemory {
-    trump: Suit,
+    trump: Trump,
     unseen: CardSet,
     /// Per seat, the suits it has shown to be void in, by suit ordinal.
     voids: [[bool; 4]; 4],
@@ -83,9 +83,10 @@ impl CardMemory {
         memory
     }
 
-    /// A seat that does not follow the suit led is void in it. A seat that neither follows nor
-    /// trumps, while the opponents are winning the trick, is also void in trumps, since the rules
-    /// would have forced a trump.
+    /// A seat that does not follow the suit led is void in it. In a suit contract, a seat that
+    /// neither follows nor trumps, while the opponents are winning the trick, is also void in
+    /// trumps, since the rules would have forced a trump. Under all trumps and no trumps nobody is
+    /// forced to cut, so a discard shows nothing more.
     fn remember(&mut self, trick: &[SeatCard]) {
         let lead = trick[0].card.suit;
         let mut played: Vec<Card> = Vec::with_capacity(trick.len());
@@ -98,8 +99,11 @@ impl CardMemory {
                 // Java compares with `played.size() - 2`, which is -1 for the second card.
                 let partner_winning = played.len() >= 2
                     && rules::winning_index(&played, self.trump) == played.len() - 2;
-                if card.suit != self.trump && !partner_winning {
-                    self.voids[seat_card.seat][self.trump.ordinal()] = true;
+                if let Some(trump_suit) = self.trump.suit()
+                    && card.suit != trump_suit
+                    && !partner_winning
+                {
+                    self.voids[seat_card.seat][trump_suit.ordinal()] = true;
                 }
             }
             played.push(card);
@@ -122,9 +126,21 @@ impl CardMemory {
         self.unseen.cards().filter(|card| card.suit == suit).count() as i32
     }
 
-    /// Trumps still held by the other seats.
+    /// Trumps still held by the other seats: every unseen card under all trumps, none under no
+    /// trumps.
+    #[cfg(test)]
     pub(crate) fn remaining_trumps(&self) -> i32 {
-        self.unseen_count(self.trump)
+        self.unseen
+            .cards()
+            .filter(|card| self.trump.is_trump(card.suit))
+            .count() as i32
+    }
+
+    /// Whether the seat may still hold a trump: one in a suit it has not shown to be void in.
+    pub(crate) fn may_hold_trump(&self, seat: Seat) -> bool {
+        self.unseen
+            .cards()
+            .any(|card| self.trump.is_trump(card.suit) && !self.shown_void(seat, card.suit))
     }
 
     /// Whether no unseen card of the card's suit beats it.
@@ -157,13 +173,14 @@ impl CardMemory {
     /// no card of it is unseen: fearing a trump earlier made bots lose points in the arena. A card
     /// known to be in another hand doesn't count.
     pub(crate) fn may_beat(&self, seat: Seat, winner: Card, lead: Suit) -> bool {
-        let may_trump = winner.suit != self.trump
-            && !self.shown_void(seat, self.trump)
-            && self
-                .unseen
-                .cards()
-                .any(|other| other.suit == self.trump && !self.known_elsewhere(other, seat))
-            && (self.shown_void(seat, lead) || self.unseen_count(lead) == 0);
+        let may_trump = self.trump.suit().is_some_and(|trump_suit| {
+            winner.suit != trump_suit
+                && !self.shown_void(seat, trump_suit)
+                && self
+                    .unseen
+                    .cards()
+                    .any(|other| other.suit == trump_suit && !self.known_elsewhere(other, seat))
+        }) && (self.shown_void(seat, lead) || self.unseen_count(lead) == 0);
         if may_trump {
             return true;
         }
@@ -217,12 +234,21 @@ mod tests {
         tricks: Vec<Vec<SeatCard>>,
         revealed: Vec<Declaration>,
     ) -> CardMemory {
+        memory_in(Trump::Hearts, hand, tricks, revealed)
+    }
+
+    fn memory_in(
+        trump: Trump,
+        hand: &str,
+        tricks: Vec<Vec<SeatCard>>,
+        revealed: Vec<Declaration>,
+    ) -> CardMemory {
         let hand = cards(hand);
         CardMemory::new(&PlayView {
             seat: 0,
             hand: hand.clone(),
             legal_cards: hand,
-            trump: Suit::Hearts,
+            trump,
             variant: Variant::Classic,
             contract_value: 0,
             coinched: false,
@@ -370,5 +396,29 @@ mod tests {
         assert_eq!(*unseen.last().unwrap(), card("KS"));
         assert!(memory.unseen(card("AH")));
         assert!(!memory.unseen(card("7C")));
+    }
+
+    #[test]
+    fn under_no_trumps_nobody_cuts_and_nobody_holds_a_trump() {
+        let tricks = vec![trick(0, "7S 7H 8S 9S")];
+        let memory = memory_in(Trump::NoTrumps, "AS", tricks, Vec::new());
+
+        assert_eq!(memory.remaining_trumps(), 0);
+        assert!(!memory.may_hold_trump(1));
+        assert!(memory.shown_void(1, Suit::Spades));
+        assert!(!memory.shown_void(1, Suit::Hearts));
+        assert!(!memory.may_beat(1, card("AS"), Suit::Spades));
+    }
+
+    #[test]
+    fn under_all_trumps_every_unseen_card_is_a_trump_and_only_void_suits_are_excluded() {
+        let tricks = vec![trick(0, "7S 7H 8S 9S")];
+        let memory = memory_in(Trump::AllTrumps, "AS", tricks, Vec::new());
+
+        assert_eq!(memory.remaining_trumps(), 32 - 1 - 4);
+        assert!(memory.may_hold_trump(1));
+        assert!(!memory.shown_void(1, Suit::Hearts));
+        assert!(memory.shown_void(1, Suit::Spades));
+        assert!(!memory.may_beat(1, card("AS"), Suit::Spades));
     }
 }

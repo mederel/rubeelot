@@ -2,7 +2,8 @@
 window.beelotLocales = window.beelotLocales || {};
 
 (() => {
-  const suits = { clubs: "klaveren", diamonds: "ruiten", hearts: "harten", spades: "schoppen" };
+  const suits = { clubs: "klaveren", diamonds: "ruiten", hearts: "harten", spades: "schoppen",
+    "all trumps": "alles troef", "no trumps": "geen troef" };
   const rankNames = { A: "aas", K: "heer", Q: "vrouw", J: "boer" };
   const rankLabels = { A: "A", K: "H", Q: "V", J: "B" };
   const you = (name) => name === "You";
@@ -314,6 +315,26 @@ window.beelotLocales = window.beelotLocales || {};
     "For your safety, sign in again to delete your account.":
       "Meld je voor de veiligheid opnieuw aan om je account te verwijderen.",
 
+
+    // Tout-atout and sans-atout (US-063)
+    "Tout-atout and sans-atout": "Alles troef en geen troef",
+    "Bids may also name all trumps or no trumps.": "Een bod mag ook alles troef of geen troef noemen.",
+    "Only the four suits are played.": "Alleen de vier kleuren worden gespeeld.",
+    "Tout-atout and sans-atout are played.": "Alles troef en geen troef worden gespeeld.",
+    "All trumps": "Alles troef",
+    "No trumps": "Geen troef",
+    "Only the table owner can change tout-atout and sans-atout.": "Alleen de eigenaar van de tafel kan alles troef en geen troef wijzigen.",
+    "Tout-atout and sans-atout cannot change after the game starts.": "Alles troef en geen troef kunnen niet meer wijzigen nadat het spel is begonnen.",
+    "Public tables always play with tout-atout and sans-atout.": "Openbare tafels spelen altijd met alles troef en geen troef.",
+    "Tout-atout and sans-atout are not played at this table.": "Alles troef en geen troef worden aan deze tafel niet gespeeld.",
+    "Besides the four suits, a Contrée bid can name sans-atout (no trumps) or tout-atout (all trumps) when the table plays them. A bid must be higher in value whatever the contract. Nothing is cut in either contract: follow the lead suit when you can, otherwise play any card. In tout-atout you must also beat the winning card when you can.":
+      "Naast de vier kleuren kan een bod in Contrée geen troef of alles troef noemen wanneer de tafel die speelt. Een bod moet in waarde hoger zijn, welk contract het ook is. In geen van beide contracten wordt getroefd: volg de uitgespeelde kleur als je kunt, speel anders een willekeurige kaart. Bij alles troef moet je ook de winnende kaart overtroeven als je kunt.",
+    "Sans-atout card points: Ace 19, 10 10, King 4, Queen 3, Jack 2, 9, 8 and 7 0. Order: ace, 10, king, queen, jack, 9, 8, 7. The cards total 162 with the 10 points for the last trick (Dix de der).":
+      "Kaartpunten bij geen troef: Aas 19, 10 10, Heer 4, Vrouw 3, Boer 2, 9, 8 en 7 0. Volgorde: aas, 10, heer, vrouw, boer, 9, 8, 7. De kaarten tellen op tot 162 met de 10 punten voor de laatste slag (Dix de der).",
+    "Tout-atout card points: Jack 13, 9 9, Ace 6, 10 5, King 3, Queen 2, 8 and 7 0. Order in every suit: jack, 9, ace, 10, king, queen, 8, 7. The cards total 162 with the 10 points for the last trick (Dix de der).":
+      "Kaartpunten bij alles troef: Boer 13, 9 9, Aas 6, 10 5, Heer 3, Vrouw 2, 8 en 7 0. Volgorde in elke kleur: boer, 9, aas, 10, heer, vrouw, 8, 7. De kaarten tellen op tot 162 met de 10 punten voor de laatste slag (Dix de der).",
+    "In tout-atout, Belote/Rebelote can be declared in every suit; sans-atout has none. Sans-atout carrés score aces 200, tens 150, and kings, queens, jacks or nines 100.":
+      "Bij alles troef kan Belote/Rebelote in elke kleur worden gemeld; bij geen troef bestaat ze niet. Carrés bij geen troef leveren 200 voor azen, 150 voor tienen en 100 voor heren, vrouwen, boeren of negens.",
 
     // Announcements (US-060)
     "Announcements": "Aankondigingen",

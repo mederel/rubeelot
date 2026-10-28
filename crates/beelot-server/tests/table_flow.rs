@@ -7,7 +7,7 @@ use beelot_game::bidding::CallType;
 use beelot_game::bot::BotStrategy;
 use beelot_game::bot::strategies;
 use beelot_game::scoring::RoundResult;
-use beelot_game::{Card, Difficulty, Suit, Team, Variant};
+use beelot_game::{Card, Difficulty, Suit, Team, Trump, Variant};
 use beelot_server::error::AppError;
 use beelot_server::tables::finished::{DELETED_PLAYER, FinishedSeat, Mode};
 use beelot_server::tables::{
@@ -45,7 +45,7 @@ fn solo_with(
     Table::local(
         Uuid::new_v4(),
         difficulty,
-        Lobby::local(seats, variant, announcements, 1_000),
+        Lobby::local(seats, variant, announcements, true, 1_000),
         setup,
         T0,
     )
@@ -57,7 +57,7 @@ fn pass_and_play(variant: Variant, names: [Option<&str>; 4], setup: TableSetup) 
     Table::local(
         Uuid::new_v4(),
         Difficulty::Relaxed,
-        Lobby::local(seats, variant, true, 1_000),
+        Lobby::local(seats, variant, true, true, 1_000),
         setup,
         T0,
     )
@@ -139,7 +139,7 @@ fn finish_auction_at_160(table: &mut Table, actor: Actor) {
         let action = if bidding.highest_bid() < 160 {
             Action::Contract {
                 value: 160,
-                suit: Some(Suit::Spades),
+                suit: Some(Trump::Spades),
             }
         } else if bidding.can_coinche(seat) {
             Action::Coinche
@@ -160,7 +160,7 @@ fn finish_auction_at_80(table: &mut Table, actor: Actor) {
         let action = if table.bidding().unwrap().highest_bid() == 0 {
             Action::Contract {
                 value: 80,
-                suit: Some(Suit::Spades),
+                suit: Some(Trump::Spades),
             }
         } else {
             Action::Pass
@@ -318,7 +318,7 @@ fn last_trick_is_played_for_the_human_and_the_round_is_recorded() {
         Actor::Device,
         Action::Contract {
             value: 160,
-            suit: Some(Suit::Spades),
+            suit: Some(Trump::Spades),
         },
     );
     finish_auction_at_160(&mut table, Actor::Device);
@@ -531,6 +531,31 @@ fn bots_take_classic_contracts_and_play_up_to_the_humans_first_card() {
 }
 
 #[test]
+fn next_round_and_rematch_keep_the_all_trumps_choice() {
+    let mut table = Table::local(
+        Uuid::new_v4(),
+        Difficulty::Relaxed,
+        Lobby::local(
+            local_seats(None).unwrap(),
+            Variant::Contree,
+            true,
+            false,
+            1_000,
+        ),
+        setup(9),
+        T0,
+    );
+    assert!(!table.bidding().unwrap().all_trumps());
+    finish_auction_at_80(&mut table, Actor::Device);
+    play_round(&mut table, Actor::Device);
+    act(&mut table, Actor::Device, Action::NextRound);
+    assert!(!table.bidding().unwrap().all_trumps());
+    play_match(&mut table, Actor::Device);
+    act(&mut table, Actor::Device, Action::Rematch);
+    assert!(!table.bidding().unwrap().all_trumps());
+}
+
+#[test]
 fn next_round_and_rematch_keep_the_announcements_choice() {
     let mut table = solo_with(Variant::Contree, Difficulty::Relaxed, false, None, setup(9));
     finish_auction_at_80(&mut table, Actor::Device);
@@ -550,7 +575,13 @@ fn a_solo_match_ends_at_its_target_and_the_rematch_keeps_it() {
     let mut table = Table::local(
         Uuid::new_v4(),
         Difficulty::Relaxed,
-        Lobby::local(local_seats(None).unwrap(), Variant::Classic, true, 500),
+        Lobby::local(
+            local_seats(None).unwrap(),
+            Variant::Classic,
+            true,
+            true,
+            500,
+        ),
         setup(9),
         T0,
     );
@@ -578,6 +609,7 @@ fn a_private_match_plays_to_the_owners_target() {
         Actor::Seat(0),
         Action::Settings {
             announcements: None,
+            all_trumps: None,
             turn_timer: None,
             target: Some(2_000),
         },
@@ -603,13 +635,13 @@ fn contree_bid_starts_a_contract_board_after_bot_players_pass() {
         Actor::Device,
         Action::Contract {
             value: 160,
-            suit: Some(Suit::Spades),
+            suit: Some(Trump::Spades),
         },
     );
     finish_auction_at_160(&mut table, Actor::Device);
     let board = table.board().unwrap();
     assert_eq!(board.variant(), Variant::Contree);
-    assert_eq!(board.trump(), Suit::Spades);
+    assert_eq!(board.trump(), Trump::Spades);
     assert!(board.contract_value() >= 160);
 }
 
@@ -635,14 +667,14 @@ fn auction_comes_back_to_the_human_when_the_bot_partner_supports_their_bid() {
             Actor::Device,
             Action::Contract {
                 value: 80,
-                suit: Some(Suit::Spades),
+                suit: Some(Trump::Spades),
             },
         );
         let bidding = table.bidding().unwrap();
         // Retry the deals where the partner did not support the bid, an opponent overcalled, or the last
         // opponent coinched the partner's bid, which ends the auction.
         if bidding.highest_bidder() != Some(2)
-            || bidding.highest_bid_suit() != Some(Suit::Spades)
+            || bidding.highest_bid_suit() != Some(Trump::Spades)
             || bidding
                 .auction()
                 .iter()
@@ -752,7 +784,7 @@ fn the_device_shows_the_hand_of_the_human_whose_turn_it_is() {
             let action = if bidding.highest_bid() == 0 {
                 Action::Contract {
                     value: 80,
-                    suit: Some(Suit::Hearts),
+                    suit: Some(Trump::Hearts),
                 }
             } else {
                 Action::Pass
@@ -866,7 +898,7 @@ fn pass_and_play_keeps_the_announcements_choice() {
     let mut table = Table::local(
         Uuid::new_v4(),
         Difficulty::Relaxed,
-        Lobby::local(seats, Variant::Contree, false, 1_000),
+        Lobby::local(seats, Variant::Contree, false, true, 1_000),
         setup(15),
         T0,
     );
@@ -944,7 +976,7 @@ fn started_contree_table_shares_an_eight_card_auction_between_players() {
         Actor::Seat(0),
         Action::Contract {
             value: 80,
-            suit: Some(Suit::Hearts),
+            suit: Some(Trump::Hearts),
         },
     );
     let bidding = table.bidding().unwrap();
@@ -971,7 +1003,7 @@ fn starting_an_active_table_cannot_replace_its_auction() {
         Actor::Seat(0),
         Action::Contract {
             value: 100,
-            suit: Some(Suit::Spades),
+            suit: Some(Trump::Spades),
         },
     );
     assert_eq!(
@@ -1181,7 +1213,7 @@ fn next_round_twice_deals_once() {
         let action = if table.bidding().unwrap().highest_bid() == 0 {
             Action::Contract {
                 value: 80,
-                suit: Some(Suit::Hearts),
+                suit: Some(Trump::Hearts),
             }
         } else {
             Action::Pass
@@ -1433,6 +1465,7 @@ fn settings_change_the_turn_timer_and_announcements() {
         Actor::Seat(0),
         Action::Settings {
             announcements: Some(false),
+            all_trumps: None,
             turn_timer: Some(30),
             target: None,
         },

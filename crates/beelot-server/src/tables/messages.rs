@@ -1,9 +1,10 @@
 //! Every English string the tables send, copied verbatim from the Java source: the frontend translates them with
 //! the English text as the key.
 
+use beelot_game::Trump;
 use beelot_game::Variant;
 use beelot_game::bidding::{BiddingState, CallType, SeatCall};
-use beelot_game::board::GameBoard;
+use beelot_game::board::{BeloteDeclaration, GameBoard};
 
 pub const TABLE_CLOSED: &str = "This table does not exist.";
 pub const ALREADY_STARTED: &str = "This table has already started.";
@@ -21,6 +22,12 @@ pub const TIMER_CHOICES: &str = "Choose no timer, 30 seconds, or 60 seconds.";
 pub const PUBLIC_ANNOUNCEMENTS: &str = "Public tables always play with announcements.";
 pub const OWNER_SETS_ANNOUNCEMENTS: &str = "Only the table owner can change announcements.";
 pub const ANNOUNCEMENTS_LOCKED: &str = "Announcements cannot change after the game starts.";
+pub const PUBLIC_ALL_TRUMPS: &str = "Public tables always play with tout-atout and sans-atout.";
+pub const OWNER_SETS_ALL_TRUMPS: &str =
+    "Only the table owner can change tout-atout and sans-atout.";
+pub const ALL_TRUMPS_LOCKED: &str =
+    "Tout-atout and sans-atout cannot change after the game starts.";
+pub const ALL_TRUMPS_NOT_PLAYED: &str = "Tout-atout and sans-atout are not played at this table.";
 pub const PUBLIC_TARGET: &str = "Public tables always play to 1,000 points.";
 pub const OWNER_SETS_TARGET: &str = "Only the table owner can change the match target.";
 pub const TARGET_LOCKED: &str = "The match target cannot change after the game starts.";
@@ -64,9 +71,9 @@ pub fn call_label(call: &SeatCall) -> String {
         CallType::Bid => format!(
             "{} {}",
             call.value,
-            call.suit.map_or("", |suit| suit.display_name())
+            call.trump.map_or("", Trump::display_name)
         ),
-        CallType::Trump => call.suit.map_or("", |suit| suit.display_name()).into(),
+        CallType::Trump => call.trump.map_or("", Trump::display_name).into(),
         CallType::Coinche => "Coinche!".into(),
     }
 }
@@ -103,7 +110,7 @@ pub fn auction_message(
             "{} bids {} {}.",
             name(call.seat),
             call.value,
-            call.suit.map_or("", |suit| suit.display_name())
+            call.trump.map_or("", Trump::display_name)
         ),
         CallType::Coinche => format!("{} coinches the contract.", name(call.seat)),
         CallType::Pass if variant == Variant::Classic && index == 3 => {
@@ -138,14 +145,27 @@ pub fn suit_name(suit: beelot_game::Suit) -> &'static str {
     }
 }
 
-/// The Belote announcement of the round, once its first card is played.
+/// Java's `Trump.name()`: `HEARTS`, `ALL_TRUMPS` or `NO_TRUMPS`.
+pub fn trump_name(trump: Trump) -> &'static str {
+    match trump {
+        Trump::AllTrumps => "ALL_TRUMPS",
+        Trump::NoTrumps => "NO_TRUMPS",
+        suit => suit_name(suit.suit().expect("a suit contract")),
+    }
+}
+
+/// The latest Belote announcement of the round, once its first card is played.
 pub fn declaration_message(board: &GameBoard, name: impl Fn(usize) -> String) -> String {
-    match (board.belote_seat(), board.belote_cards_played()) {
-        (Some(seat), 1) => format!("{} declares Belote.", name(seat)),
-        (Some(seat), played) if played >= 2 && board.belote_bonus_awarded() => {
-            format!("{} declares Rebelote: 20 bonus points.", name(seat))
-        }
-        _ => String::new(),
+    match board.last_belote() {
+        Some(BeloteDeclaration {
+            seat,
+            rebelote: false,
+        }) => format!("{} declares Belote.", name(seat)),
+        Some(BeloteDeclaration {
+            seat,
+            rebelote: true,
+        }) => format!("{} declares Rebelote: 20 bonus points.", name(seat)),
+        None => String::new(),
     }
 }
 pub const SLOW_DOWN: &str = "Slow down: wait a moment before reacting again.";

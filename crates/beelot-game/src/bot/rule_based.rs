@@ -10,7 +10,7 @@ use super::memory::CardMemory;
 use crate::announcements;
 use crate::bidding::{AuctionDecision, AuctionView};
 use crate::board::{PlayView, SeatCard};
-use crate::card::{Card, Rank, Seat, Suit, Variant};
+use crate::card::{Card, Rank, Seat, Suit, Trump, Variant};
 use crate::rules;
 
 const MAX_BID: i32 = 160;
@@ -61,15 +61,20 @@ impl RuleBasedStrategy {
     /// own announcements (US-061); the coinche leaves them out.
     fn contree_decision(&self, view: &AuctionView) -> AuctionDecision {
         if view.partner_holds_contract() {
-            let suit = view
+            // Tout-atout and sans-atout have no suit to support, so the bot leaves its partner's
+            // contract alone.
+            let supported = view
                 .highest_bid_suit
-                .expect("a contract held by the partner has a suit");
-            let raise = if view.has_bid() {
-                0
-            } else {
-                support_raise(&view.hand, suit)
+                .expect("a contract held by the partner has a trump")
+                .suit();
+            let raise = match supported {
+                Some(suit) if !view.has_bid() => support_raise(&view.hand, suit),
+                _ => 0,
             };
-            if raise > 0 && view.highest_bid < MAX_BID {
+            if let Some(suit) = supported
+                && raise > 0
+                && view.highest_bid < MAX_BID
+            {
                 return AuctionDecision::Bid {
                     value: (view.highest_bid + raise).min(MAX_BID),
                     suit,
@@ -80,7 +85,8 @@ impl RuleBasedStrategy {
         let mut best = Suit::Clubs;
         let mut best_estimate = -1;
         for suit in Suit::ALL {
-            let estimate = contract_estimate(&view.hand, suit) + announcement_bonus(view);
+            let estimate =
+                contract_estimate(&view.hand, suit) + announcement_bonus(view, suit.into());
             if estimate > best_estimate {
                 best = suit;
                 best_estimate = estimate;
@@ -112,7 +118,7 @@ impl RuleBasedStrategy {
         let mut hand = view.hand.clone();
         hand.push(upturned_card);
         let bonus = if view.announcements {
-            announcement_points(&hand) / ANNOUNCEMENT_STEP
+            announcement_points(&hand, upturned.into()) / ANNOUNCEMENT_STEP
         } else {
             0
         };
@@ -147,21 +153,20 @@ impl RuleBasedStrategy {
             && opponents_may_hold_trumps(view, memory)
             && let Some(&master_trump) = candidates
                 .iter()
-                .find(|card| card.suit == trump && memory.master(**card))
+                .find(|card| trump.is_trump(card.suit) && memory.master(**card))
         {
             return master_trump;
         }
         let master = first_max(
-            candidates
-                .iter()
-                .copied()
-                .filter(|card| card.suit != trump && holds(*card, card.suit, 3, view, memory)),
+            candidates.iter().copied().filter(|card| {
+                !trump.is_trump(card.suit) && holds(*card, card.suit, 3, view, memory)
+            }),
             by_value(trump),
         );
         if let Some(master) = master {
             return master;
         }
-        let leads = preferring(candidates, |card| card.suit != trump);
+        let leads = preferring(candidates, |card| !trump.is_trump(card.suit));
         let leads = preferring(&leads, |card| !ten_without_ace(card.suit, view, memory));
         lowest(&leads, trump, memory)
     }
@@ -179,7 +184,7 @@ impl RuleBasedStrategy {
                 candidates
                     .iter()
                     .copied()
-                    .filter(|card| card.suit != trump && !memory.master(*card)),
+                    .filter(|card| !trump.is_trump(card.suit) && !memory.master(*card)),
                 by_value(trump),
             )
             .unwrap_or_else(|| lowest(candidates, trump, memory));
@@ -236,7 +241,7 @@ impl BotStrategy for RuleBasedStrategy {
         let memory = CardMemory::new(view);
         let mut candidates = view.legal_cards.clone();
         if view.tricks.is_empty() && !view.declaring() {
-            candidates = preferring(&candidates, |card| card.suit != trump);
+            candidates = preferring(&candidates, |card| !trump.is_trump(card.suit));
         }
         if view.current_trick.is_empty() {
             self.lead(view, &memory, &candidates)
@@ -274,25 +279,26 @@ pub(crate) fn contract_estimate(hand: &[Card], trump: Suit) -> i32 {
 /// estimate comes within 4 points of the 162 − contract points that defeat it.
 fn expects_to_defeat(view: &AuctionView) -> bool {
     let defeating_points = 162 - view.highest_bid;
-    let suit = view
+    let trump = view
         .highest_bid_suit
-        .expect("a contract that may be coinched has a suit");
-    defensive_estimate(&view.hand, suit, view.highest_bid) >= defeating_points + COINCHE_MARGIN
+        .expect("a contract that may be coinched has a trump");
+    defensive_estimate(&view.hand, trump.suit(), view.highest_bid)
+        >= defeating_points + COINCHE_MARGIN
 }
 
 /// The share of the bot's announcements its Contrée contract estimate counts, when the round
 /// plays with them.
-fn announcement_bonus(view: &AuctionView) -> i32 {
+fn announcement_bonus(view: &AuctionView, trump: Trump) -> i32 {
     if view.announcements {
-        java_round(ANNOUNCEMENT_WEIGHT * f64::from(announcement_points(&view.hand)))
+        java_round(ANNOUNCEMENT_WEIGHT * f64::from(announcement_points(&view.hand, trump)))
     } else {
         0
     }
 }
 
 /// The total value of the announcements the hand would declare (US-060).
-pub(crate) fn announcement_points(hand: &[Card]) -> i32 {
-    announcements::find(hand)
+pub(crate) fn announcement_points(hand: &[Card], trump: Trump) -> i32 {
+    announcements::find(hand, trump)
         .iter()
         .map(|announcement| announcement.value)
         .sum()
@@ -300,12 +306,13 @@ pub(crate) fn announcement_points(hand: &[Card]) -> i32 {
 
 /// The points the bot's team can expect to make in defence against the given contract, fitted on
 /// bot play over random deals: 150, plus 6 for each trump, 9 for the jack of trumps, 7 for the
-/// nine, 4 for each ace and 3 for each ten in another suit, less 1.3 for each point of the
-/// contract, since a higher bid shows a stronger hand.
-pub(crate) fn defensive_estimate(hand: &[Card], trump: Suit, contract: i32) -> i32 {
+/// nine, 4 for each ace and 3 for each ten in another suit (every suit when the contract has no
+/// trump suit), less 1.3 for each point of the contract, since a higher bid shows a stronger
+/// hand.
+pub(crate) fn defensive_estimate(hand: &[Card], trump: Option<Suit>, contract: i32) -> i32 {
     let mut estimate = 150.0 - 1.3 * f64::from(contract);
     for card in hand {
-        if card.suit == trump {
+        if Some(card.suit) == trump {
             estimate += 6.0;
             if card.rank == Rank::Jack {
                 estimate += 9.0;
@@ -400,19 +407,18 @@ fn holds(
     true
 }
 
-/// Whether an opponent who has not shown a void in trumps may still hold one.
+/// Whether an opponent who has not shown a void in trumps may still hold one; never under no
+/// trumps.
 fn opponents_may_hold_trumps(view: &PlayView, memory: &CardMemory) -> bool {
-    memory.remaining_trumps() > 0
-        && (!memory.shown_void((view.seat + 1) % 4, view.trump)
-            || !memory.shown_void((view.seat + 3) % 4, view.trump))
+    memory.may_hold_trump((view.seat + 1) % 4) || memory.may_hold_trump((view.seat + 3) % 4)
 }
 
 /// The jack and nine of trumps, which a bot keeps to regain the lead.
-fn trump_honour(card: Card, trump: Suit) -> bool {
-    card.suit == trump && (card.rank == Rank::Jack || card.rank == Rank::Nine)
+fn trump_honour(card: Card, trump: Trump) -> bool {
+    trump.is_trump(card.suit) && (card.rank == Rank::Jack || card.rank == Rank::Nine)
 }
 
-fn trick_points(trick: &[SeatCard], trump: Suit) -> i32 {
+fn trick_points(trick: &[SeatCard], trump: Trump) -> i32 {
     trick
         .iter()
         .map(|played| rules::points(played.card, trump))
@@ -421,20 +427,20 @@ fn trick_points(trick: &[SeatCard], trump: Suit) -> i32 {
 
 /// Whether the bot holds the ten of the suit while the ace is still in another hand.
 fn ten_without_ace(suit: Suit, view: &PlayView, memory: &CardMemory) -> bool {
-    suit != view.trump
+    !view.trump.is_trump(suit)
         && view.hand.contains(&Card::new(Rank::Ten, suit))
         && memory.unseen(Card::new(Rank::Ace, suit))
 }
 
 /// The lowest-value card, keeping masters and trumps when it can.
-fn lowest(cards: &[Card], trump: Suit, memory: &CardMemory) -> Card {
-    let spare = preferring(cards, |card| card.suit != trump);
+fn lowest(cards: &[Card], trump: Trump, memory: &CardMemory) -> Card {
+    let spare = preferring(cards, |card| !trump.is_trump(card.suit));
     let spare = preferring(&spare, |card| !memory.master(*card));
     first_min(spare, by_value(trump)).expect("a seat to play has a legal card")
 }
 
 /// Orders cards by points, then by strength within their suit.
-pub(crate) fn by_value(trump: Suit) -> impl Fn(&Card, &Card) -> Ordering + Copy {
+pub(crate) fn by_value(trump: Trump) -> impl Fn(&Card, &Card) -> Ordering + Copy {
     move |a, b| {
         rules::points(*a, trump)
             .cmp(&rules::points(*b, trump))
@@ -508,7 +514,7 @@ mod tests {
 
     fn contree_view(
         highest_bid: i32,
-        suit: Option<Suit>,
+        suit: Option<Trump>,
         bidder: Option<Seat>,
         announcements: bool,
         hand: &str,
@@ -526,6 +532,7 @@ mod tests {
             highest_bidder_seat: bidder,
             coinche_allowed: false,
             announcements,
+            all_trumps: false,
         }
     }
 
@@ -533,7 +540,13 @@ mod tests {
     fn coinche_view(highest_bid: i32, announcements: bool, hand: &str) -> AuctionView {
         AuctionView {
             coinche_allowed: true,
-            ..contree_view(highest_bid, Some(BID_SUIT), Some(0), announcements, hand)
+            ..contree_view(
+                highest_bid,
+                Some(BID_SUIT.into()),
+                Some(0),
+                announcements,
+                hand,
+            )
         }
     }
 
@@ -551,6 +564,7 @@ mod tests {
             highest_bidder_seat: None,
             coinche_allowed: false,
             announcements,
+            all_trumps: false,
         }
     }
 
@@ -603,14 +617,18 @@ mod tests {
         let mut passed = false;
         for seed in 0..16 {
             let mut bidding = contree_bidding(seed);
-            bidding.bid(0, 80, BID_SUIT).unwrap();
+            bidding.bid(0, 80, BID_SUIT.into()).unwrap();
             bidding.pass(1).unwrap();
             let raise = support_raise(bidding.hand(2), BID_SUIT);
 
             take_auction_turn(&mut bidding, &RuleBasedStrategy::new()).unwrap();
 
             assert_eq!(bidding.highest_bid(), 80 + raise, "seed {seed}");
-            assert_eq!(bidding.highest_bid_suit(), Some(BID_SUIT), "seed {seed}");
+            assert_eq!(
+                bidding.highest_bid_suit(),
+                Some(BID_SUIT.into()),
+                "seed {seed}"
+            );
             assert_eq!(
                 bidding.highest_bidder(),
                 Some(if raise > 0 { 2 } else { 0 }),
@@ -626,7 +644,7 @@ mod tests {
     fn bot_does_not_support_an_opponents_bid() {
         let view = contree_view(
             80,
-            Some(BID_SUIT),
+            Some(BID_SUIT.into()),
             Some(0),
             false,
             "JH 7C 8C 9C 7D 8D 7S 8S",
@@ -642,9 +660,9 @@ mod tests {
     #[test]
     fn bot_that_already_bid_does_not_raise_its_partners_support() {
         let mut bidding = contree_bidding(1);
-        bidding.bid(0, 80, BID_SUIT).unwrap();
+        bidding.bid(0, 80, BID_SUIT.into()).unwrap();
         bidding.pass(1).unwrap();
-        bidding.bid(2, 100, BID_SUIT).unwrap();
+        bidding.bid(2, 100, BID_SUIT.into()).unwrap();
         bidding.pass(3).unwrap();
 
         take_auction_turn(&mut bidding, &RuleBasedStrategy::new()).unwrap();
@@ -656,7 +674,7 @@ mod tests {
     fn bot_raise_is_capped_at_the_maximum_contract() {
         for seed in 0..16 {
             let mut bidding = contree_bidding(seed);
-            bidding.bid(0, 150, BID_SUIT).unwrap();
+            bidding.bid(0, 150, BID_SUIT.into()).unwrap();
             bidding.pass(1).unwrap();
             let raise = support_raise(bidding.hand(2), BID_SUIT);
 
@@ -771,7 +789,7 @@ mod tests {
 
     #[test]
     fn overcalls_an_opponents_lower_contract() {
-        let view = contree_view(90, Some(Suit::Hearts), Some(0), false, STRONG_SPADES);
+        let view = contree_view(90, Some(Trump::Hearts), Some(0), false, STRONG_SPADES);
 
         assert_eq!(
             decide(&view),
@@ -784,14 +802,14 @@ mod tests {
 
     #[test]
     fn does_not_overcall_a_contract_at_or_above_its_estimate() {
-        let view = contree_view(110, Some(Suit::Hearts), Some(0), false, STRONG_SPADES);
+        let view = contree_view(110, Some(Trump::Hearts), Some(0), false, STRONG_SPADES);
 
         assert_eq!(decide(&view), AuctionDecision::Pass);
     }
 
     #[test]
     fn supports_its_partner_rather_than_overcalling_it() {
-        let view = contree_view(80, Some(Suit::Hearts), Some(3), false, STRONG_SPADES);
+        let view = contree_view(80, Some(Trump::Hearts), Some(3), false, STRONG_SPADES);
 
         assert_eq!(
             decide(&view),
@@ -810,7 +828,7 @@ mod tests {
         let hand = cards("JH 9H 7H AS 10C 7D 8D 7C");
 
         assert_eq!(
-            defensive_estimate(&hand, BID_SUIT, 100),
+            defensive_estimate(&hand, Some(BID_SUIT), 100),
             150 - 130 + 3 * 6 + 9 + 7 + 4 + 3
         );
     }
@@ -835,7 +853,7 @@ mod tests {
         let view = coinche_view(80, false, hand);
 
         assert_eq!(
-            defensive_estimate(&cards(hand), BID_SUIT, 80),
+            defensive_estimate(&cards(hand), Some(BID_SUIT), 80),
             85,
             "enough to coinche the 80 contract"
         );
@@ -850,7 +868,10 @@ mod tests {
 
     #[test]
     fn announcement_points_add_carres_and_sequences() {
-        assert_eq!(announcement_points(&cards("JS JH JC JD 7C 8C 9C AH")), 220);
+        assert_eq!(
+            announcement_points(&cards("JS JH JC JD 7C 8C 9C AH"), Trump::Spades),
+            220
+        );
     }
 
     #[test]
@@ -922,7 +943,7 @@ mod tests {
     fn first_max_keeps_the_first_of_equal_cards() {
         let hand = cards("8C 8D 7S");
         assert_eq!(
-            first_max(hand.iter().copied(), by_value(Suit::Hearts)),
+            first_max(hand.iter().copied(), by_value(Trump::Hearts)),
             Some(card("8C"))
         );
     }

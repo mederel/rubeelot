@@ -2,6 +2,7 @@
   "kind": "PRIVATE",
   "reactions": [],
   "table": {
+    "allTrumps": false,
     "announcements": true,
     "botFillAt": null,
     "difficulty": null,

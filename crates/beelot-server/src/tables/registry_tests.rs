@@ -134,8 +134,7 @@ fn token_hash_only() {
         .create_local(
             Variant::Classic,
             Difficulty::Relaxed,
-            true,
-            1_000,
+            LocalOptions::default(),
             None,
             None,
         )
@@ -449,6 +448,7 @@ fn public_tables_always_play_with_announcements() {
         &access,
         Action::Settings {
             announcements: Some(false),
+            all_trumps: None,
             turn_timer: None,
             target: None,
         },
@@ -651,7 +651,7 @@ fn the_sweep_collects_a_trick_four_seconds_after_it_is_shown() {
             match table.board() {
                 None if table.bidding().unwrap().highest_bid() < 80 => Action::Contract {
                     value: 80,
-                    suit: Some(beelot_game::Suit::Hearts),
+                    suit: Some(beelot_game::Trump::Hearts),
                 },
                 None => Action::Pass,
                 Some(board) if board.reviewing_completed_trick() => break,
@@ -703,8 +703,7 @@ fn local_tables_are_capped_and_idle_tables_free_capacity() {
         .create_local(
             Variant::Classic,
             Difficulty::Relaxed,
-            true,
-            1_000,
+            LocalOptions::default(),
             None,
             None,
         )
@@ -713,8 +712,7 @@ fn local_tables_are_capped_and_idle_tables_free_capacity() {
         .create_local(
             Variant::Classic,
             Difficulty::Relaxed,
-            true,
-            1_000,
+            LocalOptions::default(),
             None,
             None,
         )
@@ -723,8 +721,7 @@ fn local_tables_are_capped_and_idle_tables_free_capacity() {
         registry.create_local(
             Variant::Classic,
             Difficulty::Relaxed,
-            true,
-            1_000,
+            LocalOptions::default(),
             None,
             None
         ),
@@ -737,8 +734,7 @@ fn local_tables_are_capped_and_idle_tables_free_capacity() {
     let third = registry.create_local(
         Variant::Classic,
         Difficulty::Relaxed,
-        true,
-        1_000,
+        LocalOptions::default(),
         None,
         None,
     );
@@ -790,8 +786,7 @@ fn local_and_online_tables_have_separate_caps() {
         .create_local(
             Variant::Classic,
             Difficulty::Relaxed,
-            true,
-            1_000,
+            LocalOptions::default(),
             None,
             None,
         )
@@ -825,8 +820,10 @@ fn a_solo_table_belongs_to_its_account_and_a_device_token() {
         .create_local(
             Variant::Contree,
             Difficulty::Challenging,
-            false,
-            1_000,
+            LocalOptions {
+                announcements: false,
+                ..LocalOptions::default()
+            },
             None,
             Some(account),
         )
@@ -851,8 +848,7 @@ fn a_pass_and_play_table_belongs_to_no_account() {
         .create_local(
             Variant::Classic,
             Difficulty::Relaxed,
-            true,
-            1_000,
+            LocalOptions::default(),
             Some(seats),
             Some(Uuid::new_v4()),
         )
@@ -897,8 +893,7 @@ fn a_released_account_loses_its_seats_and_tokens_everywhere() {
         .create_local(
             Variant::Classic,
             Difficulty::Relaxed,
-            true,
-            1_000,
+            LocalOptions::default(),
             None,
             Some(deleted),
         )

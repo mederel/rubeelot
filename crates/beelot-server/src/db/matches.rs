@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use beelot_game::{Difficulty, Suit, Team, Variant};
+use beelot_game::{Difficulty, Team, Trump, Variant};
 use sqlx::{FromRow, MySql, MySqlConnection, MySqlPool, QueryBuilder};
 use time::{OffsetDateTime, PrimitiveDateTime};
 use uuid::Uuid;
@@ -22,7 +22,7 @@ pub struct StoredSeat {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredRound {
     pub declaring_team: Team,
-    pub trump: Suit,
+    pub trump: Trump,
     pub contract_value: Option<i32>,
     pub coinched: bool,
     pub contract_made: bool,
@@ -45,6 +45,8 @@ pub struct StoredMatch {
     pub east_west_score: i32,
     pub winning_team: Team,
     pub announcements: bool,
+    /// Whether bids could name tout-atout and sans-atout.
+    pub all_trumps: bool,
     /// The points the match was played to.
     pub target: i32,
     /// In play order, North first.
@@ -114,12 +116,14 @@ fn difficulty(code: &str) -> Option<Difficulty> {
     }
 }
 
-fn suit(code: &str) -> Suit {
+fn trump(code: &str) -> Trump {
     match code {
-        "CLUBS" => Suit::Clubs,
-        "DIAMONDS" => Suit::Diamonds,
-        "SPADES" => Suit::Spades,
-        _ => Suit::Hearts,
+        "CLUBS" => Trump::Clubs,
+        "DIAMONDS" => Trump::Diamonds,
+        "SPADES" => Trump::Spades,
+        "ALL_TRUMPS" => Trump::AllTrumps,
+        "NO_TRUMPS" => Trump::NoTrumps,
+        _ => Trump::Hearts,
     }
 }
 
@@ -134,7 +138,7 @@ pub async fn exists(db: &mut MySqlConnection, match_id: Uuid) -> sqlx::Result<bo
 pub async fn insert(db: &mut MySqlConnection, stored: &StoredMatch) -> sqlx::Result<()> {
     sqlx::query(
         "INSERT INTO match_record (id, ended_at, mode, variant, difficulty, north_south_score, east_west_score, \
-         winning_team, announcements, target) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+         winning_team, announcements, all_trumps, target) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(id(stored.id))
     .bind(utc(stored.ended_at))
@@ -145,6 +149,7 @@ pub async fn insert(db: &mut MySqlConnection, stored: &StoredMatch) -> sqlx::Res
     .bind(stored.east_west_score)
     .bind(team_code(stored.winning_team))
     .bind(stored.announcements)
+    .bind(stored.all_trumps)
     .bind(stored.target)
     .execute(&mut *db)
     .await?;
@@ -170,7 +175,7 @@ pub async fn insert(db: &mut MySqlConnection, stored: &StoredMatch) -> sqlx::Res
         .bind(id(stored.id))
         .bind(index as i32)
         .bind(team_code(round.declaring_team))
-        .bind(crate::tables::messages::suit_name(round.trump))
+        .bind(crate::tables::messages::trump_name(round.trump))
         .bind(round.contract_value)
         .bind(round.coinched)
         .bind(round.contract_made)
@@ -197,6 +202,7 @@ struct MatchRow {
     east_west_score: i32,
     winning_team: String,
     announcements: bool,
+    all_trumps: bool,
     target: i32,
 }
 
@@ -229,7 +235,7 @@ struct RoundRow {
 pub async fn played_by(pool: &MySqlPool, account: Uuid) -> sqlx::Result<Vec<StoredMatch>> {
     let rows: Vec<MatchRow> = sqlx::query_as(
         "SELECT DISTINCT m.id, m.ended_at, m.mode, m.variant, m.difficulty, m.north_south_score, \
-         m.east_west_score, m.winning_team, m.announcements, m.target FROM match_record m \
+         m.east_west_score, m.winning_team, m.announcements, m.all_trumps, m.target FROM match_record m \
          JOIN match_seat s ON s.match_id = m.id WHERE s.account_id = ? ORDER BY m.ended_at DESC",
     )
     .bind(id(account))
@@ -247,6 +253,7 @@ pub async fn played_by(pool: &MySqlPool, account: Uuid) -> sqlx::Result<Vec<Stor
             east_west_score: row.east_west_score,
             winning_team: team(&row.winning_team),
             announcements: row.announcements,
+            all_trumps: row.all_trumps,
             target: row.target,
             seats: Vec::new(),
             rounds: Vec::new(),
@@ -292,7 +299,7 @@ pub async fn played_by(pool: &MySqlPool, account: Uuid) -> sqlx::Result<Vec<Stor
     for row in round_rows {
         matches[index[&row.match_id.0]].rounds.push(StoredRound {
             declaring_team: team(&row.declaring_team),
-            trump: suit(&row.trump),
+            trump: trump(&row.trump),
             contract_value: row.contract_value,
             coinched: row.coinched,
             contract_made: row.contract_made,

@@ -10,7 +10,7 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use beelot_game::scoring::{RoundResult, RoundSummary};
-use beelot_game::{Difficulty, Suit, Team, Variant};
+use beelot_game::{Difficulty, Team, Trump, Variant};
 use beelot_server::app::router;
 use beelot_server::auth::sessions;
 use beelot_server::clock::Clock;
@@ -62,7 +62,7 @@ fn round(
 ) -> RoundSummary {
     RoundSummary {
         declaring_team: declaring,
-        trump: Suit::Hearts,
+        trump: Trump::Hearts,
         contract_value: Some(contract),
         coinched,
         result: result(made, capot, ns, ew),
@@ -96,6 +96,7 @@ fn finished(
         ],
         rounds,
         announcements,
+        all_trumps: false,
         target: 1_000,
     }
 }
@@ -156,7 +157,7 @@ async fn stores_the_match_with_its_seats_and_rounds_and_names_seats_after_their_
     assert!(stored.seats[1].bot);
     let first = &stored.rounds[0];
     assert_eq!(first.declaring_team, Team::NorthSouth);
-    assert_eq!(first.trump, Suit::Hearts);
+    assert_eq!(first.trump, Trump::Hearts);
     assert_eq!(first.contract_value, Some(100));
     assert!(first.contract_made);
     assert_eq!(first.belote_team, Some(Team::NorthSouth));
@@ -200,6 +201,20 @@ async fn records_the_match_target() {
         matches::played_by(&pool, fay).await.unwrap()[0].target,
         1_500
     );
+}
+
+#[tokio::test]
+async fn records_whether_the_match_played_all_trumps() {
+    let pool = db::test_pool().await;
+    let hal = account(&pool, "Hal").await;
+    let mut summary = round(Team::NorthSouth, 100, false, true, None, 160, 2);
+    summary.trump = Trump::NoTrumps;
+    let mut match_ = finished(Some(hal), vec![summary], false);
+    match_.all_trumps = true;
+    HistoryRecorder::new(pool.clone()).record(match_).await;
+    let stored = &matches::played_by(&pool, hal).await.unwrap()[0];
+    assert!(stored.all_trumps);
+    assert_eq!(stored.rounds[0].trump, Trump::NoTrumps);
 }
 
 #[tokio::test]

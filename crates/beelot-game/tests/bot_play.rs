@@ -322,3 +322,57 @@ fn bot_turns_ask_the_strategy_once_per_decision() {
     assert_eq!(strategy.decisions(), auction_turns + 28);
     assert!(play_turn(&mut board, &strategy).is_err());
 }
+
+/// Bots play tout-atout and sans-atout when a human takes one (US-063): every card they choose is
+/// legal, as the defence and as the human's partner, and the round totals 162 points.
+#[test]
+fn bots_play_all_trumps_and_no_trumps_legally() {
+    use beelot_game::bot::strategies;
+    use beelot_game::card::{Difficulty, Trump};
+    use beelot_game::rng::java_shuffle;
+    use beelot_game::rules;
+
+    for trump in [Trump::AllTrumps, Trump::NoTrumps] {
+        for difficulty in [Difficulty::Relaxed, Difficulty::Challenging] {
+            let strategy = strategies::for_difficulty(difficulty);
+            for human_at_north in [false, true] {
+                for seed in 1..=3 {
+                    let mut deck = Card::deck();
+                    java_shuffle(&mut deck, &mut JavaRandom::new(seed));
+                    let hands = std::array::from_fn(|seat| deck[seat * 8..seat * 8 + 8].to_vec());
+                    let mut board = GameBoard::from_contract(hands, trump, 0, 80, false, 3, false);
+                    while board.round_result().is_none() {
+                        if board.reviewing_completed_trick() {
+                            board.continue_after_trick().unwrap();
+                            continue;
+                        }
+                        let seat = board.active_seat();
+                        let view = board.play_view(seat);
+                        assert_eq!(view.trump, trump);
+                        let card = if human_at_north && seat == 0 {
+                            let trick: Vec<Card> = view
+                                .current_trick
+                                .iter()
+                                .map(|played| played.card)
+                                .collect();
+                            rules::legal_cards(&view.hand, &trick, trump)[0]
+                        } else {
+                            strategy.choose_card(&view)
+                        };
+                        assert!(
+                            view.legal_cards.contains(&card),
+                            "{trump:?} {difficulty:?} chose {card}"
+                        );
+                        board.play(seat, card, false).unwrap();
+                    }
+                    let result = board.round_result().unwrap();
+                    let total = result.north_south_card_points
+                        + result.east_west_card_points
+                        + result.north_south_dix_de_der
+                        + result.east_west_dix_de_der;
+                    assert_eq!(total, 162, "{trump:?} {difficulty:?} seed {seed}");
+                }
+            }
+        }
+    }
+}

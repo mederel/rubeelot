@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use beelot_game::bot::strategies;
-use beelot_game::{Difficulty, Suit, Variant};
+use beelot_game::{Difficulty, Trump, Variant};
 use beelot_server::api::{Viewer, snapshot};
 use beelot_server::tables::{Action, Actor, Lobby, Table, TableKind, TableSetup, local_seats};
 use serde_json::Value;
@@ -25,7 +25,7 @@ fn solo(variant: Variant, seed: i64) -> Table {
     Table::local(
         TABLE_ID,
         Difficulty::Relaxed,
-        Lobby::local(local_seats(None).unwrap(), variant, true, 1_000),
+        Lobby::local(local_seats(None).unwrap(), variant, true, true, 1_000),
         setup(seed),
         T0,
     )
@@ -134,7 +134,7 @@ fn contree_bidding() {
                 Actor::Device,
                 Action::Contract {
                     value: 90,
-                    suit: Some(Suit::Hearts),
+                    suit: Some(Trump::Hearts),
                 },
             );
             table
@@ -162,7 +162,7 @@ fn trick_under_review() {
         let action = if table.bidding().unwrap().highest_bid() < 80 {
             Action::Contract {
                 value: 80,
-                suit: Some(Suit::Spades),
+                suit: Some(Trump::Spades),
             }
         } else {
             Action::Pass
@@ -190,7 +190,7 @@ fn round_over_with_announcements() {
                 let action = if table.bidding().unwrap().highest_bid() < 80 {
                     Action::Contract {
                         value: 80,
-                        suit: Some(Suit::Spades),
+                        suit: Some(Trump::Spades),
                     }
                 } else {
                     Action::Pass
@@ -253,7 +253,7 @@ fn messages_match_java() {
         Actor::Seat(1),
         Action::Contract {
             value: 90,
-            suit: Some(Suit::Hearts),
+            suit: Some(Trump::Hearts),
         },
     );
     assert_eq!(message(&table), "Ben bids 90 Hearts.");
@@ -296,7 +296,7 @@ fn messages_match_java() {
         Actor::Seat(1),
         Action::Contract {
             value: 80,
-            suit: Some(Suit::Clubs),
+            suit: Some(Trump::Clubs),
         },
     );
     for seat in [2, 3, 0] {
@@ -313,14 +313,20 @@ fn belote_and_rebelote_are_announced() {
             let action = if table.bidding().unwrap().highest_bid() < 80 {
                 Action::Contract {
                     value: 80,
-                    suit: Some(Suit::Spades),
+                    suit: Some(Trump::Spades),
                 }
             } else {
                 Action::Pass
             };
             act(&mut table, Actor::Device, action);
         }
-        let Some(seat) = table.board().unwrap().belote_seat() else {
+        let Some(seat) = table
+            .board()
+            .unwrap()
+            .belotes()
+            .first()
+            .map(|belote| belote.seat)
+        else {
             continue;
         };
         let name = table.lobby().seat(seat).unwrap().name.clone();
@@ -385,7 +391,7 @@ fn every_player_sees_which_seat_took_the_contract() {
         Actor::Seat(3),
         Action::Contract {
             value: 80,
-            suit: Some(Suit::Hearts),
+            suit: Some(Trump::Hearts),
         },
     );
     for seat in 0..3 {

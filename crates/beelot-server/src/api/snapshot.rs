@@ -7,12 +7,12 @@ use beelot_game::announcements::{self, Announcement};
 use beelot_game::bidding::BiddingState;
 use beelot_game::board::GameBoard;
 use beelot_game::scoring::{Declaration, RoundResult};
-use beelot_game::{Card, Difficulty, Suit, Team, Variant, rules};
+use beelot_game::{Card, Difficulty, Suit, Team, Trump, Variant, rules};
 use serde::Serialize;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::tables::messages::{self, suit_name};
+use crate::tables::messages::{self, trump_name};
 use crate::tables::reactions::TableReaction;
 use crate::tables::{Connection, SeatKind, Status, Table, TableKind};
 
@@ -56,6 +56,8 @@ pub struct TableView {
     #[serde(with = "time::serde::rfc3339::option")]
     pub bot_fill_at: Option<OffsetDateTime>,
     pub announcements: bool,
+    /// Whether Contrée bids may name tout-atout and sans-atout.
+    pub all_trumps: bool,
     /// The points the match is played to.
     pub target: i32,
     pub kind: TableKind,
@@ -100,7 +102,7 @@ fn cards(cards: impl IntoIterator<Item = Card>) -> Vec<CardView> {
     cards.into_iter().map(CardView::from).collect()
 }
 
-fn sorted(hand: &[Card], trump: Option<Suit>) -> Vec<CardView> {
+fn sorted(hand: &[Card], trump: Option<Trump>) -> Vec<CardView> {
     let mut hand = hand.to_vec();
     hand.sort_by_key(|card| card.display_key(trump));
     cards(hand)
@@ -353,6 +355,7 @@ fn table_view(table: &Table, you: usize) -> TableView {
             .bot_fill_at()
             .filter(|_| lobby.status() == Status::WaitingForPlayers),
         announcements: lobby.announcements(),
+        all_trumps: lobby.all_trumps(),
         target: lobby.target(),
         kind: table.kind,
         difficulty: table.difficulty,
@@ -385,7 +388,7 @@ fn bidding_view(
         message: messages::auction_message(bidding, table.lobby().variant(), name),
         variant: table.lobby().variant(),
         highest_bid: bidding.highest_bid(),
-        highest_bid_suit: bidding.highest_bid_suit().map_or("", suit_name),
+        highest_bid_suit: bidding.highest_bid_suit().map_or("", trump_name),
         highest_bidder: bidding.highest_bidder().map(name).unwrap_or_default(),
         coinche_allowed: bidding.can_coinche(you),
         complete: bidding.completed_board().is_some(),
@@ -487,7 +490,7 @@ fn board_view(board: &GameBoard, you: usize, name: &impl Fn(usize) -> String) ->
             .map(|played| rules::points(played.card, trump))
             .sum(),
         declaration_message: messages::declaration_message(board, name),
-        belote_bonus_points: if board.belote_bonus_awarded() { 20 } else { 0 },
+        belote_bonus_points: board.belote_bonus(),
         round_result: board
             .round_result()
             .map(|result| round_result_view(result, name)),
@@ -501,7 +504,7 @@ fn board_view(board: &GameBoard, you: usize, name: &impl Fn(usize) -> String) ->
         declaring_player_index: board.declarer(),
         announcements,
         own_announcements: if announcements && hand.len() == 8 {
-            announcements::find(hand)
+            announcements::find(hand, trump)
                 .iter()
                 .map(AnnouncementView::from)
                 .collect()

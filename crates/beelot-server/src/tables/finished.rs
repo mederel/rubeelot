@@ -38,6 +38,8 @@ pub struct FinishedMatch {
     pub seats: Vec<FinishedSeat>,
     pub rounds: Vec<RoundSummary>,
     pub announcements: bool,
+    /// Whether bids could name tout-atout and sans-atout; never in Classic.
+    pub all_trumps: bool,
     pub target: i32,
 }
 

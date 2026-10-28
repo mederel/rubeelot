@@ -10,7 +10,7 @@ use super::rule_based::{RuleBasedStrategy, by_value, first_min, preferring, supp
 use super::sampling::SamplingStrategy;
 use crate::bidding::{AuctionDecision, AuctionView};
 use crate::board::{PlayView, SeatCard};
-use crate::card::{Card, Rank, Suit, Variant};
+use crate::card::{Card, Rank, Suit, Trump, Variant};
 use crate::rng::RandomSource;
 use crate::rules;
 
@@ -155,13 +155,14 @@ impl ArenaBot for BaselineBot {
                 suit: longest_suit(&view.hand),
             };
         }
-        let raise = match view.highest_bid_suit {
+        let supported = view.highest_bid_suit.and_then(Trump::suit);
+        let raise = match supported {
             Some(suit) if view.partner_holds_contract() && !view.has_bid() => {
                 support_raise(&view.hand, suit)
             }
             _ => 0,
         };
-        if let Some(suit) = view.highest_bid_suit
+        if let Some(suit) = supported
             && raise > 0
             && view.highest_bid < MAX_BID
         {
@@ -215,7 +216,7 @@ impl ArenaBot for PreviousPlayBot {
         let trump = view.trump;
         let mut candidates = view.legal_cards.clone();
         if view.tricks.is_empty() && !view.declaring() {
-            candidates = preferring(&candidates, |card| card.suit != trump);
+            candidates = preferring(&candidates, |card| !trump.is_trump(card.suit));
         }
         let trick = &view.current_trick;
         if trick.is_empty() {
@@ -230,14 +231,14 @@ impl ArenaBot for PreviousPlayBot {
             &trick.iter().map(|played| played.card).collect::<Vec<_>>(),
             trump,
         )];
-        if winner.card.suit != trump {
+        if !trump.is_trump(winner.card.suit) {
             let ace = Card::new(Rank::Ace, lead);
             if candidates.contains(&ace) && ace_at_risk(ace, view) {
                 return ace;
             }
         }
         let opponents_win = winner.seat % 2 != view.seat % 2;
-        let opponents_trumped = winner.card.suit == trump && opponents_win;
+        let opponents_trumped = trump.is_trump(winner.card.suit) && opponents_win;
         let can_win = candidates
             .iter()
             .any(|card| rules::beats(*card, winner.card, lead, trump));
@@ -254,7 +255,10 @@ impl ArenaBot for PreviousPlayBot {
 }
 
 fn ace_at_risk(card: Card, view: &PlayView) -> bool {
-    let trump = view.trump;
+    // Nobody cuts under all trumps or no trumps, so no ace is at risk.
+    let Some(trump) = view.trump.suit() else {
+        return false;
+    };
     if card.rank != Rank::Ace || card.suit == trump || unseen_cards(trump, view) == 0 {
         return false;
     }

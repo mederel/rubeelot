@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::announcements::{self, Declared};
-use crate::card::{Card, Rank, Seat, Suit, Team, Variant};
+use crate::card::{Card, Rank, Seat, Suit, Team, Trump, Variant};
 use crate::error::GameError;
 use crate::rules;
 use crate::scoring::{self, Declaration, RoundResult, RoundSummary, Totals};
@@ -25,7 +25,7 @@ pub struct PlayView {
     pub seat: Seat,
     pub hand: Vec<Card>,
     pub legal_cards: Vec<Card>,
-    pub trump: Suit,
+    pub trump: Trump,
     pub variant: Variant,
     pub contract_value: i32,
     pub coinched: bool,
@@ -43,10 +43,25 @@ impl PlayView {
     }
 }
 
+/// A seat's King and Queen of a trump suit: a Belote, declared on the first card and scored on the
+/// second.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Belote {
+    pub seat: Seat,
+    pub suit: Suit,
+}
+
+/// The latest Belote card played: the first of a pair declares Belote, the second Rebelote.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BeloteDeclaration {
+    pub seat: Seat,
+    pub rebelote: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct GameBoard {
     hands: [Vec<Card>; 4],
-    trump: Suit,
+    trump: Trump,
     declarer: Seat,
     variant: Variant,
     contract_value: i32,
@@ -67,9 +82,14 @@ pub struct GameBoard {
     east_west_dix_de_der: i32,
     north_south_tricks: i32,
     reviewing: bool,
-    belote_seat: Option<Seat>,
-    belote_cards_played: u32,
-    belote_bonus_awarded: bool,
+    /// One per trump suit in which a seat holds both the King and the Queen.
+    belotes: Vec<Belote>,
+    /// How many cards of each Belote have been played, in the order of `belotes`.
+    belote_cards_played: Vec<u32>,
+    belote_bonus_by_team: [i32; 2],
+    /// The Belote bonus of the team that made the latest Rebelote.
+    belote_bonus: i32,
+    last_belote: Option<BeloteDeclaration>,
     round_result: Option<RoundResult>,
     declared: Vec<Declared>,
     revealed: Vec<Declaration>,
@@ -77,9 +97,8 @@ pub struct GameBoard {
     east_west_announcements: i32,
 }
 
-fn has_belote(hand: &[Card], trump: Suit) -> bool {
-    let holds = |rank: Rank| hand.iter().any(|c| c.suit == trump && c.rank == rank);
-    holds(Rank::King) && holds(Rank::Queen)
+fn has_belote(hand: &[Card], suit: Suit) -> bool {
+    hand.contains(&Card::new(Rank::King, suit)) && hand.contains(&Card::new(Rank::Queen, suit))
 }
 
 impl GameBoard {
@@ -98,7 +117,7 @@ impl GameBoard {
         );
         Self::new(
             hands,
-            trump,
+            trump.into(),
             declarer,
             Variant::Classic,
             82,
@@ -111,7 +130,7 @@ impl GameBoard {
     /// A Contrée round with a contract from 80 to 160 in steps of ten.
     pub fn from_contract(
         hands: [Vec<Card>; 4],
-        trump: Suit,
+        trump: Trump,
         declarer: Seat,
         contract_value: i32,
         coinched: bool,
@@ -141,7 +160,7 @@ impl GameBoard {
     #[allow(clippy::too_many_arguments)]
     fn new(
         hands: [Vec<Card>; 4],
-        trump: Suit,
+        trump: Trump,
         declarer: Seat,
         variant: Variant,
         contract_value: i32,
@@ -150,7 +169,14 @@ impl GameBoard {
         announcements: bool,
     ) -> Self {
         assert!(declarer < 4 && dealer < 4, "Seats are numbered 0 to 3.");
-        let belote_seat = (0..4).find(|&seat| has_belote(&hands[seat], trump));
+        let mut belotes = Vec::new();
+        for suit in Suit::ALL.into_iter().filter(|&suit| trump.is_trump(suit)) {
+            for (seat, hand) in hands.iter().enumerate() {
+                if has_belote(hand, suit) {
+                    belotes.push(Belote { seat, suit });
+                }
+            }
+        }
         Self {
             hands,
             trump,
@@ -174,9 +200,11 @@ impl GameBoard {
             east_west_dix_de_der: 0,
             north_south_tricks: 0,
             reviewing: false,
-            belote_seat,
-            belote_cards_played: 0,
-            belote_bonus_awarded: false,
+            belote_cards_played: vec![0; belotes.len()],
+            belotes,
+            belote_bonus_by_team: [0; 2],
+            belote_bonus: 0,
+            last_belote: None,
             round_result: None,
             declared: Vec::new(),
             revealed: Vec::new(),
@@ -197,7 +225,7 @@ impl GameBoard {
         }
         self.register_belote(seat, card);
         if self.announcements && declare && self.hands[seat].len() == 8 {
-            let found = announcements::find(&self.hands[seat]);
+            let found = announcements::find(&self.hands[seat], self.trump);
             if !found.is_empty() {
                 self.declared.push(Declared {
                     seat,
@@ -299,7 +327,7 @@ impl GameBoard {
         self.round_result.as_ref()
     }
 
-    pub fn trump(&self) -> Suit {
+    pub fn trump(&self) -> Trump {
         self.trump
     }
 
@@ -349,16 +377,19 @@ impl GameBoard {
         (self.north_south_score, self.east_west_score)
     }
 
-    pub fn belote_seat(&self) -> Option<Seat> {
-        self.belote_seat
+    /// The round's Belotes: at most one in a suit contract, up to four under all trumps, none under
+    /// no trumps.
+    pub fn belotes(&self) -> &[Belote] {
+        &self.belotes
     }
 
-    pub fn belote_cards_played(&self) -> u32 {
-        self.belote_cards_played
+    pub fn last_belote(&self) -> Option<BeloteDeclaration> {
+        self.last_belote
     }
 
-    pub fn belote_bonus_awarded(&self) -> bool {
-        self.belote_bonus_awarded
+    /// The Belote bonus scored so far by the team of the latest Rebelote.
+    pub fn belote_bonus(&self) -> i32 {
+        self.belote_bonus
     }
 
     /// The announcements declared on the first trick, in declaration order.
@@ -419,17 +450,7 @@ impl GameBoard {
     }
 
     fn calculate_round_result(&mut self) {
-        let belote = if self.belote_bonus_awarded { 20 } else { 0 };
-        let north_south_belote = if self.belote_seat.is_some_and(|seat| seat.is_multiple_of(2)) {
-            belote
-        } else {
-            0
-        };
-        let east_west_belote = if self.belote_seat.is_some_and(|seat| seat % 2 != 0) {
-            belote
-        } else {
-            0
-        };
+        let [north_south_belote, east_west_belote] = self.belote_bonus_by_team;
         let totals = Totals {
             variant: self.variant,
             north_south_declares: self.declarer.is_multiple_of(2),
@@ -484,23 +505,28 @@ impl GameBoard {
     }
 
     fn register_belote(&mut self, seat: Seat, card: Card) {
-        if self.belote_seat != Some(seat)
-            || card.suit != self.trump
-            || !matches!(card.rank, Rank::King | Rank::Queen)
-        {
+        if !matches!(card.rank, Rank::King | Rank::Queen) {
             return;
         }
-        self.belote_cards_played += 1;
-        if self.belote_cards_played == 1 {
+        let Some(index) = self
+            .belotes
+            .iter()
+            .position(|belote| belote.seat == seat && belote.suit == card.suit)
+        else {
+            return;
+        };
+        self.belote_cards_played[index] += 1;
+        let rebelote = self.belote_cards_played[index] == 2;
+        self.last_belote = Some(BeloteDeclaration { seat, rebelote });
+        if !rebelote {
             return;
         }
-        if !self.belote_bonus_awarded {
-            if seat.is_multiple_of(2) {
-                self.north_south_score += 20;
-            } else {
-                self.east_west_score += 20;
-            }
-            self.belote_bonus_awarded = true;
+        if seat.is_multiple_of(2) {
+            self.north_south_score += 20;
+        } else {
+            self.east_west_score += 20;
         }
+        self.belote_bonus_by_team[seat % 2] += 20;
+        self.belote_bonus = self.belote_bonus_by_team[seat % 2];
     }
 }

@@ -82,6 +82,7 @@ impl HistoryRecorder {
             east_west_score: finished.east_west_score,
             winning_team: finished.winning_team,
             announcements: finished.announcements,
+            all_trumps: finished.all_trumps,
             target: finished.target,
             seats,
             rounds,

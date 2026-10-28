@@ -5,7 +5,7 @@
 use std::hint::black_box;
 
 use beelot_game::bot::solver::{DoubleDummySolver, Position};
-use beelot_game::{Card, JavaRandom, RandomSource, Suit, java_shuffle};
+use beelot_game::{Card, JavaRandom, RandomSource, Trump, java_shuffle};
 use criterion::{Criterion, criterion_group, criterion_main};
 
 const DEALS: usize = 20;
@@ -18,7 +18,7 @@ fn deals() -> Vec<Position> {
             let mut deck = Card::deck();
             java_shuffle(&mut deck, &mut random);
             let hands = std::array::from_fn(|seat| deck[seat * 8..seat * 8 + 8].to_vec());
-            let trump = Suit::ALL[random.next_int(4) as usize];
+            let trump = Trump::ALL[random.next_int(4) as usize];
             let dealer = deal % 4;
             Position::start(hands, trump, (dealer + 1) % 4)
         })

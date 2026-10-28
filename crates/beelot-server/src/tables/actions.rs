@@ -1,6 +1,6 @@
 //! What a player can do at a table: one tagged JSON object per request.
 
-use beelot_game::Suit;
+use beelot_game::{Suit, Trump};
 use serde::Deserialize;
 
 use super::reactions::TableReaction;
@@ -24,6 +24,7 @@ pub enum Action {
     },
     Settings {
         announcements: Option<bool>,
+        all_trumps: Option<bool>,
         turn_timer: Option<u32>,
         target: Option<i32>,
     },
@@ -31,9 +32,10 @@ pub enum Action {
     Trump {
         suit: Suit,
     },
+    /// `suit` names the contract: a suit, `ALL_TRUMPS` or `NO_TRUMPS`.
     Contract {
         value: i32,
-        suit: Option<Suit>,
+        suit: Option<Trump>,
     },
     Coinche,
     Card {
@@ -76,6 +78,7 @@ mod tests {
             parse(json!({"type": "settings", "turnTimer": 30})),
             Action::Settings {
                 announcements: None,
+                all_trumps: None,
                 turn_timer: Some(30),
                 target: None,
             }
@@ -84,7 +87,7 @@ mod tests {
             parse(json!({"type": "contract", "value": 90, "suit": "HEARTS"})),
             Action::Contract {
                 value: 90,
-                suit: Some(Suit::Hearts)
+                suit: Some(Trump::Hearts)
             }
         );
         assert_eq!(

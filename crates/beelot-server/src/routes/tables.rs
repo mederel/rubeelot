@@ -15,7 +15,7 @@ use crate::api::{Snapshot, snapshot};
 use crate::app::AppState;
 use crate::auth::MaybeSession;
 use crate::error::AppError;
-use crate::tables::registry::viewer_of;
+use crate::tables::registry::{LocalOptions, viewer_of};
 use crate::tables::{Access, Action};
 
 pub fn routes() -> Router<AppState> {
@@ -42,6 +42,8 @@ struct CreateRequest {
     variant: Option<Variant>,
     difficulty: Option<Difficulty>,
     announcements: Option<bool>,
+    /// Whether Contrée bids may name tout-atout and sans-atout; on when absent.
+    all_trumps: Option<bool>,
     target: Option<i32>,
     seats: Option<Vec<Option<String>>>,
     #[serde(default)]
@@ -98,8 +100,11 @@ async fn create(
         Kind::Local => registry.create_local(
             variant,
             request.difficulty.unwrap_or(Difficulty::Relaxed),
-            request.announcements.unwrap_or(true),
-            request.target.unwrap_or(DEFAULT_TARGET),
+            LocalOptions {
+                announcements: request.announcements.unwrap_or(true),
+                all_trumps: request.all_trumps.unwrap_or(true),
+                target: request.target.unwrap_or(DEFAULT_TARGET),
+            },
             request.seats,
             account,
         ),

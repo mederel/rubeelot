@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
-use crate::card::{Card, Rank, Seat, Suit};
+use crate::card::{Card, Rank, Seat, Suit, Trump};
 
 /// The order of sequences, whatever the trump; also the order of top cards when announcements are
 /// compared.
@@ -28,6 +28,16 @@ const CARRE_VALUES: [(Rank, i32); 6] = [
     (Rank::Ten, 100),
     (Rank::King, 100),
     (Rank::Queen, 100),
+];
+
+/// Under no trumps, carrés follow the plain card order (US-063).
+const NO_TRUMPS_CARRE_VALUES: [(Rank, i32); 6] = [
+    (Rank::Ace, 200),
+    (Rank::Ten, 150),
+    (Rank::King, 100),
+    (Rank::Queen, 100),
+    (Rank::Jack, 100),
+    (Rank::Nine, 100),
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,11 +79,17 @@ pub struct Declared {
     pub announcements: Vec<Announcement>,
 }
 
-/// Every announcement of the hand, strongest first.
-pub fn find(hand: &[Card]) -> Vec<Announcement> {
+/// Every announcement of the hand, strongest first; carrés are worth more in other ranks under no
+/// trumps.
+pub fn find(hand: &[Card], trump: Trump) -> Vec<Announcement> {
     let mut found = Vec::new();
     let mut left: Vec<Card> = hand.to_vec();
-    for (rank, value) in CARRE_VALUES {
+    let carre_values = if trump == Trump::NoTrumps {
+        NO_TRUMPS_CARRE_VALUES
+    } else {
+        CARRE_VALUES
+    };
+    for (rank, value) in carre_values {
         let four: Vec<Card> = left.iter().copied().filter(|c| c.rank == rank).collect();
         if four.len() == 4 {
             left.retain(|card| !four.contains(card));
@@ -97,15 +113,17 @@ pub fn find(hand: &[Card]) -> Vec<Announcement> {
         }
         add_sequence(&mut found, run, suit);
     }
-    found.sort_by(|a, b| compare_strength(a, b, None).reverse());
+    found.sort_by(|a, b| compare_strength(a, b, Some(trump)).reverse());
     found
 }
 
 /// Weakest first: the value, then the length of the run (a carré counts 4), then the top card,
-/// then the trump suit. Declaring first, the last tie-break, depends on the round and is left to
-/// [`best_seat`].
-pub fn compare_strength(a: &Announcement, b: &Announcement, trump: Option<Suit>) -> Ordering {
-    let in_trump = |announcement: &Announcement| trump.is_some() && announcement.suit == trump;
+/// then the trump suit, which only counts in a suit contract. Declaring first, the last tie-break,
+/// depends on the round and is left to [`best_seat`].
+pub fn compare_strength(a: &Announcement, b: &Announcement, trump: Option<Trump>) -> Ordering {
+    let trump_suit = trump.and_then(Trump::suit);
+    let in_trump =
+        |announcement: &Announcement| trump_suit.is_some() && announcement.suit == trump_suit;
     a.value
         .cmp(&b.value)
         .then(a.cards.len().cmp(&b.cards.len()))
@@ -114,7 +132,7 @@ pub fn compare_strength(a: &Announcement, b: &Announcement, trump: Option<Suit>)
 }
 
 /// The seat holding the strongest announcement; on a full tie, the one that declared first.
-pub fn best_seat(in_declaration_order: &[Declared], trump: Suit) -> Option<Seat> {
+pub fn best_seat(in_declaration_order: &[Declared], trump: Trump) -> Option<Seat> {
     let mut best: Option<(Seat, &Announcement)> = None;
     for declared in in_declaration_order {
         for announcement in &declared.announcements {
@@ -163,7 +181,7 @@ mod tests {
     }
 
     fn single(hand: &[Card]) -> Announcement {
-        let found = find(hand);
+        let found = find(hand, Trump::AllTrumps);
         assert_eq!(found.len(), 1, "announcements in {hand:?}: {found:?}");
         found.into_iter().next().unwrap()
     }
@@ -195,16 +213,19 @@ mod tests {
     #[test]
     fn carres_of_eights_and_sevens_dont_count() {
         assert!(
-            find(&[
-                card(Eight, Clubs),
-                card(Eight, Diamonds),
-                card(Eight, Hearts),
-                card(Eight, Spades),
-                card(Seven, Clubs),
-                card(Seven, Diamonds),
-                card(Seven, Hearts),
-                card(Seven, Spades),
-            ])
+            find(
+                &[
+                    card(Eight, Clubs),
+                    card(Eight, Diamonds),
+                    card(Eight, Hearts),
+                    card(Eight, Spades),
+                    card(Seven, Clubs),
+                    card(Seven, Diamonds),
+                    card(Seven, Hearts),
+                    card(Seven, Spades),
+                ],
+                Trump::AllTrumps
+            )
             .is_empty()
         );
     }
@@ -264,14 +285,17 @@ mod tests {
 
     #[test]
     fn carre_takes_a_card_a_sequence_would_use() {
-        let found = find(&[
-            card(King, Clubs),
-            card(King, Diamonds),
-            card(King, Hearts),
-            card(King, Spades),
-            card(Queen, Hearts),
-            card(Jack, Hearts),
-        ]);
+        let found = find(
+            &[
+                card(King, Clubs),
+                card(King, Diamonds),
+                card(King, Hearts),
+                card(King, Spades),
+                card(Queen, Hearts),
+                card(Jack, Hearts),
+            ],
+            Trump::AllTrumps,
+        );
 
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].kind, AnnouncementKind::Carre);
@@ -280,16 +304,19 @@ mod tests {
 
     #[test]
     fn several_announcements_in_one_hand() {
-        let found = find(&[
-            card(Seven, Spades),
-            card(Eight, Spades),
-            card(Nine, Spades),
-            card(Jack, Diamonds),
-            card(Queen, Diamonds),
-            card(King, Diamonds),
-            card(Ace, Clubs),
-            card(Seven, Hearts),
-        ]);
+        let found = find(
+            &[
+                card(Seven, Spades),
+                card(Eight, Spades),
+                card(Nine, Spades),
+                card(Jack, Diamonds),
+                card(Queen, Diamonds),
+                card(King, Diamonds),
+                card(Ace, Clubs),
+                card(Seven, Hearts),
+            ],
+            Trump::AllTrumps,
+        );
 
         assert_eq!(found.len(), 2);
         assert_eq!(found[0].top_card(), card(King, Diamonds));
@@ -312,7 +339,8 @@ mod tests {
             single(&[card(Jack, Clubs), card(Queen, Clubs), card(King, Clubs)]);
         let trump_tierce_to_the_king =
             single(&[card(Jack, Hearts), card(Queen, Hearts), card(King, Hearts)]);
-        let strength = |a: &Announcement, b: &Announcement| compare_strength(a, b, Some(Hearts));
+        let strength =
+            |a: &Announcement, b: &Announcement| compare_strength(a, b, Some(Trump::Hearts));
 
         assert_eq!(
             strength(&cent_to_the_jack, &carre_of_kings),
@@ -359,8 +387,55 @@ mod tests {
             announcements: vec![cinquante],
         };
 
-        assert_eq!(best_seat(&[first.clone(), second.clone()], Hearts), Some(1));
-        assert_eq!(best_seat(&[first, second, third], Hearts), Some(3));
-        assert_eq!(best_seat(&[], Hearts), None);
+        assert_eq!(
+            best_seat(&[first.clone(), second.clone()], Trump::Hearts),
+            Some(1)
+        );
+        assert_eq!(best_seat(&[first, second, third], Trump::Hearts), Some(3));
+        assert_eq!(best_seat(&[], Trump::Hearts), None);
+    }
+
+    fn assert_carre_in(rank: Rank, value: i32, trump: Trump) {
+        let found = find(
+            &[
+                card(rank, Clubs),
+                card(rank, Diamonds),
+                card(rank, Hearts),
+                card(rank, Spades),
+            ],
+            trump,
+        );
+        assert_eq!(found.len(), 1, "{rank:?} {trump:?}");
+        assert_eq!(found[0].value, value, "{rank:?} {trump:?}");
+    }
+
+    #[test]
+    fn no_trumps_carres() {
+        assert_carre_in(Ace, 200, Trump::NoTrumps);
+        assert_carre_in(Ten, 150, Trump::NoTrumps);
+        assert_carre_in(Nine, 100, Trump::NoTrumps);
+        assert_carre_in(Jack, 100, Trump::NoTrumps);
+        assert_carre_in(Jack, 200, Trump::AllTrumps);
+        assert_carre_in(Nine, 150, Trump::AllTrumps);
+    }
+
+    #[test]
+    fn no_trump_tie_break_outside_suit_contracts() {
+        let clubs_tierce = single(&[card(Queen, Clubs), card(King, Clubs), card(Ace, Clubs)]);
+        let hearts_tierce = single(&[card(Queen, Hearts), card(King, Hearts), card(Ace, Hearts)]);
+        let declared = [
+            Declared {
+                seat: 1,
+                announcements: vec![clubs_tierce],
+            },
+            Declared {
+                seat: 2,
+                announcements: vec![hearts_tierce],
+            },
+        ];
+
+        assert_eq!(best_seat(&declared, Trump::AllTrumps), Some(1));
+        assert_eq!(best_seat(&declared, Trump::NoTrumps), Some(1));
+        assert_eq!(best_seat(&declared, Trump::Hearts), Some(2));
     }
 }

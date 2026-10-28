@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use beelot_game::board::{GameBoard, SeatCard};
 use beelot_game::bot::solver::{DoubleDummySolver, Position, Solution};
-use beelot_game::card::{Card, Seat, Suit};
+use beelot_game::card::{Card, Seat, Suit, Trump};
 use beelot_game::rng::{JavaRandom, RandomSource, java_shuffle};
 use beelot_game::rules;
 
@@ -32,7 +32,7 @@ fn trick_cards(trick: &[SeatCard]) -> Vec<Card> {
 fn the_last_trick_scores_its_cards_and_the_dix_de_der() {
     let position = Position::start(
         [cards("AS"), cards("7S"), cards("8S"), cards("10C")],
-        Suit::Hearts,
+        Trump::Hearts,
         0,
     );
 
@@ -61,7 +61,7 @@ fn cashes_the_ace_before_the_king() {
             cards("7S 8S"),
             cards("9S QS"),
         ],
-        Suit::Hearts,
+        Trump::Hearts,
         0,
     );
 
@@ -88,7 +88,7 @@ fn counts_the_belote_of_the_player_dealt_the_king_and_queen_of_trumps() {
     ]];
     let position = Position {
         hands: [cards("QH"), cards("7C"), cards("8C"), cards("10C")],
-        trump: Suit::Hearts,
+        trump: Trump::Hearts,
         tricks,
         current_trick: Vec::new(),
         first_leader: 0,
@@ -113,7 +113,7 @@ fn solves_from_the_middle_of_a_trick() {
     // North led the ace of spades; East, out of spades and with the partner losing, must trump.
     let position = Position {
         hands: [Vec::new(), cards("7H"), cards("8S"), cards("9S")],
-        trump: Suit::Hearts,
+        trump: Trump::Hearts,
         tricks: Vec::new(),
         current_trick: vec![seat_card(0, "AS")],
         first_leader: 0,
@@ -135,7 +135,7 @@ fn solves_from_the_middle_of_a_trick() {
 fn reports_the_score_of_a_finished_round() {
     let position = Position {
         hands: Default::default(),
-        trump: Suit::Hearts,
+        trump: Trump::Hearts,
         tricks: Vec::new(),
         current_trick: Vec::new(),
         first_leader: 0,
@@ -149,7 +149,7 @@ fn reports_the_score_of_a_finished_round() {
 
 /// The plain minimax of the Java test, remembering the value of each trick start.
 struct Exhaustive {
-    memo: HashMap<(Suit, Seat, [Vec<Card>; 4]), i32>,
+    memo: HashMap<(Trump, Seat, [Vec<Card>; 4]), i32>,
 }
 
 impl Exhaustive {
@@ -165,7 +165,7 @@ impl Exhaustive {
         hands: &[Vec<Card>; 4],
         trick: &[SeatCard],
         leader: Seat,
-        trump: Suit,
+        trump: Trump,
     ) -> i32 {
         if trick.len() == 4 {
             let played = trick_cards(trick);
@@ -214,7 +214,7 @@ impl Exhaustive {
         hands: &[Vec<Card>; 4],
         trick: &[SeatCard],
         leader: Seat,
-        trump: Suit,
+        trump: Trump,
         card: Card,
     ) -> i32 {
         let seat = (leader + trick.len()) % 4;
@@ -232,11 +232,10 @@ fn remove(hand: &mut Vec<Card>, card: Card) {
     hand.remove(index);
 }
 
-/// 20 when a player of the given team (0 North–South, 1 East–West) holds or played the king and
-/// queen of trumps.
-fn belote_for(team: usize, hands: &[Vec<Card>; 4], trick: &[SeatCard], trump: Suit) -> i32 {
-    let king = Card::new(beelot_game::Rank::King, trump);
-    let queen = Card::new(beelot_game::Rank::Queen, trump);
+/// 20 for each king and queen of a trump suit held or played by one player of the team (0
+/// North–South, 1 East–West).
+fn belote_for(team: usize, hands: &[Vec<Card>; 4], trick: &[SeatCard], trump: Trump) -> i32 {
+    let mut points = 0;
     for seat in (team..4).step_by(2) {
         let mut dealt = hands[seat].clone();
         dealt.extend(
@@ -245,18 +244,22 @@ fn belote_for(team: usize, hands: &[Vec<Card>; 4], trick: &[SeatCard], trump: Su
                 .filter(|played| played.seat == seat)
                 .map(|played| played.card),
         );
-        if dealt.contains(&king) && dealt.contains(&queen) {
-            return 20;
+        for suit in Suit::ALL {
+            let king = Card::new(beelot_game::Rank::King, suit);
+            let queen = Card::new(beelot_game::Rank::Queen, suit);
+            if trump.is_trump(suit) && dealt.contains(&king) && dealt.contains(&queen) {
+                points += 20;
+            }
         }
     }
-    0
+    points
 }
 
-fn belote(hands: &[Vec<Card>; 4], trick: &[SeatCard], trump: Suit) -> i32 {
+fn belote(hands: &[Vec<Card>; 4], trick: &[SeatCard], trump: Trump) -> i32 {
     belote_for(0, hands, trick, trump) + belote_for(1, hands, trick, trump)
 }
 
-fn deck_points(hands: &[Vec<Card>; 4], trick: &[SeatCard], trump: Suit) -> i32 {
+fn deck_points(hands: &[Vec<Card>; 4], trick: &[SeatCard], trump: Trump) -> i32 {
     trick_cards(trick)
         .iter()
         .chain(hands.iter().flatten())
@@ -277,7 +280,7 @@ fn matches_an_exhaustive_search_on_random_endgames() {
     let mut random = JavaRandom::new(7);
     for test in 0..500 {
         let cards_each = 1 + test % 5;
-        let trump = Suit::ALL[random.next_int(4) as usize];
+        let trump = Trump::ALL[random.next_int(Trump::ALL.len() as i32) as usize];
         let deck = shuffled_deck(&mut random);
         let mut hands: [Vec<Card>; 4] =
             std::array::from_fn(|seat| deck[seat * cards_each..(seat + 1) * cards_each].to_vec());
@@ -338,7 +341,7 @@ fn stays_exact_when_the_search_window_falls_outside_the_remaining_points() {
     let current = vec![seat_card(0, "8S"), seat_card(1, "9S"), seat_card(2, "JH")];
     let position = Position {
         hands: hands.clone(),
-        trump: Suit::Spades,
+        trump: Trump::Spades,
         tricks: Vec::new(),
         current_trick: current.clone(),
         first_leader: 0,
@@ -348,7 +351,7 @@ fn stays_exact_when_the_search_window_falls_outside_the_remaining_points() {
 
     assert_eq!(
         solution.north_south_points,
-        Exhaustive::new().value(&hands, &current, 0, Suit::Spades)
+        Exhaustive::new().value(&hands, &current, 0, Trump::Spades)
     );
 }
 
@@ -361,23 +364,41 @@ fn solves_a_full_deal_consistently() {
     let deck = shuffled_deck(&mut JavaRandom::new(3));
     let hands = deal_eight(&deck);
 
-    let solution = DoubleDummySolver::new().solve(&Position::start(hands.clone(), Suit::Spades, 1));
+    let solution =
+        DoubleDummySolver::new().solve(&Position::start(hands.clone(), Trump::Spades, 1));
 
     assert_eq!(
         solution.north_south_points + solution.east_west_points,
-        162 + belote(&hands, &[], Suit::Spades)
+        162 + belote(&hands, &[], Trump::Spades)
     );
     assert!(hands[1].contains(&solution.best_card.unwrap()));
+}
+
+#[test]
+fn a_full_deal_totals_162_points_and_its_belotes_in_every_contract() {
+    let deck = shuffled_deck(&mut JavaRandom::new(5));
+    let hands = deal_eight(&deck);
+    let mut solver = DoubleDummySolver::new();
+    for trump in Trump::ALL {
+        let solution = solver.solve(&Position::start(hands.clone(), trump, 1));
+
+        assert_eq!(
+            solution.north_south_points + solution.east_west_points,
+            162 + belote(&hands, &[], trump),
+            "{trump:?}"
+        );
+        assert!(hands[1].contains(&solution.best_card.unwrap()), "{trump:?}");
+    }
 }
 
 #[test]
 fn playing_the_solvers_cards_in_a_real_round_gives_the_predicted_result() {
     let mut solver = DoubleDummySolver::new();
     let mut random = JavaRandom::new(11);
-    for deal in 0..10 {
+    for deal in 0..12 {
         let deck = shuffled_deck(&mut random);
         let hands = deal_eight(&deck);
-        let trump = Suit::ALL[deal % 4];
+        let trump = Trump::ALL[deal % Trump::ALL.len()];
         let dealer = deal % 4;
         let mut board =
             GameBoard::from_contract(hands.clone(), trump, deal % 2, 80, false, dealer, false);
