@@ -45,6 +45,8 @@ pub struct StoredMatch {
     pub east_west_score: i32,
     pub winning_team: Team,
     pub announcements: bool,
+    /// The points the match was played to.
+    pub target: i32,
     /// In play order, North first.
     pub seats: Vec<StoredSeat>,
     /// In the order played.
@@ -132,7 +134,7 @@ pub async fn exists(db: &mut MySqlConnection, match_id: Uuid) -> sqlx::Result<bo
 pub async fn insert(db: &mut MySqlConnection, stored: &StoredMatch) -> sqlx::Result<()> {
     sqlx::query(
         "INSERT INTO match_record (id, ended_at, mode, variant, difficulty, north_south_score, east_west_score, \
-         winning_team, announcements) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+         winning_team, announcements, target) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(id(stored.id))
     .bind(utc(stored.ended_at))
@@ -143,6 +145,7 @@ pub async fn insert(db: &mut MySqlConnection, stored: &StoredMatch) -> sqlx::Res
     .bind(stored.east_west_score)
     .bind(team_code(stored.winning_team))
     .bind(stored.announcements)
+    .bind(stored.target)
     .execute(&mut *db)
     .await?;
     for (position, seat) in stored.seats.iter().enumerate() {
@@ -194,6 +197,7 @@ struct MatchRow {
     east_west_score: i32,
     winning_team: String,
     announcements: bool,
+    target: i32,
 }
 
 #[derive(FromRow)]
@@ -225,7 +229,7 @@ struct RoundRow {
 pub async fn played_by(pool: &MySqlPool, account: Uuid) -> sqlx::Result<Vec<StoredMatch>> {
     let rows: Vec<MatchRow> = sqlx::query_as(
         "SELECT DISTINCT m.id, m.ended_at, m.mode, m.variant, m.difficulty, m.north_south_score, \
-         m.east_west_score, m.winning_team, m.announcements FROM match_record m \
+         m.east_west_score, m.winning_team, m.announcements, m.target FROM match_record m \
          JOIN match_seat s ON s.match_id = m.id WHERE s.account_id = ? ORDER BY m.ended_at DESC",
     )
     .bind(id(account))
@@ -243,6 +247,7 @@ pub async fn played_by(pool: &MySqlPool, account: Uuid) -> sqlx::Result<Vec<Stor
             east_west_score: row.east_west_score,
             winning_team: team(&row.winning_team),
             announcements: row.announcements,
+            target: row.target,
             seats: Vec::new(),
             rounds: Vec::new(),
         })

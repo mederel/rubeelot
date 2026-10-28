@@ -131,7 +131,14 @@ fn token_hash_only() {
         .create_private("Ana", Variant::Classic, None)
         .unwrap();
     let local = registry
-        .create_local(Variant::Classic, Difficulty::Relaxed, true, None, None)
+        .create_local(
+            Variant::Classic,
+            Difficulty::Relaxed,
+            true,
+            1_000,
+            None,
+            None,
+        )
         .unwrap();
     let debug = format!(
         "{registry:?} {:?} {:?}",
@@ -443,6 +450,7 @@ fn public_tables_always_play_with_announcements() {
         Action::Settings {
             announcements: Some(false),
             turn_timer: None,
+            target: None,
         },
     );
     assert_eq!(
@@ -692,20 +700,48 @@ fn local_tables_are_capped_and_idle_tables_free_capacity() {
         ..Limits::default()
     });
     let first = registry
-        .create_local(Variant::Classic, Difficulty::Relaxed, true, None, None)
+        .create_local(
+            Variant::Classic,
+            Difficulty::Relaxed,
+            true,
+            1_000,
+            None,
+            None,
+        )
         .unwrap();
     registry
-        .create_local(Variant::Classic, Difficulty::Relaxed, true, None, None)
+        .create_local(
+            Variant::Classic,
+            Difficulty::Relaxed,
+            true,
+            1_000,
+            None,
+            None,
+        )
         .unwrap();
     assert!(matches!(
-        registry.create_local(Variant::Classic, Difficulty::Relaxed, true, None, None),
+        registry.create_local(
+            Variant::Classic,
+            Difficulty::Relaxed,
+            true,
+            1_000,
+            None,
+            None
+        ),
         Err(AppError::CapacityExceeded)
     ));
     registry.evict_idle(registry.now());
     assert_eq!(registry.counts(), (2, 0));
 
     clock.advance(time::Duration::hours(2) + time::Duration::seconds(1));
-    let third = registry.create_local(Variant::Classic, Difficulty::Relaxed, true, None, None);
+    let third = registry.create_local(
+        Variant::Classic,
+        Difficulty::Relaxed,
+        true,
+        1_000,
+        None,
+        None,
+    );
     assert!(third.is_ok(), "idle tables are evicted to make room");
     assert!(registry.handle(first.table_id).is_none());
     assert_eq!(registry.counts().0, 1);
@@ -751,7 +787,14 @@ fn local_and_online_tables_have_separate_caps() {
         ..Limits::default()
     });
     registry
-        .create_local(Variant::Classic, Difficulty::Relaxed, true, None, None)
+        .create_local(
+            Variant::Classic,
+            Difficulty::Relaxed,
+            true,
+            1_000,
+            None,
+            None,
+        )
         .unwrap();
     registry
         .create_private("Ann", Variant::Classic, None)
@@ -783,6 +826,7 @@ fn a_solo_table_belongs_to_its_account_and_a_device_token() {
             Variant::Contree,
             Difficulty::Challenging,
             false,
+            1_000,
             None,
             Some(account),
         )
@@ -808,6 +852,7 @@ fn a_pass_and_play_table_belongs_to_no_account() {
             Variant::Classic,
             Difficulty::Relaxed,
             true,
+            1_000,
             Some(seats),
             Some(Uuid::new_v4()),
         )
@@ -853,6 +898,7 @@ fn a_released_account_loses_its_seats_and_tokens_everywhere() {
             Variant::Classic,
             Difficulty::Relaxed,
             true,
+            1_000,
             None,
             Some(deleted),
         )

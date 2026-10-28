@@ -194,6 +194,34 @@ fn only_the_owner_of_a_private_table_turns_announcements_off_before_the_start() 
 }
 
 #[test]
+fn only_the_owner_of_a_private_table_chooses_the_match_target_before_the_start() {
+    let mut table = private_table();
+    assert_eq!(table.target(), 1_000);
+    let guest = table.join("Ben".into(), None).unwrap();
+    assert_eq!(
+        refusal(table.set_target(guest, 500)),
+        "Only the table owner can change the match target."
+    );
+    assert_eq!(
+        refusal(table.set_target(0, 750)),
+        "The match target must be 500, 1,000, 1,500 or 2,000 points."
+    );
+    table.set_target(0, 1_500).unwrap();
+    assert_eq!(table.target(), 1_500);
+    table.set_ready(0, true).unwrap();
+    table.set_ready(guest, true).unwrap();
+    table.start_with_bots(0).unwrap();
+    assert_eq!(
+        refusal(table.set_target(0, 2_000)),
+        "The match target cannot change after the game starts."
+    );
+    assert_eq!(
+        refusal(public_table().set_target(0, 500)),
+        "Public tables always play to 1,000 points."
+    );
+}
+
+#[test]
 fn a_seat_a_bot_has_taken_over_stays_with_the_bot() {
     let mut table = private_table();
     let guest = table.join("Ben".into(), None).unwrap();

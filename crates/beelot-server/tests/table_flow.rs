@@ -44,10 +44,8 @@ fn solo_with(
     seats[0].account = account;
     Table::local(
         Uuid::new_v4(),
-        variant,
         difficulty,
-        announcements,
-        seats,
+        Lobby::local(seats, variant, announcements, 1_000),
         setup,
         T0,
     )
@@ -58,10 +56,8 @@ fn pass_and_play(variant: Variant, names: [Option<&str>; 4], setup: TableSetup) 
     let seats = local_seats(Some(&names)).unwrap();
     Table::local(
         Uuid::new_v4(),
-        variant,
         Difficulty::Relaxed,
-        true,
-        seats,
+        Lobby::local(seats, variant, true, 1_000),
         setup,
         T0,
     )
@@ -550,6 +546,55 @@ fn next_round_and_rematch_keep_the_announcements_choice() {
 }
 
 #[test]
+fn a_solo_match_ends_at_its_target_and_the_rematch_keeps_it() {
+    let mut table = Table::local(
+        Uuid::new_v4(),
+        Difficulty::Relaxed,
+        Lobby::local(local_seats(None).unwrap(), Variant::Classic, true, 500),
+        setup(9),
+        T0,
+    );
+    assert_eq!(table.match_score().unwrap().target(), 500);
+    play_match(&mut table, Actor::Device);
+    let score = table.match_score().unwrap();
+    assert!(score.north_south().max(score.east_west()) >= 500);
+    assert!(
+        score.north_south().max(score.east_west()) < 500 + 500,
+        "the match ended at its first round past 500"
+    );
+    act(&mut table, Actor::Device, Action::Rematch);
+    assert_eq!(table.match_score().unwrap().target(), 500);
+    finish_auction(&mut table, Actor::Device);
+    play_round(&mut table, Actor::Device);
+    act(&mut table, Actor::Device, Action::NextRound);
+    assert_eq!(table.match_score().unwrap().target(), 500);
+}
+
+#[test]
+fn a_private_match_plays_to_the_owners_target() {
+    let mut table = private(Variant::Classic, None, setup(42));
+    act(
+        &mut table,
+        Actor::Seat(0),
+        Action::Settings {
+            announcements: None,
+            turn_timer: None,
+            target: Some(2_000),
+        },
+    );
+    act(&mut table, Actor::Seat(0), Action::Ready { ready: true });
+    act(
+        &mut table,
+        Actor::Seat(0),
+        Action::Start {
+            fill_with_bots: true,
+        },
+    );
+    assert_eq!(table.lobby().target(), 2_000);
+    assert_eq!(table.match_score().unwrap().target(), 2_000);
+}
+
+#[test]
 fn contree_bid_starts_a_contract_board_after_bot_players_pass() {
     let mut table = solo(Variant::Contree, 10);
     assert_eq!(table.bidding().unwrap().hand(0).len(), 8);
@@ -820,10 +865,8 @@ fn pass_and_play_keeps_the_announcements_choice() {
     let seats = local_seats(Some(&names)).unwrap();
     let mut table = Table::local(
         Uuid::new_v4(),
-        Variant::Contree,
         Difficulty::Relaxed,
-        false,
-        seats,
+        Lobby::local(seats, Variant::Contree, false, 1_000),
         setup(15),
         T0,
     );
@@ -1391,6 +1434,7 @@ fn settings_change_the_turn_timer_and_announcements() {
         Action::Settings {
             announcements: Some(false),
             turn_timer: Some(30),
+            target: None,
         },
     );
     assert!(!table.lobby().announcements());

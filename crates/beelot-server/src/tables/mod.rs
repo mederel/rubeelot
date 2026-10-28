@@ -14,7 +14,9 @@ use beelot_game::RandomSource;
 
 pub use actions::Action;
 pub use registry::{Access, TableHandle, TableRegistry};
-pub use seats::{Connection, Lobby, Seat, SeatKind, Status, TableKind, local_seats, required_name};
+pub use seats::{
+    Connection, Lobby, Seat, SeatKind, Status, TableKind, local_seats, required_name, valid_target,
+};
 pub use table::{Actor, Outcome, RngFactory, Table, TableSetup};
 
 /// Deals from the operating system's generator: production deals need no reproducibility.

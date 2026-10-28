@@ -24,10 +24,8 @@ fn setup(seed: i64) -> TableSetup {
 fn solo(variant: Variant, seed: i64) -> Table {
     Table::local(
         TABLE_ID,
-        variant,
         Difficulty::Relaxed,
-        true,
-        local_seats(None).unwrap(),
+        Lobby::local(local_seats(None).unwrap(), variant, true, 1_000),
         setup(seed),
         T0,
     )

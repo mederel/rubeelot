@@ -96,6 +96,7 @@ fn finished(
         ],
         rounds,
         announcements,
+        target: 1_000,
     }
 }
 
@@ -182,6 +183,36 @@ async fn records_announcements() {
     assert_eq!(stored.rounds[0].north_south_announcements, 50);
     assert_eq!(stored.rounds[0].east_west_announcements, 0);
     assert_eq!(stored.rounds[0].contract_value, None);
+}
+
+#[tokio::test]
+async fn records_the_match_target() {
+    let pool = db::test_pool().await;
+    let fay = account(&pool, "Fay").await;
+    let mut match_ = finished(
+        Some(fay),
+        vec![round(Team::NorthSouth, 80, false, true, None, 0, 0)],
+        false,
+    );
+    match_.target = 1_500;
+    HistoryRecorder::new(pool.clone()).record(match_).await;
+    assert_eq!(
+        matches::played_by(&pool, fay).await.unwrap()[0].target,
+        1_500
+    );
+}
+
+#[tokio::test]
+async fn matches_recorded_before_the_target_read_as_played_to_one_thousand() {
+    let pool = db::test_pool().await;
+    let column: Option<String> = sqlx::query_scalar(
+        "SELECT COLUMN_DEFAULT FROM information_schema.COLUMNS \
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'match_record' AND COLUMN_NAME = 'target'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(column.as_deref(), Some("1000"));
 }
 
 #[tokio::test]

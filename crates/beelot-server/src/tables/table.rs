@@ -11,7 +11,7 @@ use beelot_game::bidding::BiddingState;
 use beelot_game::board::GameBoard;
 use beelot_game::bot::{BotStrategy, strategies, turns};
 use beelot_game::match_score::MatchScore;
-use beelot_game::{Card, Difficulty, GameError, JavaRandom, RandomSource, Rank, Variant};
+use beelot_game::{Card, Difficulty, GameError, JavaRandom, RandomSource, Rank};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -208,14 +208,11 @@ impl Table {
     /// A solo or pass-and-play table, dealt at once; its bots play the difficulty's strategy.
     pub fn local(
         id: Uuid,
-        variant: Variant,
         difficulty: Difficulty,
-        announcements: bool,
-        seats: [Seat; 4],
+        lobby: Lobby,
         setup: TableSetup,
         now: OffsetDateTime,
     ) -> Self {
-        let lobby = Lobby::local(seats, variant, announcements);
         let mut table = Self::new(
             id,
             TableKind::Local,
@@ -374,18 +371,22 @@ impl Table {
             Action::Settings {
                 announcements,
                 turn_timer,
+                target,
             } => {
                 let seat = self.seat_of(actor)?;
-                if announcements.is_none() && turn_timer.is_none() {
+                if announcements.is_none() && turn_timer.is_none() && target.is_none() {
                     return Ok(false);
                 }
-                // Both settings are checked before either changes.
+                // Every setting is checked before any changes.
                 let mut lobby = self.lobby.clone();
                 if let Some(on) = announcements {
                     lobby.set_announcements(seat, on)?;
                 }
                 if let Some(seconds) = turn_timer {
                     lobby.set_turn_timer(seat, seconds)?;
+                }
+                if let Some(target) = target {
+                    lobby.set_target(seat, target)?;
                 }
                 self.lobby = lobby;
             }
@@ -442,7 +443,7 @@ impl Table {
                 if !score.complete() {
                     return Ok(false);
                 }
-                self.match_score = Some(MatchScore::new());
+                self.match_score = Some(self.new_match_score());
                 self.match_id = Uuid::new_v4();
                 self.deal_next_round(now)?;
             }
@@ -494,8 +495,13 @@ impl Table {
             .ok_or_else(|| conflict("auction-not-finished", msg::AUCTION_NOT_FINISHED))
     }
 
+    /// A match to the table's target: the next round and a rematch keep it.
+    fn new_match_score(&self) -> MatchScore {
+        MatchScore::to(self.lobby.target()).expect("the lobby holds a valid target")
+    }
+
     fn begin_match(&mut self, now: OffsetDateTime) -> Result<(), AppError> {
-        self.match_score = Some(MatchScore::new());
+        self.match_score = Some(self.new_match_score());
         self.match_id = Uuid::new_v4();
         self.deal(FIRST_DEALER);
         self.drive_bots(now)
@@ -626,6 +632,7 @@ impl Table {
                 .collect(),
             rounds: score.rounds().to_vec(),
             announcements: self.lobby.announcements(),
+            target: score.target(),
         }
     }
 

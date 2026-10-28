@@ -21,6 +21,10 @@ pub const TIMER_CHOICES: &str = "Choose no timer, 30 seconds, or 60 seconds.";
 pub const PUBLIC_ANNOUNCEMENTS: &str = "Public tables always play with announcements.";
 pub const OWNER_SETS_ANNOUNCEMENTS: &str = "Only the table owner can change announcements.";
 pub const ANNOUNCEMENTS_LOCKED: &str = "Announcements cannot change after the game starts.";
+pub const PUBLIC_TARGET: &str = "Public tables always play to 1,000 points.";
+pub const OWNER_SETS_TARGET: &str = "Only the table owner can change the match target.";
+pub const TARGET_LOCKED: &str = "The match target cannot change after the game starts.";
+pub const TARGET_CHOICES: &str = "The match target must be 500, 1,000, 1,500 or 2,000 points.";
 pub const BOT_TOOK_OVER: &str = "A bot has taken over this seat for the rest of the match.";
 
 pub const NAME_REQUIRED: &str = "Enter a player name.";

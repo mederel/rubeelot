@@ -101,6 +101,13 @@
                 <label class="difficulty-choice" for="announcements-off"><input id="announcements-off" name="announcements" type="radio" value="off"><span><strong>Off</strong><small>Card points and Belote only.</small></span></label>
             </fieldset>
             <fieldset>
+                <legend>Match target</legend>
+                <label class="difficulty-choice" for="target-500"><input id="target-500" name="target" type="radio" value="500"><span><strong>500 points</strong><small>A quick match.</small></span></label>
+                <label class="difficulty-choice" for="target-1000"><input checked id="target-1000" name="target" type="radio" value="1000"><span><strong>1,000 points</strong><small>The usual match.</small></span></label>
+                <label class="difficulty-choice" for="target-1500"><input id="target-1500" name="target" type="radio" value="1500"><span><strong>1,500 points</strong><small>A long match.</small></span></label>
+                <label class="difficulty-choice" for="target-2000"><input id="target-2000" name="target" type="radio" value="2000"><span><strong>2,000 points</strong><small>A very long match.</small></span></label>
+            </fieldset>
+            <fieldset>
                 <legend>Bot difficulty</legend>
                 <label class="difficulty-choice" for="relaxed">
                     <input checked id="relaxed" name="difficulty" type="radio" value="RELAXED">
@@ -264,6 +271,10 @@
             <span class="choice-label" id="table-announcements-label">Announcements</span><div class="choice-group" role="radiogroup" aria-labelledby="table-announcements-label"><label class="choice"><input checked name="table-announcements" type="radio" value="on"><span>On</span></label><label class="choice"><input name="table-announcements" type="radio" value="off"><span>Off</span></label></div>
         </div>
         <p class="timer-policy" id="announcements-summary"></p>
+        <div class="timer-settings" id="target-settings" hidden>
+            <span class="choice-label" id="table-target-label">Match target</span><div class="choice-group" role="radiogroup" aria-labelledby="table-target-label"><label class="choice"><input name="table-target" type="radio" value="500"><span>500 points</span></label><label class="choice"><input checked name="table-target" type="radio" value="1000"><span>1,000 points</span></label><label class="choice"><input name="table-target" type="radio" value="1500"><span>1,500 points</span></label><label class="choice"><input name="table-target" type="radio" value="2000"><span>2,000 points</span></label></div>
+        </div>
+        <p class="timer-policy" id="target-summary"></p>
         <p class="variant-summary" id="private-variant-summary"></p>
         <p class="form-message" id="private-table-message" role="alert"></p>
         <div class="table-actions">
@@ -355,7 +366,7 @@
             <section><h2>Announcements</h2><p>Declare tierce (three cards in a row, 20), cinquante (four, 50), cent (five or more, 100) and carrés (jacks 200, nines 150, aces, tens, kings or queens 100) when you play your first card. Sequences follow 7, 8, 9, 10, jack, queen, king, ace in one suit; a card counts once, carrés first. Only the team with the best announcement scores, and it scores all of its own: the higher value wins, then the longer run, then the higher card, then trump, then whoever declared first. Belote and announcements count towards the contract.</p></section>
             <section><h2>Card order</h2><p>At trump: jack, 9, ace, 10, king, queen, 8, 7. In other suits: ace, 10, king, queen, jack, 9, 8, 7.</p></section>
             <section><h2>Playing a card</h2><p>Follow the lead suit when possible. If void and an opponent wins, trump and overtrump when able. If your partner wins, you may discard.</p></section>
-            <section><h2>Scoring</h2><p>Card points total 162, including 10 points for the last trick (Dix de der). King and queen of trump declare Belote/Rebelote for 20 points. The declaring team must score more than its opponents, counting Belote and announcements.</p><p>A team that takes every trick makes a capot and scores 250 instead of 162; in Contrée, a declaring team that makes a capot also scores its bid.</p><p>The first team to reach 1,000 points wins the match. When both teams pass 1,000 points in the same round, the higher score wins; an exact tie is settled by another round.</p></section>
+            <section><h2>Scoring</h2><p>Card points total 162, including 10 points for the last trick (Dix de der). King and queen of trump declare Belote/Rebelote for 20 points. The declaring team must score more than its opponents, counting Belote and announcements.</p><p>A team that takes every trick makes a capot and scores 250 instead of 162; in Contrée, a declaring team that makes a capot also scores its bid.</p><p>The first team to reach the match target (1,000 points unless the players choose 500, 1,500 or 2,000) wins the match. When both teams reach it in the same round, the higher score wins; an exact tie is settled by another round.</p></section>
         </div>
         <h2>Contrée variant</h2>
         <p>All eight cards are dealt before an auction from 80 to 160, in steps of 10. Each call names a trump suit and must raise the current contract. Three passes after a bid close the auction. An opponent may coinche, doubling the round score; Belote/Rebelote remains active.</p>
@@ -386,6 +397,13 @@
                 <legend>Announcements</legend>
                 <label class="difficulty-choice" for="local-announcements-on"><input checked id="local-announcements-on" name="local-announcements" type="radio" value="on"><span><strong>On</strong><small>Declare tierce, cinquante, cent and carrés.</small></span></label>
                 <label class="difficulty-choice" for="local-announcements-off"><input id="local-announcements-off" name="local-announcements" type="radio" value="off"><span><strong>Off</strong><small>Card points and Belote only.</small></span></label>
+            </fieldset>
+            <fieldset>
+                <legend>Match target</legend>
+                <label class="difficulty-choice" for="local-target-500"><input id="local-target-500" name="local-target" type="radio" value="500"><span><strong>500 points</strong><small>A quick match.</small></span></label>
+                <label class="difficulty-choice" for="local-target-1000"><input checked id="local-target-1000" name="local-target" type="radio" value="1000"><span><strong>1,000 points</strong><small>The usual match.</small></span></label>
+                <label class="difficulty-choice" for="local-target-1500"><input id="local-target-1500" name="local-target" type="radio" value="1500"><span><strong>1,500 points</strong><small>A long match.</small></span></label>
+                <label class="difficulty-choice" for="local-target-2000"><input id="local-target-2000" name="local-target" type="radio" value="2000"><span><strong>2,000 points</strong><small>A very long match.</small></span></label>
             </fieldset>
             <fieldset>
                 <legend>Bot difficulty</legend>

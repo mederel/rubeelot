@@ -56,6 +56,8 @@ pub struct TableView {
     #[serde(with = "time::serde::rfc3339::option")]
     pub bot_fill_at: Option<OffsetDateTime>,
     pub announcements: bool,
+    /// The points the match is played to.
+    pub target: i32,
     pub kind: TableKind,
     pub difficulty: Option<Difficulty>,
     pub difficulty_label: Option<&'static str>,
@@ -248,6 +250,7 @@ pub struct MatchView {
     pub east_west: i32,
     pub complete: bool,
     pub winner: Option<Team>,
+    pub target: i32,
 }
 
 /// A reaction from the seat at `position`; clients show the reactions whose sequence they have not seen.
@@ -306,6 +309,7 @@ pub fn snapshot(table: &Table, viewer: Viewer, now: OffsetDateTime) -> Snapshot 
             east_west: score.east_west(),
             complete: score.complete(),
             winner: score.winner(),
+            target: score.target(),
         }),
         reactions: table
             .reactions(now)
@@ -349,6 +353,7 @@ fn table_view(table: &Table, you: usize) -> TableView {
             .bot_fill_at()
             .filter(|_| lobby.status() == Status::WaitingForPlayers),
         announcements: lobby.announcements(),
+        target: lobby.target(),
         kind: table.kind,
         difficulty: table.difficulty,
         difficulty_label: table.difficulty.map(difficulty_label),

@@ -35,6 +35,8 @@ pub struct RecentMatch {
     pub team_score: i32,
     pub opponent_score: i32,
     pub won: bool,
+    /// The points the match was played to.
+    pub target: i32,
 }
 
 /// Contracts the team took and made; coinches the team made against the opponents' contracts and how many defeated
@@ -146,6 +148,7 @@ pub fn of(account: Uuid, matches: &[StoredMatch]) -> PlayerStatistics {
                 team_score,
                 opponent_score,
                 won,
+                target: stored.target,
             });
         }
         for round in &stored.rounds {
@@ -223,6 +226,7 @@ mod tests {
             east_west_score: if east_west_won { 1020 } else { 600 },
             winning_team: winner,
             announcements: false,
+            target: 1_000,
             seats: vec![
                 seat(None, "Ben", Team::NorthSouth, false),
                 seat(Some(ANA), "Ana", Team::EastWest, false),

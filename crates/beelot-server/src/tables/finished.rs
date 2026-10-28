@@ -38,6 +38,7 @@ pub struct FinishedMatch {
     pub seats: Vec<FinishedSeat>,
     pub rounds: Vec<RoundSummary>,
     pub announcements: bool,
+    pub target: i32,
 }
 
 impl FinishedMatch {

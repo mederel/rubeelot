@@ -25,6 +25,7 @@ pub enum Action {
     Settings {
         announcements: Option<bool>,
         turn_timer: Option<u32>,
+        target: Option<i32>,
     },
     Pass,
     Trump {
@@ -75,7 +76,8 @@ mod tests {
             parse(json!({"type": "settings", "turnTimer": 30})),
             Action::Settings {
                 announcements: None,
-                turn_timer: Some(30)
+                turn_timer: Some(30),
+                target: None,
             }
         );
         assert_eq!(

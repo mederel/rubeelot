@@ -4,6 +4,7 @@
 use std::time::Duration;
 
 use beelot_game::card::Variant;
+use beelot_game::match_score::{DEFAULT_TARGET, TARGETS};
 use serde::Serialize;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -94,6 +95,7 @@ pub struct Lobby {
     status: Status,
     variant: Variant,
     announcements: bool,
+    target: i32,
     turn_timer_seconds: u32,
     /// Set for public tables only: bots take the empty seats once it passes.
     bot_fill_at: Option<OffsetDateTime>,
@@ -107,6 +109,7 @@ impl Lobby {
             status: Status::WaitingForPlayers,
             variant,
             announcements: true,
+            target: DEFAULT_TARGET,
             turn_timer_seconds: 0,
             bot_fill_at,
         }
@@ -128,7 +131,7 @@ impl Lobby {
     }
 
     /// A solo or pass-and-play table, which starts at once.
-    pub fn local(seats: [Seat; 4], variant: Variant, announcements: bool) -> Self {
+    pub fn local(seats: [Seat; 4], variant: Variant, announcements: bool, target: i32) -> Self {
         let owner = seats
             .iter()
             .position(|seat| seat.kind == SeatKind::Human)
@@ -139,6 +142,7 @@ impl Lobby {
             status: Status::InProgress,
             variant,
             announcements,
+            target,
             turn_timer_seconds: 0,
             bot_fill_at: None,
         }
@@ -174,6 +178,11 @@ impl Lobby {
 
     pub fn announcements(&self) -> bool {
         self.announcements
+    }
+
+    /// The points the match is played to (US-062).
+    pub fn target(&self) -> i32 {
+        self.target
     }
 
     pub fn turn_timer_seconds(&self) -> u32 {
@@ -395,6 +404,28 @@ impl Lobby {
         }
         self.announcements = on;
         Ok(())
+    }
+
+    /// Before the game starts, the owner of a private table may choose the match target.
+    pub fn set_target(&mut self, position: usize, target: i32) -> Result<(), AppError> {
+        if self.is_public() {
+            return Err(conflict("public-target", msg::PUBLIC_TARGET));
+        }
+        self.owned_by(position, msg::OWNER_SETS_TARGET)?;
+        if self.status != Status::WaitingForPlayers {
+            return Err(conflict("settings-locked", msg::TARGET_LOCKED));
+        }
+        self.target = valid_target(target)?;
+        Ok(())
+    }
+}
+
+/// A match target players may choose: 500, 1,000, 1,500 or 2,000 points.
+pub fn valid_target(target: i32) -> Result<i32, AppError> {
+    if TARGETS.contains(&target) {
+        Ok(target)
+    } else {
+        Err(conflict("invalid-target", msg::TARGET_CHOICES))
     }
 }
 

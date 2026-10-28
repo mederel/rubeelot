@@ -18,6 +18,7 @@ use uuid::Uuid;
 use super::messages as msg;
 use super::{
     Action, Actor, Lobby, Outcome, Table, TableKind, TableSetup, codes, local_seats, required_name,
+    valid_target,
 };
 use crate::api::{Snapshot, Viewer, snapshot};
 use crate::clock::Clock;
@@ -308,9 +309,11 @@ impl TableRegistry {
         variant: Variant,
         difficulty: Difficulty,
         announcements: bool,
+        target: i32,
         seats: Option<Vec<Option<String>>>,
         account: Option<Uuid>,
     ) -> Result<Access, AppError> {
+        let target = valid_target(target)?;
         let mut seated = local_seats(seats.as_deref())?;
         if seats.is_none() {
             seated[0].account = account;
@@ -318,10 +321,8 @@ impl TableRegistry {
         self.ensure_capacity(true)?;
         let table = Table::local(
             Uuid::new_v4(),
-            variant,
             difficulty,
-            announcements,
-            seated,
+            Lobby::local(seated, variant, announcements, target),
             self.table_setup(),
             self.now(),
         );

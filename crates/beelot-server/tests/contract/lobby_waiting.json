@@ -31,6 +31,7 @@
       }
     ],
     "status": "WAITING_FOR_PLAYERS",
+    "target": 1000,
     "turnTimerSeconds": 0,
     "variant": "CLASSIC",
     "variantLabel": "Classic Belote"

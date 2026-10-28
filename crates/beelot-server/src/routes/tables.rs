@@ -5,6 +5,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use beelot_game::match_score::DEFAULT_TARGET;
 use beelot_game::{Difficulty, Variant};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -41,6 +42,7 @@ struct CreateRequest {
     variant: Option<Variant>,
     difficulty: Option<Difficulty>,
     announcements: Option<bool>,
+    target: Option<i32>,
     seats: Option<Vec<Option<String>>>,
     #[serde(default)]
     player_name: String,
@@ -97,6 +99,7 @@ async fn create(
             variant,
             request.difficulty.unwrap_or(Difficulty::Relaxed),
             request.announcements.unwrap_or(true),
+            request.target.unwrap_or(DEFAULT_TARGET),
             request.seats,
             account,
         ),

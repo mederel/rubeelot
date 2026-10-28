@@ -276,6 +276,7 @@
     "complete": false,
     "eastWest": 108,
     "northSouth": 74,
+    "target": 1000,
     "winner": null
   },
   "reactions": [],
@@ -325,6 +326,7 @@
       }
     ],
     "status": "IN_PROGRESS",
+    "target": 1000,
     "turnTimerSeconds": 0,
     "variant": "CONTREE",
     "variantLabel": "Contrée"

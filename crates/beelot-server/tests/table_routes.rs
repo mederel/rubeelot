@@ -187,6 +187,48 @@ async fn announcements_can_be_turned_off() {
 }
 
 #[tokio::test]
+async fn a_local_table_plays_to_the_chosen_target_or_to_one_thousand() {
+    let (app, _) = app();
+    let default = solo(&app, "CLASSIC").await;
+    let view = snapshot(&app, &default).await;
+    assert_eq!(view["table"]["target"], 1_000);
+    assert_eq!(view["match"]["target"], 1_000);
+    let chosen = create(
+        &app,
+        json!({"kind": "LOCAL", "variant": "CLASSIC", "difficulty": "RELAXED", "target": 1500}),
+    )
+    .await;
+    let view = snapshot(&app, &chosen).await;
+    assert_eq!(view["table"]["target"], 1_500);
+    assert_eq!(view["match"]["target"], 1_500);
+}
+
+#[tokio::test]
+async fn a_target_that_is_not_offered_is_refused() {
+    let (app, _) = app();
+    let (status, _) = call(
+        &app,
+        json_request(
+            "POST",
+            "/api/tables",
+            None,
+            json!({"kind": "LOCAL", "variant": "CLASSIC", "target": 750}),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    let (owner, _) = private(&app, "Ana", "CLASSIC").await;
+    let (status, error) = act(&app, &owner, json!({"type": "settings", "target": 750})).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(
+        error["message"],
+        "The match target must be 500, 1,000, 1,500 or 2,000 points."
+    );
+    let set = accepted(&app, &owner, json!({"type": "settings", "target": 500})).await;
+    assert_eq!(set["table"]["target"], 500);
+}
+
+#[tokio::test]
 async fn plays_a_legal_card_from_the_human_hand() {
     let (app, _) = app();
     let player = solo(&app, "CONTREE").await;
@@ -219,7 +261,7 @@ async fn the_match_score_starts_at_zero_and_a_round_cannot_be_skipped() {
     let view = snapshot(&app, &player).await;
     assert_eq!(
         view["match"],
-        json!({"northSouth": 0, "eastWest": 0, "complete": false, "winner": null})
+        json!({"northSouth": 0, "eastWest": 0, "complete": false, "winner": null, "target": 1000})
     );
     let (status, error) = act(&app, &player, json!({"type": "rematch"})).await;
     assert_eq!(
