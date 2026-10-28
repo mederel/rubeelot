@@ -3,6 +3,7 @@ name = "beelot-arena"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
+default-run = "beelot-arena"
 description = "Plays Beelot's arena bots against each other on seeded duplicate deals."
 
 [dependencies]

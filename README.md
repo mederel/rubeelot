@@ -109,7 +109,8 @@ elsewhere, copy `crates/beelot-server/static/` next to it and point
 The arena plays two bots against each other on seeded duplicate deals: every
 deal is played twice with the same cards, once with each bot as North–South,
 and the report gives the point difference per deal with its 95% confidence
-interval, the matches won, contract and coinche success, and decision times.
+interval, the matches won, contract and coinche success (and the tout-atout and
+sans-atout contracts on their own), and decision times.
 
 ```sh
 cargo run --release -p beelot-arena -- --first current --second random
@@ -123,11 +124,25 @@ cargo run --release -p beelot-arena -- --first current --second random
 | `--seed`          | the seed the deals are dealt from        | `1`                           |
 | `--variant`       | `classic`, `contree` or `both`           | `both`                        |
 | `--announcements` | `on` or `off`                            | `on`                          |
+| `--all-trumps`    | Contrée tout-atout and sans-atout        | `on`                          |
 | `--report`        | the report file                          | `target/bot-arena/report.txt` |
 
 The arena bots are `current`, `challenging`, `baseline`, `previous-play`,
-`previous-trumps`, `no-coinche`, `no-announcement-bidding` and `random`. The
-command prints each variant's report and writes them to the report file.
+`previous-trumps`, `previous-all-trumps-play`, `no-coinche`,
+`no-announcement-bidding`, `no-all-trumps-bidding` and `random`. The command
+prints each variant's report and writes them to the report file.
+
+The bots' tout-atout and sans-atout estimates were fitted on bot play by least
+squares. To fit them again:
+
+```sh
+cargo run --release -p beelot-arena --bin fit-estimates -- --stage offence --deals 20000 --seed 1
+```
+
+`--stage offence` fits the taker's estimate and `--stage defence` the
+defence's, which the coinche uses. The command prints each feature's weight
+with its standard error and the fit's R²; the rounded weights go into
+`crates/beelot-game/src/bot/rule_based.rs`.
 
 ## Solver benchmark
 
