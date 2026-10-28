@@ -4,8 +4,8 @@
 //! announcements), which are covered through `declared()` and `announcements::find`.
 
 use beelot_game::announcements::{self, AnnouncementKind};
-use beelot_game::board::GameBoard;
-use beelot_game::card::{Card, Suit, Team, Variant};
+use beelot_game::board::{Belote, BeloteDeclaration, GameBoard};
+use beelot_game::card::{Card, Suit, Team, Trump, Variant};
 use beelot_game::error::GameError;
 use beelot_game::scoring::RoundResult;
 
@@ -122,7 +122,7 @@ fn a_round_needs_eight_cards_each_bidding() {
 fn a_round_needs_eight_cards_each_contract() {
     let mut hands = round_robin_deal();
     hands[1].truncate(7);
-    GameBoard::from_contract(hands, Suit::Hearts, 0, 80, false, 3, false);
+    GameBoard::from_contract(hands, Trump::Hearts, 0, 80, false, 3, false);
 }
 
 #[test]
@@ -131,7 +131,7 @@ fn a_contree_contract_is_from_80_to_160_in_steps_of_ten() {
         let result = std::panic::catch_unwind(|| {
             GameBoard::from_contract(
                 round_robin_deal(),
-                Suit::Hearts,
+                Trump::Hearts,
                 0,
                 invalid,
                 false,
@@ -142,7 +142,8 @@ fn a_contree_contract_is_from_80_to_160_in_steps_of_ten() {
         assert!(result.is_err(), "{invalid} should be refused");
     }
 
-    let board = GameBoard::from_contract(round_robin_deal(), Suit::Hearts, 0, 160, false, 3, false);
+    let board =
+        GameBoard::from_contract(round_robin_deal(), Trump::Hearts, 0, 160, false, 3, false);
     assert_eq!(board.contract_value(), 160);
     assert_eq!(board.variant(), Variant::Contree);
 }
@@ -211,19 +212,37 @@ fn declares_belote_then_awards_rebelote_bonus_once() {
         cards("7S 8S 9S 10S JS QS KS AS"),
     ];
     let mut board = GameBoard::from_bidding(hands, Suit::Hearts, 0, 3, false);
-    assert_eq!(board.belote_seat(), Some(0));
+    assert_eq!(
+        board.belotes(),
+        [Belote {
+            seat: 0,
+            suit: Suit::Hearts
+        }]
+    );
 
     board.play(0, card("KH"), false).unwrap();
-    assert_eq!(board.belote_cards_played(), 1);
-    assert!(!board.belote_bonus_awarded());
+    assert_eq!(
+        board.last_belote(),
+        Some(BeloteDeclaration {
+            seat: 0,
+            rebelote: false
+        })
+    );
+    assert_eq!(board.belote_bonus(), 0);
     finish_first_trick(&mut board, false);
     board.continue_after_trick().unwrap();
     assert_eq!(board.active_seat(), 0);
     let before = board.scores();
     board.play(0, card("QH"), false).unwrap();
 
-    assert!(board.belote_bonus_awarded());
-    assert_eq!(board.belote_cards_played(), 2);
+    assert_eq!(
+        board.last_belote(),
+        Some(BeloteDeclaration {
+            seat: 0,
+            rebelote: true
+        })
+    );
+    assert_eq!(board.belote_bonus(), 20);
     assert_eq!(board.scores().0, before.0 + 20);
     // The bonus is awarded once: playing on does not add it again.
     let result = play_out(&mut board);
@@ -267,7 +286,7 @@ fn bidding_result(hands: [Vec<Card>; 4], declarer: usize) -> RoundResult {
 fn contract_result(declarer: usize, value: i32, coinched: bool) -> RoundResult {
     play_out(&mut GameBoard::from_contract(
         north_south_capot_deal(),
-        Suit::Hearts,
+        Trump::Hearts,
         declarer,
         value,
         coinched,
@@ -422,7 +441,7 @@ fn declaring_on_the_first_card_scores_after_the_first_trick() {
     let trick_points: i32 = board
         .visible_trick()
         .iter()
-        .map(|played| beelot_game::rules::points(played.card, Suit::Hearts))
+        .map(|played| beelot_game::rules::points(played.card, Trump::Hearts))
         .sum();
     let (north_south, east_west) = board.scores();
     assert_eq!(north_south + east_west, trick_points + 20);
@@ -504,7 +523,7 @@ fn opponents_see_only_who_declared_during_the_first_trick() {
     assert_eq!(seats, [0]);
     assert!(board.revealed().is_empty());
     assert!(board.play_view(1).revealed_announcements.is_empty());
-    let own = announcements::find(board.hand(1));
+    let own = announcements::find(board.hand(1), board.trump());
     assert_eq!(own[0].kind, AnnouncementKind::Cinquante);
 }
 
@@ -541,4 +560,142 @@ fn bots_see_the_reveal_only_after_the_first_trick() {
 #[test]
 fn bots_see_announcements_off() {
     assert!(!announcement_board(false).play_view(0).announcements);
+}
+
+// ---- all trumps and no trumps (US-063) ----
+
+/// A deal where the given seats hold the given cards, and the rest of the deck is shuffled out
+/// with no other Belote.
+fn deal_with(fixed: &[(usize, &str)], seed: i64) -> [Vec<Card>; 4] {
+    let belotes = |hand: &[Card]| {
+        Suit::ALL
+            .into_iter()
+            .filter(|&suit| {
+                hand.contains(&Card::new(beelot_game::Rank::King, suit))
+                    && hand.contains(&Card::new(beelot_game::Rank::Queen, suit))
+            })
+            .count()
+    };
+    for seed in seed.. {
+        let mut hands: [Vec<Card>; 4] = Default::default();
+        for &(seat, codes) in fixed {
+            hands[seat] = cards(codes);
+        }
+        let mut rest: Vec<Card> = Card::deck()
+            .into_iter()
+            .filter(|card| !hands.iter().flatten().any(|held| held == card))
+            .collect();
+        beelot_game::java_shuffle(&mut rest, &mut beelot_game::JavaRandom::new(seed));
+        let asked: Vec<usize> = hands.iter().map(|hand| belotes(hand)).collect();
+        for hand in &mut hands {
+            while hand.len() < 8 {
+                hand.push(rest.pop().unwrap());
+            }
+        }
+        if hands
+            .iter()
+            .zip(&asked)
+            .all(|(hand, &asked)| belotes(hand) == asked)
+        {
+            return hands;
+        }
+    }
+    unreachable!()
+}
+
+fn contract_board(trump: Trump, hands: [Vec<Card>; 4]) -> GameBoard {
+    GameBoard::from_contract(hands, trump, 0, 80, false, 3, false)
+}
+
+#[test]
+fn two_belotes_in_all_trumps_both_score() {
+    let hands = deal_with(&[(0, "KH QH"), (1, "KS QS")], 0);
+    let result = play_out(&mut contract_board(Trump::AllTrumps, hands));
+
+    assert_eq!(result.north_south_belote_bonus, 20);
+    assert_eq!(result.east_west_belote_bonus, 20);
+}
+
+#[test]
+fn one_player_with_two_belotes_scores_forty() {
+    let hands = deal_with(&[(0, "KH QH KC QC")], 0);
+    let result = play_out(&mut contract_board(Trump::AllTrumps, hands));
+
+    assert_eq!(result.north_south_belote_bonus, 40);
+    assert_eq!(result.east_west_belote_bonus, 0);
+}
+
+/// The Belote bonus shown after each Rebelote, until the round ends.
+fn bonuses_after_each_rebelote(board: &mut GameBoard) -> Vec<(usize, i32)> {
+    let mut bonuses = Vec::new();
+    while board.round_result().is_none() {
+        let before = (board.last_belote(), board.belote_bonus());
+        if board.reviewing_completed_trick() {
+            board.continue_after_trick().unwrap();
+        } else {
+            let seat = board.active_seat();
+            let card = board.legal_cards(seat)[0];
+            board.play(seat, card, false).unwrap();
+        }
+        // A Rebelote always changes the bonus or the seat it counts for.
+        if let Some(declaration) = board.last_belote()
+            && declaration.rebelote
+            && (board.last_belote(), board.belote_bonus()) != before
+        {
+            bonuses.push((declaration.seat, board.belote_bonus()));
+        }
+    }
+    bonuses
+}
+
+#[test]
+fn the_belote_bonus_counts_the_team_of_the_latest_rebelote() {
+    let hands = deal_with(&[(0, "KH QH"), (1, "KS QS")], 0);
+    let bonuses = bonuses_after_each_rebelote(&mut contract_board(Trump::AllTrumps, hands));
+
+    assert_eq!(bonuses.len(), 2, "{bonuses:?}");
+    assert!(bonuses.iter().all(|&(_, bonus)| bonus == 20), "{bonuses:?}");
+}
+
+#[test]
+fn a_player_with_two_belotes_sees_forty_after_the_second_rebelote() {
+    let hands = deal_with(&[(0, "KH QH KC QC")], 0);
+    let bonuses = bonuses_after_each_rebelote(&mut contract_board(Trump::AllTrumps, hands));
+
+    assert_eq!(bonuses, [(0, 20), (0, 40)]);
+}
+
+#[test]
+fn no_belote_in_no_trumps() {
+    let hands = deal_with(&[(0, "KH QH")], 0);
+    let mut board = contract_board(Trump::NoTrumps, hands);
+    assert!(board.belotes().is_empty());
+
+    let result = play_out(&mut board);
+
+    assert_eq!(board.last_belote(), None);
+    assert_eq!(result.north_south_belote_bonus, 0);
+    assert_eq!(result.east_west_belote_bonus, 0);
+}
+
+#[test]
+fn a_full_deal_of_all_trumps_or_no_trumps_totals_162() {
+    for trump in [Trump::AllTrumps, Trump::NoTrumps] {
+        for seed in 0..5 {
+            let result = play_out(&mut contract_board(trump, deal_with(&[], seed)));
+            let total = result.north_south_card_points
+                + result.east_west_card_points
+                + result.north_south_dix_de_der
+                + result.east_west_dix_de_der;
+            assert_eq!(total, 162, "{trump:?} seed {seed}");
+        }
+    }
+}
+
+#[test]
+fn the_round_summary_and_play_view_carry_the_contract() {
+    let mut board = contract_board(Trump::NoTrumps, deal_with(&[], 1));
+    assert_eq!(board.play_view(0).trump, Trump::NoTrumps);
+    play_out(&mut board);
+    assert_eq!(board.round_summary().unwrap().trump, Trump::NoTrumps);
 }

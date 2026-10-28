@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::db::matches::{self, difficulty_code, mode_code, team_code, variant_code};
 use crate::db::{accounts, from_utc, id};
 use crate::privacy::events::{EventType, Outcome, SecurityEvents};
-use crate::tables::messages::suit_name;
+use crate::tables::messages::trump_name;
 
 pub const FORMAT: &str = "beelot-export-2";
 const INTERVAL: time::Duration = time::Duration::hours(1);
@@ -244,7 +244,7 @@ pub async fn export(
                         .iter()
                         .map(|round| Round {
                             declaring_team: team_code(round.declaring_team),
-                            trump: suit_name(round.trump),
+                            trump: trump_name(round.trump),
                             contract_value: round.contract_value,
                             coinched: round.coinched,
                             contract_made: round.contract_made,

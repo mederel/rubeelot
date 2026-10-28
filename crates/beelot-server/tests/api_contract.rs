@@ -320,7 +320,13 @@ fn belote_and_rebelote_are_announced() {
             };
             act(&mut table, Actor::Device, action);
         }
-        let Some(seat) = table.board().unwrap().belote_seat() else {
+        let Some(seat) = table
+            .board()
+            .unwrap()
+            .belotes()
+            .first()
+            .map(|belote| belote.seat)
+        else {
             continue;
         };
         let name = table.lobby().seat(seat).unwrap().name.clone();

@@ -50,6 +50,74 @@ impl Suit {
     }
 }
 
+/// What a round is played in: one of the four suits as trump, or, in Contrée, all trumps or no
+/// trumps (US-063).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Trump {
+    Clubs,
+    Diamonds,
+    Hearts,
+    Spades,
+    AllTrumps,
+    NoTrumps,
+}
+
+impl From<Suit> for Trump {
+    fn from(suit: Suit) -> Self {
+        match suit {
+            Suit::Clubs => Trump::Clubs,
+            Suit::Diamonds => Trump::Diamonds,
+            Suit::Hearts => Trump::Hearts,
+            Suit::Spades => Trump::Spades,
+        }
+    }
+}
+
+impl Trump {
+    pub const ALL: [Trump; 6] = [
+        Trump::Clubs,
+        Trump::Diamonds,
+        Trump::Hearts,
+        Trump::Spades,
+        Trump::AllTrumps,
+        Trump::NoTrumps,
+    ];
+
+    /// The trump suit, or none under all trumps and no trumps.
+    pub fn suit(self) -> Option<Suit> {
+        match self {
+            Trump::Clubs => Some(Suit::Clubs),
+            Trump::Diamonds => Some(Suit::Diamonds),
+            Trump::Hearts => Some(Suit::Hearts),
+            Trump::Spades => Some(Suit::Spades),
+            Trump::AllTrumps | Trump::NoTrumps => None,
+        }
+    }
+
+    /// Whether cards of the given suit are trumps.
+    pub fn is_trump(self, suit: Suit) -> bool {
+        self == Trump::AllTrumps || self.suit() == Some(suit)
+    }
+
+    /// Whether one suit is trump, as in classic Belote.
+    pub fn suit_contract(self) -> bool {
+        self.suit().is_some()
+    }
+
+    pub fn ordinal(self) -> usize {
+        self as usize
+    }
+
+    pub fn display_name(self) -> &'static str {
+        match self {
+            Trump::AllTrumps => "All trumps",
+            Trump::NoTrumps => "No trumps",
+            suit => suit.suit().expect("a suit contract").display_name(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Rank {
@@ -157,19 +225,17 @@ impl Card {
             .collect()
     }
 
-    /// Sort key of `GameCard.displayOrder(trump)`: trump suit first, then the
-    /// other suits in order, each in its display order.
-    pub fn display_key(self, trump: Option<Suit>) -> (usize, usize) {
-        let suit_order = if Some(self.suit) == trump {
-            0
-        } else {
-            let before_trump = trump.is_none_or(|t| self.suit.ordinal() < t.ordinal());
-            self.suit.ordinal() + usize::from(before_trump)
+    /// Sort key of `GameCard.displayOrder(trump)`: the trump suit first when there is one, then
+    /// the other suits in order, each in its display order. No trump is the auction's natural
+    /// order.
+    pub fn display_key(self, trump: Option<Trump>) -> (usize, usize) {
+        let suit_order = match trump.and_then(Trump::suit) {
+            None => self.suit.ordinal(),
+            Some(suit) if suit == self.suit => 0,
+            Some(suit) => self.suit.ordinal() + usize::from(self.suit.ordinal() < suit.ordinal()),
         };
-        (
-            suit_order,
-            self.rank.display_position(Some(self.suit) == trump),
-        )
+        let trump_card = trump.is_some_and(|trump| trump.is_trump(self.suit));
+        (suit_order, self.rank.display_position(trump_card))
     }
 }
 
@@ -271,7 +337,7 @@ impl Team {
 mod tests {
     use super::*;
 
-    fn sorted(mut cards: Vec<Card>, trump: Option<Suit>) -> Vec<Card> {
+    fn sorted(mut cards: Vec<Card>, trump: Option<Trump>) -> Vec<Card> {
         cards.sort_by_key(|card| card.display_key(trump));
         cards
     }
@@ -297,7 +363,7 @@ mod tests {
                 .map(|rank| Card::new(rank, Suit::Hearts)),
         );
 
-        let sorted = sorted(cards, Some(Suit::Hearts));
+        let sorted = sorted(cards, Some(Trump::Hearts));
 
         let ranks: Vec<Rank> = sorted.iter().map(|c| c.rank).collect();
         assert_eq!(

@@ -7,7 +7,7 @@
 
 use beelot_game::bidding::{AuctionDecision, BiddingState, CallType, SeatCall};
 use beelot_game::board::GameBoard;
-use beelot_game::card::{Card, Suit, Variant};
+use beelot_game::card::{Card, Suit, Trump, Variant};
 use beelot_game::error::GameError;
 use beelot_game::rng::JavaRandom;
 use beelot_game::scoring::RoundResult;
@@ -151,7 +151,7 @@ fn the_first_round_only_accepts_the_upturned_suit_and_the_second_any_other() {
     );
 
     state.choose_trump(first, other).unwrap();
-    assert_eq!(state.completed_board().unwrap().trump(), other);
+    assert_eq!(state.completed_board().unwrap().trump(), other.into());
 }
 
 #[test]
@@ -223,7 +223,7 @@ fn deals_all_cards_and_closes_a_contract_after_three_passes() {
     let board = state.completed_board().unwrap();
     assert_eq!(board.variant(), Variant::Contree);
     assert_eq!(board.contract_value(), 90);
-    assert_eq!(board.trump(), Suit::Hearts);
+    assert_eq!(board.trump(), Trump::Hearts);
     assert!(!board.coinched());
 }
 
@@ -304,9 +304,9 @@ fn play_out(board: &mut GameBoard) -> RoundResult {
 #[test]
 fn coinche_doubles_the_awarded_round_scores() {
     let mut normal =
-        GameBoard::from_contract(complete_hands(), Suit::Hearts, 0, 100, false, 3, false);
+        GameBoard::from_contract(complete_hands(), Trump::Hearts, 0, 100, false, 3, false);
     let mut doubled =
-        GameBoard::from_contract(complete_hands(), Suit::Hearts, 0, 100, true, 3, false);
+        GameBoard::from_contract(complete_hands(), Trump::Hearts, 0, 100, true, 3, false);
 
     let normal_result = play_out(&mut normal);
     let doubled_result = play_out(&mut doubled);
@@ -324,9 +324,9 @@ fn coinche_doubles_the_awarded_round_scores() {
 #[test]
 fn contract_outcome_uses_the_called_value_and_declaring_team() {
     let mut north_south =
-        GameBoard::from_contract(complete_hands(), Suit::Hearts, 0, 160, false, 3, false);
+        GameBoard::from_contract(complete_hands(), Trump::Hearts, 0, 160, false, 3, false);
     let mut east_west =
-        GameBoard::from_contract(complete_hands(), Suit::Hearts, 1, 80, false, 3, false);
+        GameBoard::from_contract(complete_hands(), Trump::Hearts, 1, 80, false, 3, false);
 
     assert!(play_out(&mut north_south).contract_made);
     assert!(!play_out(&mut east_west).contract_made);

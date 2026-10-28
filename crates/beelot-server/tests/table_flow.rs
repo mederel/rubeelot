@@ -7,7 +7,7 @@ use beelot_game::bidding::CallType;
 use beelot_game::bot::BotStrategy;
 use beelot_game::bot::strategies;
 use beelot_game::scoring::RoundResult;
-use beelot_game::{Card, Difficulty, Suit, Team, Variant};
+use beelot_game::{Card, Difficulty, Suit, Team, Trump, Variant};
 use beelot_server::error::AppError;
 use beelot_server::tables::finished::{DELETED_PLAYER, FinishedSeat, Mode};
 use beelot_server::tables::{
@@ -609,7 +609,7 @@ fn contree_bid_starts_a_contract_board_after_bot_players_pass() {
     finish_auction_at_160(&mut table, Actor::Device);
     let board = table.board().unwrap();
     assert_eq!(board.variant(), Variant::Contree);
-    assert_eq!(board.trump(), Suit::Spades);
+    assert_eq!(board.trump(), Trump::Spades);
     assert!(board.contract_value() >= 160);
 }
 

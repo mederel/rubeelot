@@ -191,7 +191,7 @@ pub fn of(account: Uuid, matches: &[StoredMatch]) -> PlayerStatistics {
 mod tests {
     //! Ports Java's `PlayerStatisticsTest`: Ana plays East (seat 1) with Chloé (seat 3) against Ben and David.
 
-    use beelot_game::{Difficulty, Suit, Variant};
+    use beelot_game::{Difficulty, Trump, Variant};
     use time::macros::datetime;
 
     use super::*;
@@ -248,7 +248,7 @@ mod tests {
     ) -> StoredRound {
         StoredRound {
             declaring_team: declaring,
-            trump: Suit::Spades,
+            trump: Trump::Spades,
             contract_value: Some(100),
             coinched,
             contract_made: made,

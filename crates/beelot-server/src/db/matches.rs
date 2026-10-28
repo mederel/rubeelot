@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use beelot_game::{Difficulty, Suit, Team, Variant};
+use beelot_game::{Difficulty, Team, Trump, Variant};
 use sqlx::{FromRow, MySql, MySqlConnection, MySqlPool, QueryBuilder};
 use time::{OffsetDateTime, PrimitiveDateTime};
 use uuid::Uuid;
@@ -22,7 +22,7 @@ pub struct StoredSeat {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredRound {
     pub declaring_team: Team,
-    pub trump: Suit,
+    pub trump: Trump,
     pub contract_value: Option<i32>,
     pub coinched: bool,
     pub contract_made: bool,
@@ -114,12 +114,14 @@ fn difficulty(code: &str) -> Option<Difficulty> {
     }
 }
 
-fn suit(code: &str) -> Suit {
+fn trump(code: &str) -> Trump {
     match code {
-        "CLUBS" => Suit::Clubs,
-        "DIAMONDS" => Suit::Diamonds,
-        "SPADES" => Suit::Spades,
-        _ => Suit::Hearts,
+        "CLUBS" => Trump::Clubs,
+        "DIAMONDS" => Trump::Diamonds,
+        "SPADES" => Trump::Spades,
+        "ALL_TRUMPS" => Trump::AllTrumps,
+        "NO_TRUMPS" => Trump::NoTrumps,
+        _ => Trump::Hearts,
     }
 }
 
@@ -170,7 +172,7 @@ pub async fn insert(db: &mut MySqlConnection, stored: &StoredMatch) -> sqlx::Res
         .bind(id(stored.id))
         .bind(index as i32)
         .bind(team_code(round.declaring_team))
-        .bind(crate::tables::messages::suit_name(round.trump))
+        .bind(crate::tables::messages::trump_name(round.trump))
         .bind(round.contract_value)
         .bind(round.coinched)
         .bind(round.contract_made)
@@ -292,7 +294,7 @@ pub async fn played_by(pool: &MySqlPool, account: Uuid) -> sqlx::Result<Vec<Stor
     for row in round_rows {
         matches[index[&row.match_id.0]].rounds.push(StoredRound {
             declaring_team: team(&row.declaring_team),
-            trump: suit(&row.trump),
+            trump: trump(&row.trump),
             contract_value: row.contract_value,
             coinched: row.coinched,
             contract_made: row.contract_made,

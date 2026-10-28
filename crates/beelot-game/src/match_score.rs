@@ -102,7 +102,7 @@ impl MatchScore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::card::{Suit, Team};
+    use crate::card::{Team, Trump};
 
     fn round(north_south_awarded: i32, east_west_awarded: i32) -> RoundResult {
         RoundResult {
@@ -125,7 +125,7 @@ mod tests {
     fn summary(result: RoundResult) -> RoundSummary {
         RoundSummary {
             declaring_team: Team::NorthSouth,
-            trump: Suit::Hearts,
+            trump: Trump::Hearts,
             contract_value: Some(80),
             coinched: false,
             result,

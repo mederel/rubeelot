@@ -5,7 +5,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::announcements::Announcement;
-use crate::card::{Seat, Suit, Team, Variant};
+use crate::card::{Seat, Team, Trump, Variant};
 
 /// A player's declared announcements, and whether their team scores them. The team is
 /// `Team::of(seat)`.
@@ -58,7 +58,7 @@ pub struct RoundResult {
 #[serde(rename_all = "camelCase")]
 pub struct RoundSummary {
     pub declaring_team: Team,
-    pub trump: Suit,
+    pub trump: Trump,
     pub contract_value: Option<i32>,
     pub coinched: bool,
     pub result: RoundResult,

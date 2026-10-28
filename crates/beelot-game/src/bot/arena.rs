@@ -215,7 +215,7 @@ impl ArenaBot for PreviousPlayBot {
         let trump = view.trump;
         let mut candidates = view.legal_cards.clone();
         if view.tricks.is_empty() && !view.declaring() {
-            candidates = preferring(&candidates, |card| card.suit != trump);
+            candidates = preferring(&candidates, |card| !trump.is_trump(card.suit));
         }
         let trick = &view.current_trick;
         if trick.is_empty() {
@@ -230,14 +230,14 @@ impl ArenaBot for PreviousPlayBot {
             &trick.iter().map(|played| played.card).collect::<Vec<_>>(),
             trump,
         )];
-        if winner.card.suit != trump {
+        if !trump.is_trump(winner.card.suit) {
             let ace = Card::new(Rank::Ace, lead);
             if candidates.contains(&ace) && ace_at_risk(ace, view) {
                 return ace;
             }
         }
         let opponents_win = winner.seat % 2 != view.seat % 2;
-        let opponents_trumped = winner.card.suit == trump && opponents_win;
+        let opponents_trumped = trump.is_trump(winner.card.suit) && opponents_win;
         let can_win = candidates
             .iter()
             .any(|card| rules::beats(*card, winner.card, lead, trump));
@@ -254,7 +254,10 @@ impl ArenaBot for PreviousPlayBot {
 }
 
 fn ace_at_risk(card: Card, view: &PlayView) -> bool {
-    let trump = view.trump;
+    // Nobody cuts under all trumps or no trumps, so no ace is at risk.
+    let Some(trump) = view.trump.suit() else {
+        return false;
+    };
     if card.rank != Rank::Ace || card.suit == trump || unseen_cards(trump, view) == 0 {
         return false;
     }

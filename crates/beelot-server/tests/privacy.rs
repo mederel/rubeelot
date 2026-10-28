@@ -12,7 +12,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use beelot_game::scoring::{RoundResult, RoundSummary};
-use beelot_game::{Suit, Team, Variant};
+use beelot_game::{Team, Trump, Variant};
 use beelot_server::app::{AppState, router};
 use beelot_server::auth::sessions;
 use beelot_server::clock::{Clock, FakeClock};
@@ -133,7 +133,7 @@ impl World {
 fn round() -> RoundSummary {
     RoundSummary {
         declaring_team: Team::NorthSouth,
-        trump: Suit::Hearts,
+        trump: Trump::Hearts,
         contract_value: Some(90),
         coinched: false,
         result: RoundResult {

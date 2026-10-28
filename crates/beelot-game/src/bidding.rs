@@ -407,7 +407,7 @@ impl BiddingState {
         };
         self.completed_board = Some(GameBoard::from_contract(
             self.hands.clone(),
-            trump,
+            trump.into(),
             declarer,
             self.highest_bid,
             self.coinched,

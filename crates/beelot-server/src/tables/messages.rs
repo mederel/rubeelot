@@ -1,9 +1,10 @@
 //! Every English string the tables send, copied verbatim from the Java source: the frontend translates them with
 //! the English text as the key.
 
+use beelot_game::Trump;
 use beelot_game::Variant;
 use beelot_game::bidding::{BiddingState, CallType, SeatCall};
-use beelot_game::board::GameBoard;
+use beelot_game::board::{BeloteDeclaration, GameBoard};
 
 pub const TABLE_CLOSED: &str = "This table does not exist.";
 pub const ALREADY_STARTED: &str = "This table has already started.";
@@ -138,14 +139,27 @@ pub fn suit_name(suit: beelot_game::Suit) -> &'static str {
     }
 }
 
-/// The Belote announcement of the round, once its first card is played.
+/// Java's `Trump.name()`: `HEARTS`, `ALL_TRUMPS` or `NO_TRUMPS`.
+pub fn trump_name(trump: Trump) -> &'static str {
+    match trump {
+        Trump::AllTrumps => "ALL_TRUMPS",
+        Trump::NoTrumps => "NO_TRUMPS",
+        suit => suit_name(suit.suit().expect("a suit contract")),
+    }
+}
+
+/// The latest Belote announcement of the round, once its first card is played.
 pub fn declaration_message(board: &GameBoard, name: impl Fn(usize) -> String) -> String {
-    match (board.belote_seat(), board.belote_cards_played()) {
-        (Some(seat), 1) => format!("{} declares Belote.", name(seat)),
-        (Some(seat), played) if played >= 2 && board.belote_bonus_awarded() => {
-            format!("{} declares Rebelote: 20 bonus points.", name(seat))
-        }
-        _ => String::new(),
+    match board.last_belote() {
+        Some(BeloteDeclaration {
+            seat,
+            rebelote: false,
+        }) => format!("{} declares Belote.", name(seat)),
+        Some(BeloteDeclaration {
+            seat,
+            rebelote: true,
+        }) => format!("{} declares Rebelote: 20 bonus points.", name(seat)),
+        None => String::new(),
     }
 }
 pub const SLOW_DOWN: &str = "Slow down: wait a moment before reacting again.";

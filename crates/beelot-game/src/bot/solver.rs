@@ -6,7 +6,7 @@
 //! same best card.
 
 use crate::board::SeatCard;
-use crate::card::{Card, Rank, Seat, Suit};
+use crate::card::{Card, Rank, Seat, Suit, Trump};
 use crate::rules;
 
 const TABLE_BITS: u32 = 20;
@@ -20,7 +20,7 @@ const GOLDEN_GAMMA: i64 = 0x9E3779B97F4A7C15_u64 as i64;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Position {
     pub hands: [Vec<Card>; 4],
-    pub trump: Suit,
+    pub trump: Trump,
     pub tricks: Vec<Vec<SeatCard>>,
     pub current_trick: Vec<SeatCard>,
     pub first_leader: Seat,
@@ -28,7 +28,7 @@ pub struct Position {
 
 impl Position {
     /// A round before its first card, led by the given seat.
-    pub fn start(hands: [Vec<Card>; 4], trump: Suit, leader: Seat) -> Self {
+    pub fn start(hands: [Vec<Card>; 4], trump: Trump, leader: Seat) -> Self {
         Self {
             hands,
             trump,
@@ -59,7 +59,9 @@ pub struct DoubleDummySolver {
     points: [i32; 32],
     hands: [u32; 4],
     trick: [u32; 4],
-    trump_suit: u32,
+    trump: Trump,
+    /// The trump suit, or none under all trumps and no trumps, where nothing is cut.
+    trump_suit: Option<u32>,
     nodes: u64,
     /// Table entries carry the number of the solve that wrote them, so the table never needs
     /// clearing.
@@ -82,7 +84,8 @@ impl DoubleDummySolver {
             points: [0; 32],
             hands: [0; 4],
             trick: [0; 4],
-            trump_suit: 0,
+            trump: Trump::Clubs,
+            trump_suit: None,
             nodes: 0,
             generation: 0,
         }
@@ -116,14 +119,8 @@ impl DoubleDummySolver {
             self.hands[seat] = self.mask(&position.hands[seat]);
         }
         let won = points_won(position);
-        let belote = belote_seat(position);
-        let belote_for = |team: Seat| {
-            if belote.is_some_and(|seat| seat % 2 == team) {
-                20
-            } else {
-                0
-            }
-        };
+        let belote = belote_points(position);
+        let belote_for = |team: Seat| belote[team];
 
         let current = &position.current_trick;
         let remaining = self.remaining();
@@ -163,8 +160,9 @@ impl DoubleDummySolver {
         self.nodes
     }
 
-    fn prepare(&mut self, trump: Suit) {
-        self.trump_suit = trump.ordinal() as u32;
+    fn prepare(&mut self, trump: Trump) {
+        self.trump = trump;
+        self.trump_suit = trump.suit().map(|suit| suit.ordinal() as u32);
         for suit in Suit::ALL {
             for rank in Rank::ALL {
                 let card = Card::new(rank, suit);
@@ -298,21 +296,24 @@ impl DoubleDummySolver {
         let winning_card = self.trick[winner];
         let follow = hand & suit_mask(lead_suit);
         if follow != 0 {
-            if lead_suit != self.trump_suit {
+            if Some(lead_suit) != self.trump_suit && self.trump != Trump::AllTrumps {
                 return follow;
             }
             let higher = follow & above(winning_card);
             return if higher != 0 { higher } else { follow };
         }
         // Java compares with `position - 2`, which is -1 for the second card.
+        let Some(trump_suit) = self.trump_suit else {
+            return hand;
+        };
         if winner + 2 == position {
             return hand;
         }
-        let trumps = hand & suit_mask(self.trump_suit);
+        let trumps = hand & suit_mask(trump_suit);
         if trumps == 0 {
             return hand;
         }
-        if winning_card >> 3 != self.trump_suit {
+        if winning_card >> 3 != trump_suit {
             return trumps;
         }
         let higher = trumps & above(winning_card);
@@ -327,7 +328,7 @@ impl DoubleDummySolver {
             let beats = if contender >> 3 == current >> 3 {
                 contender > current
             } else {
-                contender >> 3 == self.trump_suit
+                Some(contender >> 3) == self.trump_suit
             };
             if beats {
                 winner = pos;
@@ -346,8 +347,7 @@ impl DoubleDummySolver {
     }
 
     fn index(&self, card: Card) -> u32 {
-        let trump = Suit::ALL[self.trump_suit as usize];
-        8 * card.suit.ordinal() as u32 + rules::strength(card, trump) as u32
+        8 * card.suit.ordinal() as u32 + rules::strength(card, self.trump) as u32
     }
 
     fn mask(&self, hand: &[Card]) -> u32 {
@@ -398,11 +398,10 @@ fn leader_of(position: &Position) -> Seat {
     }
 }
 
-/// The seat dealt both the king and the queen of trumps.
-fn belote_seat(position: &Position) -> Option<Seat> {
-    let king = Card::new(Rank::King, position.trump);
-    let queen = Card::new(Rank::Queen, position.trump);
-    (0..4).find(|&seat| {
+/// The belote points of each team: 20 for every seat dealt the king and queen of a trump suit.
+fn belote_points(position: &Position) -> [i32; 2] {
+    let mut points = [0; 2];
+    for seat in 0..4 {
         let dealt: Vec<Card> = position.hands[seat]
             .iter()
             .copied()
@@ -416,6 +415,14 @@ fn belote_seat(position: &Position) -> Option<Seat> {
                     .map(|played| played.card),
             )
             .collect();
-        dealt.contains(&king) && dealt.contains(&queen)
-    })
+        for suit in Suit::ALL {
+            if position.trump.is_trump(suit)
+                && dealt.contains(&Card::new(Rank::King, suit))
+                && dealt.contains(&Card::new(Rank::Queen, suit))
+            {
+                points[seat % 2] += 20;
+            }
+        }
+    }
+    points
 }

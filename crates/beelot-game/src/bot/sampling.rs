@@ -18,7 +18,7 @@ use super::rule_based::RuleBasedStrategy;
 use super::solver::{DoubleDummySolver, Position};
 use crate::bidding::{AuctionDecision, AuctionView};
 use crate::board::{PlayView, SeatCard};
-use crate::card::{Card, Rank, Seat, Variant};
+use crate::card::{Card, Rank, Seat, Suit, Variant};
 use crate::rng::{RandomSource, SplitMix64};
 use crate::scoring::{self, Declaration, Totals};
 
@@ -265,10 +265,7 @@ pub(crate) fn outcome(
     north_south: i32,
     east_west: i32,
 ) -> i64 {
-    let mut belote = [0; 2];
-    if let Some(seat) = belote_seat(view, hands) {
-        belote[seat % 2] = 20;
-    }
+    let belote = belote_points(view, hands);
     let mut announcements = [0i32; 2];
     for declaration in view
         .revealed_announcements
@@ -310,11 +307,11 @@ pub(crate) fn outcome(
     }
 }
 
-/// The seat dealt both the king and the queen of trumps in the sample.
-fn belote_seat(view: &PlayView, hands: &[Vec<Card>; 4]) -> Option<Seat> {
-    let king = Card::new(Rank::King, view.trump);
-    let queen = Card::new(Rank::Queen, view.trump);
-    (0..4).find(|&seat| {
+/// The belote points of each team in the sample: 20 for every seat dealt the king and queen of a
+/// trump suit.
+fn belote_points(view: &PlayView, hands: &[Vec<Card>; 4]) -> [i32; 2] {
+    let mut points = [0; 2];
+    for seat in 0..4 {
         let dealt: Vec<Card> = hands[seat]
             .iter()
             .copied()
@@ -327,8 +324,16 @@ fn belote_seat(view: &PlayView, hands: &[Vec<Card>; 4]) -> Option<Seat> {
                     .map(|played| played.card),
             )
             .collect();
-        dealt.contains(&king) && dealt.contains(&queen)
-    })
+        for suit in Suit::ALL {
+            if view.trump.is_trump(suit)
+                && dealt.contains(&Card::new(Rank::King, suit))
+                && dealt.contains(&Card::new(Rank::Queen, suit))
+            {
+                points[seat % 2] += 20;
+            }
+        }
+    }
+    points
 }
 
 /// A number identifying the bot's view that is the same in every run, unlike Java's enum hash
@@ -368,7 +373,7 @@ mod tests {
     use crate::bidding::BiddingState;
     use crate::board::GameBoard;
     use crate::bot::turns::{play_turn, take_auction_turn};
-    use crate::card::{Suit, Variant};
+    use crate::card::{Suit, Trump, Variant};
     use crate::rng::JavaRandom;
 
     fn card(code: &str) -> Card {
@@ -503,7 +508,7 @@ mod tests {
             seat,
             hand: hand.clone(),
             legal_cards: hand,
-            trump: Suit::Hearts,
+            trump: Trump::Hearts,
             variant,
             contract_value,
             coinched: false,

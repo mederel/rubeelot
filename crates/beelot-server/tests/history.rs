@@ -10,7 +10,7 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use beelot_game::scoring::{RoundResult, RoundSummary};
-use beelot_game::{Difficulty, Suit, Team, Variant};
+use beelot_game::{Difficulty, Team, Trump, Variant};
 use beelot_server::app::router;
 use beelot_server::auth::sessions;
 use beelot_server::clock::Clock;
@@ -62,7 +62,7 @@ fn round(
 ) -> RoundSummary {
     RoundSummary {
         declaring_team: declaring,
-        trump: Suit::Hearts,
+        trump: Trump::Hearts,
         contract_value: Some(contract),
         coinched,
         result: result(made, capot, ns, ew),
@@ -156,7 +156,7 @@ async fn stores_the_match_with_its_seats_and_rounds_and_names_seats_after_their_
     assert!(stored.seats[1].bot);
     let first = &stored.rounds[0];
     assert_eq!(first.declaring_team, Team::NorthSouth);
-    assert_eq!(first.trump, Suit::Hearts);
+    assert_eq!(first.trump, Trump::Hearts);
     assert_eq!(first.contract_value, Some(100));
     assert!(first.contract_made);
     assert_eq!(first.belote_team, Some(Team::NorthSouth));

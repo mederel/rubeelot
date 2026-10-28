@@ -7,7 +7,7 @@ use beelot_game::announcements::{self, Announcement};
 use beelot_game::bidding::BiddingState;
 use beelot_game::board::GameBoard;
 use beelot_game::scoring::{Declaration, RoundResult};
-use beelot_game::{Card, Difficulty, Suit, Team, Variant, rules};
+use beelot_game::{Card, Difficulty, Suit, Team, Trump, Variant, rules};
 use serde::Serialize;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -100,7 +100,7 @@ fn cards(cards: impl IntoIterator<Item = Card>) -> Vec<CardView> {
     cards.into_iter().map(CardView::from).collect()
 }
 
-fn sorted(hand: &[Card], trump: Option<Suit>) -> Vec<CardView> {
+fn sorted(hand: &[Card], trump: Option<Trump>) -> Vec<CardView> {
     let mut hand = hand.to_vec();
     hand.sort_by_key(|card| card.display_key(trump));
     cards(hand)
@@ -487,7 +487,7 @@ fn board_view(board: &GameBoard, you: usize, name: &impl Fn(usize) -> String) ->
             .map(|played| rules::points(played.card, trump))
             .sum(),
         declaration_message: messages::declaration_message(board, name),
-        belote_bonus_points: if board.belote_bonus_awarded() { 20 } else { 0 },
+        belote_bonus_points: board.belote_bonus(),
         round_result: board
             .round_result()
             .map(|result| round_result_view(result, name)),
@@ -501,7 +501,7 @@ fn board_view(board: &GameBoard, you: usize, name: &impl Fn(usize) -> String) ->
         declaring_player_index: board.declarer(),
         announcements,
         own_announcements: if announcements && hand.len() == 8 {
-            announcements::find(hand)
+            announcements::find(hand, trump)
                 .iter()
                 .map(AnnouncementView::from)
                 .collect()
