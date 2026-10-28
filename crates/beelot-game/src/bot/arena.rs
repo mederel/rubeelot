@@ -15,14 +15,16 @@ use crate::rng::RandomSource;
 use crate::rules;
 
 /// The names of the arena bots, in the order the arena lists them.
-pub const ARENA_BOTS: [&str; 8] = [
+pub const ARENA_BOTS: [&str; 10] = [
     "current",
     "challenging",
     "baseline",
     "previous-play",
     "previous-trumps",
+    "previous-all-trumps-play",
     "no-coinche",
     "no-announcement-bidding",
+    "no-all-trumps-bidding",
     "random",
 ];
 
@@ -86,8 +88,12 @@ fn named(name: &str, challenging: SamplingStrategy) -> Result<Box<dyn ArenaBot>,
         "previous-trumps" => {
             Box::new(PreviousTrumpsBot(RuleBasedStrategy::without_trump_control()))
         }
+        "previous-all-trumps-play" => Box::new(PreviousAllTrumpsPlayBot(
+            RuleBasedStrategy::without_all_trumps_tactics(),
+        )),
         "no-coinche" => Box::new(NoCoincheBot::default()),
         "no-announcement-bidding" => Box::new(NoAnnouncementBiddingBot::default()),
+        "no-all-trumps-bidding" => Box::new(NoAllTrumpsBiddingBot::default()),
         "random" => Box::new(RandomCardBot::default()),
         _ => {
             return Err(UnknownBot {
@@ -152,7 +158,7 @@ impl ArenaBot for BaselineBot {
         if view.highest_bid == 0 {
             return AuctionDecision::Bid {
                 value: 80,
-                suit: longest_suit(&view.hand),
+                trump: longest_suit(&view.hand).into(),
             };
         }
         let supported = view.highest_bid_suit.and_then(Trump::suit);
@@ -168,7 +174,7 @@ impl ArenaBot for BaselineBot {
         {
             return AuctionDecision::Bid {
                 value: (view.highest_bid + raise).min(MAX_BID),
-                suit,
+                trump: suit.into(),
             };
         }
         AuctionDecision::Pass
@@ -325,6 +331,24 @@ impl ArenaBot for PreviousTrumpsBot {
     }
 }
 
+/// Reference bot: bids like the current bot, but plays all trumps as bots did in US-063, holding
+/// back the jack and nine of every suit and never cashing a master card in defence.
+struct PreviousAllTrumpsPlayBot(RuleBasedStrategy);
+
+impl ArenaBot for PreviousAllTrumpsPlayBot {
+    fn name(&self) -> &'static str {
+        "previous-all-trumps-play"
+    }
+
+    fn decide_auction(&self, view: &AuctionView, _: &mut dyn RandomSource) -> AuctionDecision {
+        self.0.decide_auction(view)
+    }
+
+    fn choose_card(&self, view: &PlayView, _: &mut dyn RandomSource) -> Card {
+        self.0.choose_card(view)
+    }
+}
+
 /// Reference bot: bids and plays like the current bot, but passes where it would coinche, as
 /// bots did before US-055.
 #[derive(Default)]
@@ -360,6 +384,27 @@ impl ArenaBot for NoAnnouncementBiddingBot {
     fn decide_auction(&self, view: &AuctionView, _: &mut dyn RandomSource) -> AuctionDecision {
         let mut view = view.clone();
         view.announcements = false;
+        self.0.decide_auction(&view)
+    }
+
+    fn choose_card(&self, view: &PlayView, _: &mut dyn RandomSource) -> Card {
+        self.0.choose_card(view)
+    }
+}
+
+/// Reference bot: plays like the current bot, but bids as though the table played without all
+/// trumps and no trumps (US-064).
+#[derive(Default)]
+struct NoAllTrumpsBiddingBot(RuleBasedStrategy);
+
+impl ArenaBot for NoAllTrumpsBiddingBot {
+    fn name(&self) -> &'static str {
+        "no-all-trumps-bidding"
+    }
+
+    fn decide_auction(&self, view: &AuctionView, _: &mut dyn RandomSource) -> AuctionDecision {
+        let mut view = view.clone();
+        view.all_trumps = false;
         self.0.decide_auction(&view)
     }
 
@@ -408,7 +453,8 @@ mod tests {
         assert_eq!(
             error.to_string(),
             "Unknown bot nobody. Available: [current, challenging, baseline, previous-play, \
-             previous-trumps, no-coinche, no-announcement-bidding, random]"
+             previous-trumps, previous-all-trumps-play, no-coinche, no-announcement-bidding, \
+             no-all-trumps-bidding, random]"
         );
     }
 

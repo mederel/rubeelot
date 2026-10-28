@@ -1,0 +1,11 @@
+Bot arena — Contrée
+current vs baseline, 100 duplicate deal pairs, seed 1, announcements on, tout-atout and sans-atout off
+
+Point difference per deal (current − baseline): +36.69 ± 14.80 (95% CI +21.89 to +51.49)
+Matches to 1,000 won by current: 86.4% (19/22), 95% CI 66.7%–95.3%
+Contract success: current 90.2% (120/133); baseline 82.1% (55/67)
+Tout-atout and sans-atout contracts: current n/a (0/0); baseline n/a (0/0)
+Coinche success: current 37.5% (3/8); baseline n/a (0/0)
+Redeal rate: 0.0% (0/200)
+Rounds with announcements: 64.0% (128/200)
+Decision time per card: current avg 6.7 µs, p99 17.3 µs; baseline avg 7.2 µs, p99 17.6 µs

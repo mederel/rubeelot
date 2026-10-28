@@ -3,6 +3,7 @@
 //! `fr.beelot.game.bot` package.
 
 pub mod arena;
+pub mod hand_features;
 pub(crate) mod memory;
 pub mod rule_based;
 pub mod sampling;

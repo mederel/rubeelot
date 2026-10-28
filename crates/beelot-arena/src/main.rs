@@ -32,6 +32,9 @@ struct Options {
     /// Whether players declare announcements.
     #[arg(long, value_enum, default_value_t = Switch::On)]
     announcements: Switch,
+    /// Whether Contrée deals play all trumps and no trumps, as public tables do.
+    #[arg(long, value_enum, default_value_t = Switch::On)]
+    all_trumps: Switch,
     /// Where to write the report.
     #[arg(long, default_value = "target/bot-arena/report.txt")]
     report: PathBuf,
@@ -75,10 +78,17 @@ fn run(options: Options) -> Result<(), String> {
     let second = arena_bot(&options.second).map_err(|error| error.to_string())?;
     let arena = BotArena::new(first, second);
     let announcements = matches!(options.announcements, Switch::On);
+    let all_trumps = matches!(options.all_trumps, Switch::On);
     let mut report = String::new();
     for &variant in options.variant.variants() {
         let section = arena
-            .run(variant, options.deals as usize, options.seed, announcements)
+            .run(
+                variant,
+                options.deals as usize,
+                options.seed,
+                announcements,
+                all_trumps,
+            )
             .format();
         println!("{section}");
         report.push_str(&section);

@@ -1,10 +1,11 @@
 Bot arena — Contrée
-current vs random, 100 duplicate deal pairs, seed 1, announcements on
+current vs random, 100 duplicate deal pairs, seed 1, announcements on, tout-atout and sans-atout on
 
-Point difference per deal (current − random): +60.95 ± 13.56 (95% CI +47.39 to +74.51)
-Matches to 1,000 won by current: 88.5% (23/26), 95% CI 71.0%–96.0%
-Contract success: current 95.0% (95/100); random 77.0% (77/100)
-Coinche success: current 20.0% (1/5); random 0.0% (0/5)
+Point difference per deal (current − random): +70.73 ± 15.16 (95% CI +55.57 to +85.89)
+Matches to 1,000 won by current: 88.9% (24/27), 95% CI 71.9%–96.1%
+Contract success: current 94.0% (94/100); random 72.0% (72/100)
+Tout-atout and sans-atout contracts: current 94.1% (16/17); random 58.8% (10/17)
+Coinche success: current 16.7% (1/6); random 0.0% (0/6)
 Redeal rate: 0.0% (0/200)
 Rounds with announcements: 64.0% (128/200)
-Decision time per card: current avg 6.4 µs, p99 17.7 µs; random avg 1.2 µs, p99 3.1 µs
+Decision time per card: current avg 6.0 µs, p99 15.2 µs; random avg 1.3 µs, p99 2.4 µs

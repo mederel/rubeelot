@@ -1,8 +1,9 @@
 //! Plays two bots against each other on seeded deals, in the duplicate format: every deal is
 //! played twice with the same cards in the same seats, once with the first bot as North–South and
 //! once with it as East–West. A deal where everyone passes counts as a redeal worth no points; the
-//! cards are not dealt again. Bots always declare their announcements (US-061). Port of the Java
-//! `BotArena`.
+//! cards are not dealt again. Bots always declare their announcements (US-061). Contrée deals
+//! play with all trumps and no trumps when asked, as public tables do (US-064); Classic ignores
+//! the option. Port of the Java `BotArena`.
 
 use std::time::Instant;
 
@@ -27,7 +28,8 @@ impl BotArena {
         Self { first, second }
     }
 
-    /// Plays `deal_pairs` deal pairs, dealt from `seed`, with or without announcements.
+    /// Plays `deal_pairs` deal pairs, dealt from `seed`, with or without announcements, and with or
+    /// without all trumps and no trumps.
     ///
     /// # Panics
     ///
@@ -38,6 +40,7 @@ impl BotArena {
         deal_pairs: usize,
         seed: i64,
         announcements: bool,
+        all_trumps: bool,
     ) -> ArenaReport {
         assert!(deal_pairs >= 2, "The arena needs at least two deal pairs.");
         let mut tally = Tally::new(deal_pairs);
@@ -47,36 +50,38 @@ impl BotArena {
         for pair in 0..deal_pairs {
             let deal_seed = deal_seeds.next_long();
             let dealer = pair % SEATS;
-            let first_north_south =
-                self.play(variant, announcements, deal_seed, dealer, true, &mut tally);
-            let first_east_west =
-                self.play(variant, announcements, deal_seed, dealer, false, &mut tally);
+            let options = DealOptions {
+                variant,
+                announcements,
+                all_trumps,
+                seed: deal_seed,
+                dealer,
+            };
+            let first_north_south = self.play(options, true, &mut tally);
+            let first_east_west = self.play(options, false, &mut tally);
             tally.pair(&first_north_south, &first_east_west);
             tally.record_match(&mut first_north_south_match, &first_north_south, true);
             tally.record_match(&mut first_east_west_match, &first_east_west, false);
         }
-        tally.report(
+        let setup = RunSetup {
             variant,
             announcements,
-            self.first.name(),
-            self.second.name(),
+            all_trumps,
             deal_pairs,
             seed,
-        )
+        };
+        tally.report(setup, self.first.name(), self.second.name())
     }
 
-    fn play(
-        &self,
-        variant: Variant,
-        announcements: bool,
-        deal_seed: i64,
-        dealer: Seat,
-        first_is_north_south: bool,
-        tally: &mut Tally,
-    ) -> Deal {
-        let mut bidding = BiddingState::new(variant, dealer, Box::new(JavaRandom::new(deal_seed)))
-            .with_announcements(announcements);
-        let mut bot_random = SplitMix64::new(deal_seed);
+    fn play(&self, options: DealOptions, first_is_north_south: bool, tally: &mut Tally) -> Deal {
+        let mut bidding = BiddingState::new(
+            options.variant,
+            options.dealer,
+            Box::new(JavaRandom::new(options.seed)),
+        )
+        .with_announcements(options.announcements)
+        .with_all_trumps(options.all_trumps);
+        let mut bot_random = SplitMix64::new(options.seed);
         while bidding.completed_board().is_none() && bidding.deals() == 1 {
             let seat = bidding.active_seat();
             let (bot, _) = self.seated(seat, first_is_north_south);
@@ -88,6 +93,7 @@ impl BotArena {
         let Some(mut board) = bidding.into_board() else {
             return Deal::Redealt;
         };
+        let all_trumps_contract = !board.trump().suit_contract();
         let result = loop {
             if let Some(result) = board.round_result() {
                 break result.clone();
@@ -111,6 +117,7 @@ impl BotArena {
             result,
             north_south_declared: Team::of(board.declarer()) == Team::NorthSouth,
             coinched: board.coinched(),
+            all_trumps_contract,
         }
     }
 
@@ -122,6 +129,25 @@ impl BotArena {
     }
 }
 
+/// What a run played, for its report.
+struct RunSetup {
+    variant: Variant,
+    announcements: bool,
+    all_trumps: bool,
+    deal_pairs: usize,
+    seed: i64,
+}
+
+/// How one deal is dealt and played.
+#[derive(Clone, Copy)]
+struct DealOptions {
+    variant: Variant,
+    announcements: bool,
+    all_trumps: bool,
+    seed: i64,
+    dealer: Seat,
+}
+
 /// One played deal, or a redeal when everyone passed.
 enum Deal {
     Redealt,
@@ -129,6 +155,8 @@ enum Deal {
         result: RoundResult,
         north_south_declared: bool,
         coinched: bool,
+        /// Whether the contract is all trumps or no trumps.
+        all_trumps_contract: bool,
     },
 }
 
@@ -148,6 +176,8 @@ struct Tally {
     first_match_wins: usize,
     contracts: [usize; 2],
     contracts_made: [usize; 2],
+    all_trumps_contracts: [usize; 2],
+    all_trumps_contracts_made: [usize; 2],
     coinches: [usize; 2],
     coinches_won: [usize; 2],
     deals: usize,
@@ -165,6 +195,8 @@ impl Tally {
             first_match_wins: 0,
             contracts: [0; 2],
             contracts_made: [0; 2],
+            all_trumps_contracts: [0; 2],
+            all_trumps_contracts_made: [0; 2],
             coinches: [0; 2],
             coinches_won: [0; 2],
             deals: 0,
@@ -199,6 +231,7 @@ impl Tally {
             result,
             north_south_declared,
             coinched,
+            all_trumps_contract,
         } = deal
         else {
             self.redeals += 1;
@@ -215,6 +248,12 @@ impl Tally {
         self.contracts[declarer] += 1;
         if result.contract_made {
             self.contracts_made[declarer] += 1;
+        }
+        if *all_trumps_contract {
+            self.all_trumps_contracts[declarer] += 1;
+            if result.contract_made {
+                self.all_trumps_contracts_made[declarer] += 1;
+            }
         }
         if *coinched {
             self.coinches[1 - declarer] += 1;
@@ -240,15 +279,14 @@ impl Tally {
         *score = MatchScore::new();
     }
 
-    fn report(
-        self,
-        variant: Variant,
-        announcements: bool,
-        first: &str,
-        second: &str,
-        deal_pairs: usize,
-        seed: i64,
-    ) -> ArenaReport {
+    fn report(self, setup: RunSetup, first: &str, second: &str) -> ArenaReport {
+        let RunSetup {
+            variant,
+            announcements,
+            all_trumps,
+            deal_pairs,
+            seed,
+        } = setup;
         let pairs = self.pair_differences.len();
         let mean = java_sum(self.pair_differences.iter().copied()) / pairs as f64;
         let variance = java_sum(
@@ -260,6 +298,7 @@ impl Tally {
         ArenaReport {
             variant,
             announcements,
+            all_trumps,
             first: first.to_string(),
             second: second.to_string(),
             deal_pairs,
@@ -269,6 +308,14 @@ impl Tally {
             first_match_wins: Rate::new(self.first_match_wins, self.matches),
             first_contracts: Rate::new(self.contracts_made[0], self.contracts[0]),
             second_contracts: Rate::new(self.contracts_made[1], self.contracts[1]),
+            first_all_trumps_contracts: Rate::new(
+                self.all_trumps_contracts_made[0],
+                self.all_trumps_contracts[0],
+            ),
+            second_all_trumps_contracts: Rate::new(
+                self.all_trumps_contracts_made[1],
+                self.all_trumps_contracts[1],
+            ),
             first_coinches: Rate::new(self.coinches_won[0], self.coinches[0]),
             second_coinches: Rate::new(self.coinches_won[1], self.coinches[1]),
             redeals: Rate::new(self.redeals, self.deals),
