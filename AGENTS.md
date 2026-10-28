@@ -2,9 +2,10 @@
 
 ## Project status
 
-This repository holds the Rust rewrite of the Beelot backend. The design is in
-`docs/superpowers/specs/2026-10-23-rust-backend-design.md`. The Java backend it
-replaces lives in https://github.com/mederel/beelot. The Cargo workspace is in
+This repository holds Beelot's Rust backend and its frontend. It replaced the
+Java backend of https://github.com/mederel/beelot, which is no longer the
+product (`docs/adr/001-rust-platform.md`). The design is in
+`docs/superpowers/specs/2026-10-23-rust-backend-design.md`. The Cargo workspace is in
 `crates/`: `beelot-game` (rules and bots), `beelot-arena` (the bot arena CLI) and
 `beelot-server` (the axum server, which serves the frontend in its `static/`
 folder). `fixtures/` holds data recorded from the Java implementation (see

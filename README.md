@@ -1,13 +1,28 @@
-# Rubeelot
+# Beelot
 
-The Rust backend of [Beelot](https://github.com/mederel/beelot): French Belote
-and Contrée in the browser, against bots, around one device, or online with
-friends.
+[![Build](https://github.com/mederel/rubeelot/actions/workflows/build.yml/badge.svg)](https://github.com/mederel/rubeelot/actions/workflows/build.yml)
+![Rust 1.95](https://img.shields.io/badge/Rust-1.95-orange?logo=rust)
+![axum](https://img.shields.io/badge/axum-tokio-blue)
+![French, English, Dutch](https://img.shields.io/badge/languages-FR%20%C2%B7%20EN%20%C2%B7%20NL-purple)
 
-This repository is being built to replace Beelot's Java / Spring Boot backend.
-Until the cutover, [`mederel/beelot`](https://github.com/mederel/beelot) remains
-the product. The design is in
-[`docs/superpowers/specs/2026-10-23-rust-backend-design.md`](docs/superpowers/specs/2026-10-23-rust-backend-design.md).
+**Deal in. Good times await.** French Belote and Contrée in the browser:
+against sharp bots, around one device, or online with friends.
+
+| | |
+| --- | --- |
+| **Two games, one table** | Classic Belote with upcard bidding, and Contrée with an 80–160 auction and coinche. |
+| **Bots worth beating** | Relaxed bots play by the rules of thumb; Challenging bots sample hidden hands and solve them double-dummy before every card. |
+| **Play your way** | Quick games against bots, pass-and-play on one device, private tables for your crew, or public matchmaking. |
+| **Your story in numbers** | Sign in to keep every match: wins per variant and difficulty, contracts, coinches, capots and belotes. |
+| **No passwords, ever** | Sign in with a passkey, or just play as a guest. No email address asked. |
+| **Privacy built in** | Download or delete your data from Settings, and a clear privacy policy. |
+| **Speaks your language** | French, English and Dutch, with sound effects and reduced-motion settings. |
+
+This repository is Beelot's Rust backend and its frontend. It replaced the Java /
+Spring Boot backend of [`mederel/beelot`](https://github.com/mederel/beelot);
+[ADR-001](docs/adr/001-rust-platform.md) records the decision and
+[the design](docs/superpowers/specs/2026-10-23-rust-backend-design.md) the
+details.
 
 ## Quick start
 
@@ -78,6 +93,17 @@ without errors:
 - passkey sign-up, sign-out and sign-in, statistics after a finished match, the
   data export and the account deletion.
 
+## Release build
+
+```sh
+cargo build --release
+```
+
+The server is `target/release/beelot-server`. It finds the frontend in the
+crate's `static/` folder at the path it was built from; when the binary runs
+elsewhere, copy `crates/beelot-server/static/` next to it and point
+`BEELOT_STATIC_DIR` at the copy.
+
 ## Bot arena
 
 The arena plays two bots against each other on seeded duplicate deals: every
@@ -102,6 +128,8 @@ cargo run --release -p beelot-arena -- --first current --second random
 The arena bots are `current`, `challenging`, `baseline`, `previous-play`,
 `previous-trumps`, `no-coinche`, `no-announcement-bidding` and `random`. The
 command prints each variant's report and writes them to the report file.
+
+## Solver benchmark
 
 The double-dummy solver behind the Challenging bot has its own benchmark:
 
