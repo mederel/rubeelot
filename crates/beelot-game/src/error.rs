@@ -26,6 +26,8 @@ pub enum GameError {
     BidTooLow,
     #[error("coinche-not-allowed")]
     CoincheNotAllowed,
+    #[error("all-trumps-not-played")]
+    AllTrumpsNotPlayed,
 }
 
 impl GameError {
@@ -44,6 +46,7 @@ impl GameError {
             GameError::InvalidBid => "invalid-bid",
             GameError::BidTooLow => "bid-too-low",
             GameError::CoincheNotAllowed => "coinche-not-allowed",
+            GameError::AllTrumpsNotPlayed => "all-trumps-not-played",
         }
     }
 }
@@ -54,7 +57,7 @@ mod tests {
 
     #[test]
     fn display_is_the_code_for_every_variant() {
-        let all: [GameError; 12] = [
+        let all: [GameError; 13] = [
             NotYourTurn,
             IllegalCard,
             RoundEnded,
@@ -67,6 +70,7 @@ mod tests {
             InvalidBid,
             BidTooLow,
             CoincheNotAllowed,
+            AllTrumpsNotPlayed,
         ];
         for e in all {
             assert_eq!(e.to_string(), e.code());

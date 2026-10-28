@@ -222,6 +222,38 @@ fn only_the_owner_of_a_private_table_chooses_the_match_target_before_the_start()
 }
 
 #[test]
+fn only_the_owner_of_a_private_table_turns_all_trumps_off_before_the_start() {
+    let mut table = Lobby::private("Ana".into(), None, Variant::Contree);
+    assert!(table.all_trumps());
+    let guest = table.join("Ben".into(), None).unwrap();
+    assert_eq!(
+        refusal(table.set_all_trumps(guest, false)),
+        "Only the table owner can change tout-atout and sans-atout."
+    );
+    table.set_all_trumps(0, false).unwrap();
+    assert!(!table.all_trumps());
+    table.set_ready(0, true).unwrap();
+    table.set_ready(guest, true).unwrap();
+    table.start_with_bots(0).unwrap();
+    assert_eq!(
+        refusal(table.set_all_trumps(0, true)),
+        "Tout-atout and sans-atout cannot change after the game starts."
+    );
+    assert_eq!(
+        refusal(public_table().set_all_trumps(0, false)),
+        "Public tables always play with tout-atout and sans-atout."
+    );
+}
+
+#[test]
+fn only_contree_plays_all_trumps() {
+    let seats = || local_seats(None).unwrap();
+    assert!(Lobby::local(seats(), Variant::Contree, true, true, 1_000).all_trumps());
+    assert!(!Lobby::local(seats(), Variant::Contree, true, false, 1_000).all_trumps());
+    assert!(!Lobby::local(seats(), Variant::Classic, true, true, 1_000).all_trumps());
+}
+
+#[test]
 fn a_seat_a_bot_has_taken_over_stays_with_the_bot() {
     let mut table = private_table();
     let guest = table.join("Ben".into(), None).unwrap();

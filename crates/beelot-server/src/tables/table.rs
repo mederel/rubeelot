@@ -147,6 +147,7 @@ fn auction_error(error: GameError) -> AppError {
         GameError::InvalidBid => msg::INVALID_BID,
         GameError::BidTooLow => msg::BID_TOO_LOW,
         GameError::CoincheNotAllowed => msg::COINCHE_NOT_ALLOWED,
+        GameError::AllTrumpsNotPlayed => msg::ALL_TRUMPS_NOT_PLAYED,
         other => return board_error(other),
     };
     conflict(error.code(), message)
@@ -370,17 +371,25 @@ impl Table {
             }
             Action::Settings {
                 announcements,
+                all_trumps,
                 turn_timer,
                 target,
             } => {
                 let seat = self.seat_of(actor)?;
-                if announcements.is_none() && turn_timer.is_none() && target.is_none() {
+                if announcements.is_none()
+                    && all_trumps.is_none()
+                    && turn_timer.is_none()
+                    && target.is_none()
+                {
                     return Ok(false);
                 }
                 // Every setting is checked before any changes.
                 let mut lobby = self.lobby.clone();
                 if let Some(on) = announcements {
                     lobby.set_announcements(seat, on)?;
+                }
+                if let Some(on) = all_trumps {
+                    lobby.set_all_trumps(seat, on)?;
                 }
                 if let Some(seconds) = turn_timer {
                     lobby.set_turn_timer(seat, seconds)?;
@@ -525,10 +534,11 @@ impl Table {
         Ok(true)
     }
 
-    /// Every deal of the table keeps its variant and its announcements.
+    /// Every deal of the table keeps its variant and its options.
     fn deal(&mut self, dealer: usize) {
         let bidding = BiddingState::new(self.lobby.variant(), dealer, (self.rng)())
-            .with_announcements(self.lobby.announcements());
+            .with_announcements(self.lobby.announcements())
+            .with_all_trumps(self.lobby.all_trumps());
         self.auction_deals = bidding.deals();
         self.bidding = Some(bidding);
         self.auction_id = Uuid::new_v4();
@@ -632,6 +642,7 @@ impl Table {
                 .collect(),
             rounds: score.rounds().to_vec(),
             announcements: self.lobby.announcements(),
+            all_trumps: self.lobby.all_trumps(),
             target: score.target(),
         }
     }

@@ -12,7 +12,7 @@ use serde::Serialize;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::tables::messages::{self, suit_name};
+use crate::tables::messages::{self, trump_name};
 use crate::tables::reactions::TableReaction;
 use crate::tables::{Connection, SeatKind, Status, Table, TableKind};
 
@@ -56,6 +56,8 @@ pub struct TableView {
     #[serde(with = "time::serde::rfc3339::option")]
     pub bot_fill_at: Option<OffsetDateTime>,
     pub announcements: bool,
+    /// Whether Contrée bids may name tout-atout and sans-atout.
+    pub all_trumps: bool,
     /// The points the match is played to.
     pub target: i32,
     pub kind: TableKind,
@@ -353,6 +355,7 @@ fn table_view(table: &Table, you: usize) -> TableView {
             .bot_fill_at()
             .filter(|_| lobby.status() == Status::WaitingForPlayers),
         announcements: lobby.announcements(),
+        all_trumps: lobby.all_trumps(),
         target: lobby.target(),
         kind: table.kind,
         difficulty: table.difficulty,
@@ -385,7 +388,7 @@ fn bidding_view(
         message: messages::auction_message(bidding, table.lobby().variant(), name),
         variant: table.lobby().variant(),
         highest_bid: bidding.highest_bid(),
-        highest_bid_suit: bidding.highest_bid_suit().map_or("", suit_name),
+        highest_bid_suit: bidding.highest_bid_suit().map_or("", trump_name),
         highest_bidder: bidding.highest_bidder().map(name).unwrap_or_default(),
         coinche_allowed: bidding.can_coinche(you),
         complete: bidding.completed_board().is_some(),

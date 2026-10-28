@@ -226,6 +226,7 @@ mod tests {
             east_west_score: if east_west_won { 1020 } else { 600 },
             winning_team: winner,
             announcements: false,
+            all_trumps: false,
             target: 1_000,
             seats: vec![
                 seat(None, "Ben", Team::NorthSouth, false),

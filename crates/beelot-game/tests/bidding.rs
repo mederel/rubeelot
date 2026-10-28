@@ -68,7 +68,7 @@ fn the_auction_log_keeps_every_call_in_order_until_the_cards_are_redealt() {
             seat,
             r#type: CallType::Pass,
             value: 0,
-            suit: None,
+            trump: None,
         })
         .collect();
     assert_eq!(state.auction(), expected.as_slice());
@@ -176,7 +176,7 @@ fn each_variant_only_accepts_its_own_calls() {
     let contree_turn = contree.active_seat();
 
     assert_eq!(
-        classic.bid(classic_turn, 80, Suit::Hearts),
+        classic.bid(classic_turn, 80, Trump::Hearts),
         Err(GameError::ContractOnlyInContree)
     );
     assert_eq!(
@@ -201,7 +201,7 @@ fn nobody_may_coinche_before_the_first_bid() {
 fn completed_board_keeps_the_announcements_flag() {
     let mut state = bidding(Variant::Contree, 3, 12).with_announcements(true);
     let seat = state.active_seat();
-    state.bid(seat, 80, Suit::Hearts).unwrap();
+    state.bid(seat, 80, Trump::Hearts).unwrap();
     for _ in 0..3 {
         pass_active(&mut state);
     }
@@ -215,7 +215,7 @@ fn deals_all_cards_and_closes_a_contract_after_three_passes() {
     assert_eq!(state.hand(0).len(), 8);
     assert_eq!(state.upturned_card(), None);
 
-    state.bid(0, 90, Suit::Hearts).unwrap();
+    state.bid(0, 90, Trump::Hearts).unwrap();
     state.pass(1).unwrap();
     state.pass(2).unwrap();
     state.pass(3).unwrap();
@@ -230,14 +230,14 @@ fn deals_all_cards_and_closes_a_contract_after_three_passes() {
 #[test]
 fn opponent_can_coinche_but_declarers_partner_cannot() {
     let mut coinched = contree();
-    coinched.bid(0, 80, Suit::Clubs).unwrap();
+    coinched.bid(0, 80, Trump::Clubs).unwrap();
     assert!(coinched.auction_view(1).coinche_allowed);
     assert!(coinched.can_coinche(1));
     coinched.coinche(1).unwrap();
     assert!(coinched.completed_board().unwrap().coinched());
 
     let mut teammate_turn = contree();
-    teammate_turn.bid(0, 80, Suit::Clubs).unwrap();
+    teammate_turn.bid(0, 80, Trump::Clubs).unwrap();
     teammate_turn.pass(1).unwrap();
     assert_eq!(teammate_turn.coinche(2), Err(GameError::CoincheNotAllowed));
 }
@@ -245,11 +245,11 @@ fn opponent_can_coinche_but_declarers_partner_cannot() {
 #[test]
 fn bids_must_increase_by_ten_within_the_supported_range() {
     let mut state = contree();
-    assert_eq!(state.bid(0, 85, Suit::Spades), Err(GameError::InvalidBid));
-    assert_eq!(state.bid(0, 70, Suit::Spades), Err(GameError::InvalidBid));
-    assert_eq!(state.bid(0, 170, Suit::Spades), Err(GameError::InvalidBid));
-    state.bid(0, 100, Suit::Spades).unwrap();
-    assert_eq!(state.bid(1, 100, Suit::Hearts), Err(GameError::BidTooLow));
+    assert_eq!(state.bid(0, 85, Trump::Spades), Err(GameError::InvalidBid));
+    assert_eq!(state.bid(0, 70, Trump::Spades), Err(GameError::InvalidBid));
+    assert_eq!(state.bid(0, 170, Trump::Spades), Err(GameError::InvalidBid));
+    state.bid(0, 100, Trump::Spades).unwrap();
+    assert_eq!(state.bid(1, 100, Trump::Hearts), Err(GameError::BidTooLow));
 }
 
 #[test]
@@ -270,9 +270,9 @@ fn four_opening_passes_redeal_with_the_next_dealer_and_the_turn_moves_on() {
 #[test]
 fn a_raise_restarts_the_three_pass_closure_count() {
     let mut state = contree();
-    state.bid(0, 80, Suit::Clubs).unwrap();
+    state.bid(0, 80, Trump::Clubs).unwrap();
     state.pass(1).unwrap();
-    state.bid(2, 100, Suit::Hearts).unwrap();
+    state.bid(2, 100, Trump::Hearts).unwrap();
     state.pass(3).unwrap();
     state.pass(0).unwrap();
 
@@ -386,4 +386,84 @@ fn apply_dispatches_decisions_and_serde_matches_the_fixtures() {
     classic.apply(0, AuctionDecision::Trump { suit }).unwrap();
     assert_eq!(classic.completed_board().unwrap().hand(0).len(), 8);
     assert!(classic.into_board().is_some());
+}
+
+// ---- all trumps and no trumps (US-063) ----
+
+#[test]
+fn bids_all_trumps_when_the_table_plays_them() {
+    let mut state = contree().with_all_trumps(true);
+
+    state.bid(0, 100, Trump::AllTrumps).unwrap();
+    assert_eq!(
+        state.auction_view(1).highest_bid_suit,
+        Some(Trump::AllTrumps)
+    );
+    assert!(state.auction_view(1).all_trumps);
+    for seat in 1..4 {
+        state.pass(seat).unwrap();
+    }
+
+    let board = state.completed_board().unwrap();
+    assert_eq!(board.trump(), Trump::AllTrumps);
+    assert_eq!(board.contract_value(), 100);
+}
+
+#[test]
+fn bids_no_trumps_when_the_table_plays_them() {
+    let mut state = contree().with_all_trumps(true);
+
+    state.bid(0, 100, Trump::NoTrumps).unwrap();
+
+    assert_eq!(state.highest_bid_suit(), Some(Trump::NoTrumps));
+    assert_eq!(
+        state.auction_view(1).highest_bid_suit,
+        Some(Trump::NoTrumps)
+    );
+}
+
+#[test]
+fn a_new_contract_is_refused_when_the_table_does_not_play_them() {
+    let mut state = contree();
+
+    assert!(!state.all_trumps());
+    assert_eq!(
+        state.bid(0, 100, Trump::AllTrumps),
+        Err(GameError::AllTrumpsNotPlayed)
+    );
+    assert_eq!(
+        state.bid(0, 100, Trump::NoTrumps),
+        Err(GameError::AllTrumpsNotPlayed)
+    );
+    state.bid(0, 100, Trump::Hearts).unwrap();
+    assert_eq!(state.highest_bid_suit(), Some(Trump::Hearts));
+}
+
+#[test]
+fn no_trumps_does_not_overcall_a_suit_at_the_same_value() {
+    let mut state = contree().with_all_trumps(true);
+    state.bid(0, 100, Trump::Hearts).unwrap();
+
+    assert_eq!(
+        state.bid(1, 100, Trump::NoTrumps),
+        Err(GameError::BidTooLow)
+    );
+    state.bid(1, 110, Trump::NoTrumps).unwrap();
+    assert_eq!(state.highest_bid(), 110);
+}
+
+#[test]
+fn a_redeal_keeps_the_all_trumps_option() {
+    let mut state = contree();
+    for _ in 0..4 {
+        pass_active(&mut state);
+    }
+
+    assert_eq!(state.deals(), 2);
+    assert!(!state.all_trumps());
+    let seat = state.active_seat();
+    assert_eq!(
+        state.bid(seat, 100, Trump::AllTrumps),
+        Err(GameError::AllTrumpsNotPlayed)
+    );
 }

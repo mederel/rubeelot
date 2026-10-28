@@ -178,6 +178,7 @@ fn private_match(account: Uuid, other: Uuid, at: OffsetDateTime) -> FinishedMatc
         ],
         rounds: vec![round()],
         announcements: false,
+        all_trumps: false,
         target: 1_000,
     }
 }
@@ -370,6 +371,7 @@ async fn export_holds_account_events_and_matches() {
     assert!(played["rounds"][0]["capotTeam"].is_null());
     assert_eq!(played["announcements"], false);
     assert_eq!(played["target"], 1_000);
+    assert_eq!(played["allTrumps"], false);
     assert_eq!(played["rounds"][0]["northSouthAnnouncements"], 0);
     assert_eq!(
         world

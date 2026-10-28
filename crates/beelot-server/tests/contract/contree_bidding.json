@@ -107,6 +107,7 @@
   },
   "reactions": [],
   "table": {
+    "allTrumps": true,
     "announcements": true,
     "botFillAt": null,
     "difficulty": "RELAXED",

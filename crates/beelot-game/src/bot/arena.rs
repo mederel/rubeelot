@@ -10,7 +10,7 @@ use super::rule_based::{RuleBasedStrategy, by_value, first_min, preferring, supp
 use super::sampling::SamplingStrategy;
 use crate::bidding::{AuctionDecision, AuctionView};
 use crate::board::{PlayView, SeatCard};
-use crate::card::{Card, Rank, Suit, Variant};
+use crate::card::{Card, Rank, Suit, Trump, Variant};
 use crate::rng::RandomSource;
 use crate::rules;
 
@@ -155,13 +155,14 @@ impl ArenaBot for BaselineBot {
                 suit: longest_suit(&view.hand),
             };
         }
-        let raise = match view.highest_bid_suit {
+        let supported = view.highest_bid_suit.and_then(Trump::suit);
+        let raise = match supported {
             Some(suit) if view.partner_holds_contract() && !view.has_bid() => {
                 support_raise(&view.hand, suit)
             }
             _ => 0,
         };
-        if let Some(suit) = view.highest_bid_suit
+        if let Some(suit) = supported
             && raise > 0
             && view.highest_bid < MAX_BID
         {

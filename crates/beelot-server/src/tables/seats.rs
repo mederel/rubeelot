@@ -95,6 +95,7 @@ pub struct Lobby {
     status: Status,
     variant: Variant,
     announcements: bool,
+    all_trumps: bool,
     target: i32,
     turn_timer_seconds: u32,
     /// Set for public tables only: bots take the empty seats once it passes.
@@ -109,6 +110,7 @@ impl Lobby {
             status: Status::WaitingForPlayers,
             variant,
             announcements: true,
+            all_trumps: true,
             target: DEFAULT_TARGET,
             turn_timer_seconds: 0,
             bot_fill_at,
@@ -131,7 +133,13 @@ impl Lobby {
     }
 
     /// A solo or pass-and-play table, which starts at once.
-    pub fn local(seats: [Seat; 4], variant: Variant, announcements: bool, target: i32) -> Self {
+    pub fn local(
+        seats: [Seat; 4],
+        variant: Variant,
+        announcements: bool,
+        all_trumps: bool,
+        target: i32,
+    ) -> Self {
         let owner = seats
             .iter()
             .position(|seat| seat.kind == SeatKind::Human)
@@ -142,6 +150,7 @@ impl Lobby {
             status: Status::InProgress,
             variant,
             announcements,
+            all_trumps,
             target,
             turn_timer_seconds: 0,
             bot_fill_at: None,
@@ -178,6 +187,11 @@ impl Lobby {
 
     pub fn announcements(&self) -> bool {
         self.announcements
+    }
+
+    /// Whether bids may name tout-atout and sans-atout (US-063): only Contrée has them.
+    pub fn all_trumps(&self) -> bool {
+        self.variant == Variant::Contree && self.all_trumps
     }
 
     /// The points the match is played to (US-062).
@@ -403,6 +417,19 @@ impl Lobby {
             return Err(conflict("settings-locked", msg::ANNOUNCEMENTS_LOCKED));
         }
         self.announcements = on;
+        Ok(())
+    }
+
+    /// Before the game starts, the owner of a private table may turn tout-atout and sans-atout off.
+    pub fn set_all_trumps(&mut self, position: usize, on: bool) -> Result<(), AppError> {
+        if self.is_public() {
+            return Err(conflict("public-all-trumps", msg::PUBLIC_ALL_TRUMPS));
+        }
+        self.owned_by(position, msg::OWNER_SETS_ALL_TRUMPS)?;
+        if self.status != Status::WaitingForPlayers {
+            return Err(conflict("settings-locked", msg::ALL_TRUMPS_LOCKED));
+        }
+        self.all_trumps = on;
         Ok(())
     }
 

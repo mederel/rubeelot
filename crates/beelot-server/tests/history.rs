@@ -96,6 +96,7 @@ fn finished(
         ],
         rounds,
         announcements,
+        all_trumps: false,
         target: 1_000,
     }
 }
@@ -200,6 +201,20 @@ async fn records_the_match_target() {
         matches::played_by(&pool, fay).await.unwrap()[0].target,
         1_500
     );
+}
+
+#[tokio::test]
+async fn records_whether_the_match_played_all_trumps() {
+    let pool = db::test_pool().await;
+    let hal = account(&pool, "Hal").await;
+    let mut summary = round(Team::NorthSouth, 100, false, true, None, 160, 2);
+    summary.trump = Trump::NoTrumps;
+    let mut match_ = finished(Some(hal), vec![summary], false);
+    match_.all_trumps = true;
+    HistoryRecorder::new(pool.clone()).record(match_).await;
+    let stored = &matches::played_by(&pool, hal).await.unwrap()[0];
+    assert!(stored.all_trumps);
+    assert_eq!(stored.rounds[0].trump, Trump::NoTrumps);
 }
 
 #[tokio::test]

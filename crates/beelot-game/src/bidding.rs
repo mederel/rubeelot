@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::board::GameBoard;
-use crate::card::{Card, Seat, Suit, Variant};
+use crate::card::{Card, Seat, Suit, Trump, Variant};
 use crate::error::GameError;
 use crate::rng::{RandomSource, java_shuffle};
 
@@ -40,14 +40,16 @@ pub enum CallType {
     Coinche,
 }
 
-/// A call made from the given seat; `value` is set for a bid, `suit` for a bid or a chosen trump.
+/// A call made from the given seat; `value` is set for a bid, `trump` for a bid or a chosen trump.
+/// The fixtures recorded before US-063 name the trump `suit`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SeatCall {
     pub seat: Seat,
     #[serde(rename = "type")]
     pub r#type: CallType,
     pub value: i32,
-    pub suit: Option<Suit>,
+    #[serde(rename = "suit", alias = "trump")]
+    pub trump: Option<Trump>,
 }
 
 /// A seat's view of the auction, for bots. `highest_bidder_seat` is `-1` in JSON before the first bid.
@@ -62,11 +64,14 @@ pub struct AuctionView {
     pub dealer_index: Seat,
     pub auction: Vec<SeatCall>,
     pub highest_bid: i32,
-    pub highest_bid_suit: Option<Suit>,
+    pub highest_bid_suit: Option<Trump>,
     #[serde(with = "minus_one_none")]
     pub highest_bidder_seat: Option<Seat>,
     pub coinche_allowed: bool,
     pub announcements: bool,
+    /// Whether bids may name all trumps or no trumps (US-063); off in fixtures recorded before.
+    #[serde(default)]
+    pub all_trumps: bool,
 }
 
 impl AuctionView {
@@ -106,11 +111,12 @@ pub struct BiddingState {
     consecutive_passes: usize,
     highest_bid: i32,
     highest_bidder: Option<Seat>,
-    highest_bid_suit: Option<Suit>,
+    highest_bid_suit: Option<Trump>,
     coinched: bool,
     completed_board: Option<GameBoard>,
     auction: Vec<SeatCall>,
     announcements: bool,
+    all_trumps: bool,
 }
 
 impl std::fmt::Debug for BiddingState {
@@ -133,6 +139,7 @@ impl std::fmt::Debug for BiddingState {
             .field("completed_board", &self.completed_board)
             .field("auction", &self.auction)
             .field("announcements", &self.announcements)
+            .field("all_trumps", &self.all_trumps)
             .finish_non_exhaustive()
     }
 }
@@ -158,6 +165,7 @@ impl BiddingState {
             completed_board: None,
             auction: Vec::new(),
             announcements: false,
+            all_trumps: false,
         };
         state.deal_again();
         state
@@ -171,6 +179,16 @@ impl BiddingState {
 
     pub fn announcements(&self) -> bool {
         self.announcements
+    }
+
+    /// Whether Contrée bids may name all trumps or no trumps (US-063); off unless set.
+    pub fn with_all_trumps(mut self, on: bool) -> Self {
+        self.all_trumps = on;
+        self
+    }
+
+    pub fn all_trumps(&self) -> bool {
+        self.all_trumps
     }
 
     pub fn pass(&mut self, seat: Seat) -> Result<(), GameError> {
@@ -211,7 +229,7 @@ impl BiddingState {
         if self.round == 2 && trump == upturned {
             return Err(GameError::MustChooseAnotherSuit);
         }
-        self.record_call(seat, CallType::Trump, 0, Some(trump));
+        self.record_call(seat, CallType::Trump, 0, Some(trump.into()));
         let mut hands = self.hands.clone();
         for (index, hand) in hands.iter_mut().enumerate() {
             let extra = if index == self.active { 2 } else { 3 };
@@ -228,9 +246,14 @@ impl BiddingState {
         Ok(())
     }
 
-    pub fn bid(&mut self, seat: Seat, value: i32, suit: Suit) -> Result<(), GameError> {
+    /// A Contrée bid. It must be higher than the highest bid; a contract of all trumps or no trumps
+    /// at the same value does not overcall a suit (FFB §4.1 b).
+    pub fn bid(&mut self, seat: Seat, value: i32, trump: Trump) -> Result<(), GameError> {
         self.require_contree()?;
         self.require_active(seat)?;
+        if !self.all_trumps && !trump.suit_contract() {
+            return Err(GameError::AllTrumpsNotPlayed);
+        }
         if !(80..=160).contains(&value) || value % 10 != 0 {
             return Err(GameError::InvalidBid);
         }
@@ -238,9 +261,9 @@ impl BiddingState {
             return Err(GameError::BidTooLow);
         }
         self.highest_bid = value;
-        self.highest_bid_suit = Some(suit);
+        self.highest_bid_suit = Some(trump);
         self.highest_bidder = Some(self.active);
-        self.record_call(seat, CallType::Bid, value, Some(suit));
+        self.record_call(seat, CallType::Bid, value, Some(trump));
         self.consecutive_passes = 0;
         self.active = (self.active + 1) % 4;
         Ok(())
@@ -263,7 +286,7 @@ impl BiddingState {
     pub fn apply(&mut self, seat: Seat, decision: AuctionDecision) -> Result<(), GameError> {
         match decision {
             AuctionDecision::Pass => self.pass(seat),
-            AuctionDecision::Bid { value, suit } => self.bid(seat, value, suit),
+            AuctionDecision::Bid { value, suit } => self.bid(seat, value, suit.into()),
             AuctionDecision::Coinche => self.coinche(seat),
             AuctionDecision::Trump { suit } => self.choose_trump(seat, suit),
         }
@@ -284,6 +307,7 @@ impl BiddingState {
             highest_bidder_seat: self.highest_bidder,
             coinche_allowed: self.can_coinche(seat),
             announcements: self.announcements,
+            all_trumps: self.all_trumps,
         }
     }
 
@@ -316,7 +340,7 @@ impl BiddingState {
         self.highest_bid
     }
 
-    pub fn highest_bid_suit(&self) -> Option<Suit> {
+    pub fn highest_bid_suit(&self) -> Option<Trump> {
         self.highest_bid_suit
     }
 
@@ -345,12 +369,12 @@ impl BiddingState {
         self.completed_board
     }
 
-    fn record_call(&mut self, seat: Seat, call: CallType, value: i32, suit: Option<Suit>) {
+    fn record_call(&mut self, seat: Seat, call: CallType, value: i32, trump: Option<Trump>) {
         self.auction.push(SeatCall {
             seat,
             r#type: call,
             value,
-            suit,
+            trump,
         });
     }
 
@@ -407,7 +431,7 @@ impl BiddingState {
         };
         self.completed_board = Some(GameBoard::from_contract(
             self.hands.clone(),
-            trump.into(),
+            trump,
             declarer,
             self.highest_bid,
             self.coinched,

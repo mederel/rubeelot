@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use beelot_game::match_score::DEFAULT_TARGET;
 use beelot_game::{Difficulty, Variant};
 use dashmap::DashMap;
 use sha2::{Digest, Sha256};
@@ -37,6 +38,25 @@ fn new_token() -> String {
     let mut bytes = [0u8; 32];
     getrandom::fill(&mut bytes).expect("the operating system's random generator");
     URL_SAFE_NO_PAD.encode(bytes)
+}
+
+/// The options a solo or pass-and-play table is created with: announcements (US-060), tout-atout
+/// and sans-atout (US-063) and the match target (US-062).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LocalOptions {
+    pub announcements: bool,
+    pub all_trumps: bool,
+    pub target: i32,
+}
+
+impl Default for LocalOptions {
+    fn default() -> Self {
+        Self {
+            announcements: true,
+            all_trumps: true,
+            target: DEFAULT_TARGET,
+        }
+    }
 }
 
 /// What a player gets on creating or joining a table: the token that acts at it, and a private table's code.
@@ -308,12 +328,11 @@ impl TableRegistry {
         &self,
         variant: Variant,
         difficulty: Difficulty,
-        announcements: bool,
-        target: i32,
+        options: LocalOptions,
         seats: Option<Vec<Option<String>>>,
         account: Option<Uuid>,
     ) -> Result<Access, AppError> {
-        let target = valid_target(target)?;
+        let target = valid_target(options.target)?;
         let mut seated = local_seats(seats.as_deref())?;
         if seats.is_none() {
             seated[0].account = account;
@@ -322,7 +341,13 @@ impl TableRegistry {
         let table = Table::local(
             Uuid::new_v4(),
             difficulty,
-            Lobby::local(seated, variant, announcements, target),
+            Lobby::local(
+                seated,
+                variant,
+                options.announcements,
+                options.all_trumps,
+                target,
+            ),
             self.table_setup(),
             self.now(),
         );
