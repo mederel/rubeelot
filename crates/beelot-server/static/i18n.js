@@ -15,7 +15,8 @@ function detectLanguage() {
 
 const language = detectLanguage();
 
-const frenchSuits = { clubs: "trèfle", diamonds: "carreau", hearts: "cœur", spades: "pique" };
+const frenchSuits = { clubs: "trèfle", diamonds: "carreau", hearts: "cœur", spades: "pique",
+  "all trumps": "tout atout", "no trumps": "sans atout" };
 const frenchRankNames = { A: "as", K: "roi", Q: "dame", J: "valet" };
 const frenchRankLabels = { A: "A", K: "R", Q: "D", J: "V" };
 
@@ -328,6 +329,26 @@ const fr = {
     "Par sécurité, reconnectez-vous pour supprimer votre compte.",
 
 
+  // Tout-atout and sans-atout (US-063)
+  "Tout-atout and sans-atout": "Tout atout et sans atout",
+  "Bids may also name all trumps or no trumps.": "Les annonces peuvent aussi nommer le tout atout ou le sans atout.",
+  "Only the four suits are played.": "Seules les quatre couleurs se jouent.",
+  "Tout-atout and sans-atout are played.": "Le tout atout et le sans atout se jouent.",
+  "All trumps": "Tout atout",
+  "No trumps": "Sans atout",
+  "Only the table owner can change tout-atout and sans-atout.": "Seul le propriétaire de la table peut modifier le tout atout et le sans atout.",
+  "Tout-atout and sans-atout cannot change after the game starts.": "Le tout atout et le sans atout ne peuvent pas changer après le début de la partie.",
+  "Public tables always play with tout-atout and sans-atout.": "Les tables publiques jouent toujours avec le tout atout et le sans atout.",
+  "Tout-atout and sans-atout are not played at this table.": "Le tout atout et le sans atout ne se jouent pas à cette table.",
+  "Besides the four suits, a Contrée bid can name sans-atout (no trumps) or tout-atout (all trumps) when the table plays them. A bid must be higher in value whatever the contract. Nothing is cut in either contract: follow the lead suit when you can, otherwise play any card. In tout-atout you must also beat the winning card when you can.":
+    "Outre les quatre couleurs, une annonce de Contrée peut nommer le sans atout ou le tout atout quand la table les joue. Une annonce doit être supérieure en valeur, quel que soit le contrat. On ne coupe dans aucun des deux contrats : fournissez la couleur demandée quand vous le pouvez, sinon jouez la carte de votre choix. Au tout atout, vous devez aussi monter sur la carte qui tient le pli quand vous le pouvez.",
+  "Sans-atout card points: Ace 19, 10 10, King 4, Queen 3, Jack 2, 9, 8 and 7 0. Order: ace, 10, king, queen, jack, 9, 8, 7. The cards total 162 with the 10 points for the last trick (Dix de der).":
+    "Points des cartes au sans atout : As 19, 10 10, Roi 4, Dame 3, Valet 2, 9, 8 et 7 0. Ordre : as, 10, roi, dame, valet, 9, 8, 7. Les cartes valent 162 points au total avec les 10 points du dernier pli (dix de der).",
+  "Tout-atout card points: Jack 13, 9 9, Ace 6, 10 5, King 3, Queen 2, 8 and 7 0. Order in every suit: jack, 9, ace, 10, king, queen, 8, 7. The cards total 162 with the 10 points for the last trick (Dix de der).":
+    "Points des cartes au tout atout : Valet 13, 9 9, As 6, 10 5, Roi 3, Dame 2, 8 et 7 0. Ordre dans chaque couleur : valet, 9, as, 10, roi, dame, 8, 7. Les cartes valent 162 points au total avec les 10 points du dernier pli (dix de der).",
+  "In tout-atout, Belote/Rebelote can be declared in every suit; sans-atout has none. Sans-atout carrés score aces 200, tens 150, and kings, queens, jacks or nines 100.":
+    "Au tout atout, la Belote/Rebelote peut s’annoncer dans toutes les couleurs ; il n’y en a pas au sans atout. Les carrés du sans atout valent 200 pour les as, 150 pour les dix, et 100 pour les rois, dames, valets ou neuf.",
+
   // Announcements (US-060)
   "Announcements": "Annonces",
   "On": "Activées",
@@ -516,7 +537,7 @@ const fr = {
 };
 
 // Server messages that embed names, suits or numbers. Handlers receive the regex captures.
-const suitWord = "(CLUBS|DIAMONDS|HEARTS|SPADES|Clubs|Diamonds|Hearts|Spades)";
+const suitWord = "(CLUBS|DIAMONDS|HEARTS|SPADES|ALL_TRUMPS|NO_TRUMPS|Clubs|Diamonds|Hearts|Spades|All trumps|No trumps)";
 const frenchPatterns = (suitWord) => [
   [/^(.+) is deciding\.$/, (name) => (name === "You" ? "Vous réfléchissez." : `${name} réfléchit.`)],
   [new RegExp(`^(.+) bids (\\d+) ${suitWord}\\.$`), (name, value, suit) =>
@@ -576,7 +597,7 @@ function t(text, ...args) {
 // Suit names arrive as enum values (HEARTS) or display names (Hearts).
 function suitName(suit, capitalise = true) {
   if (!suit) return "";
-  const key = String(suit).toLowerCase();
+  const key = String(suit).toLowerCase().replace("_", " ");
   const name = locale ? locale.suits[key] ?? key : key;
   return capitalise ? name.charAt(0).toUpperCase() + name.slice(1) : name;
 }

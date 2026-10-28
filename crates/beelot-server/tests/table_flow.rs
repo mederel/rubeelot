@@ -531,6 +531,31 @@ fn bots_take_classic_contracts_and_play_up_to_the_humans_first_card() {
 }
 
 #[test]
+fn next_round_and_rematch_keep_the_all_trumps_choice() {
+    let mut table = Table::local(
+        Uuid::new_v4(),
+        Difficulty::Relaxed,
+        Lobby::local(
+            local_seats(None).unwrap(),
+            Variant::Contree,
+            true,
+            false,
+            1_000,
+        ),
+        setup(9),
+        T0,
+    );
+    assert!(!table.bidding().unwrap().all_trumps());
+    finish_auction_at_80(&mut table, Actor::Device);
+    play_round(&mut table, Actor::Device);
+    act(&mut table, Actor::Device, Action::NextRound);
+    assert!(!table.bidding().unwrap().all_trumps());
+    play_match(&mut table, Actor::Device);
+    act(&mut table, Actor::Device, Action::Rematch);
+    assert!(!table.bidding().unwrap().all_trumps());
+}
+
+#[test]
 fn next_round_and_rematch_keep_the_announcements_choice() {
     let mut table = solo_with(Variant::Contree, Difficulty::Relaxed, false, None, setup(9));
     finish_auction_at_80(&mut table, Actor::Device);
