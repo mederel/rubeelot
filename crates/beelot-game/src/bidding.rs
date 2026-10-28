@@ -93,9 +93,16 @@ impl AuctionView {
 #[serde(tag = "type", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AuctionDecision {
     Pass,
-    Bid { value: i32, suit: Suit },
+    /// A Contrée bid in a suit, all trumps or no trumps.
+    Bid {
+        value: i32,
+        #[serde(rename = "suit")]
+        trump: Trump,
+    },
     Coinche,
-    Trump { suit: Suit },
+    Trump {
+        suit: Suit,
+    },
 }
 
 pub struct BiddingState {
@@ -286,7 +293,7 @@ impl BiddingState {
     pub fn apply(&mut self, seat: Seat, decision: AuctionDecision) -> Result<(), GameError> {
         match decision {
             AuctionDecision::Pass => self.pass(seat),
-            AuctionDecision::Bid { value, suit } => self.bid(seat, value, suit.into()),
+            AuctionDecision::Bid { value, trump } => self.bid(seat, value, trump),
             AuctionDecision::Coinche => self.coinche(seat),
             AuctionDecision::Trump { suit } => self.choose_trump(seat, suit),
         }

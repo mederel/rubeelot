@@ -23,7 +23,7 @@ fn engine_matches_every_recorded_deal() {
     let deals = load_deals();
     assert_eq!(
         deals.len(),
-        96,
+        192,
         "a truncated fixture must not shrink the test"
     );
     let mut steps = 0;
@@ -56,7 +56,7 @@ fn every_bot_matches_java() {
     let deals = load_deals();
     assert_eq!(
         deals.len(),
-        96,
+        192,
         "a truncated fixture must not shrink the test"
     );
     let bots: BTreeMap<&str, Box<dyn ArenaBot>> = ARENA_BOTS

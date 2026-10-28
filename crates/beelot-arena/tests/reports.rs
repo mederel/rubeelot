@@ -40,10 +40,16 @@ fn java_sum_keeps_an_infinite_simple_sum() {
     assert_eq!(java_sum([]), 0.0);
 }
 
-/// The configuration a fixture's name records: `<first>-vs-<second>-<classic|contree>-<on|off>`.
-/// Bot names contain hyphens, so the bots are found among the arena bots.
-fn configuration(name: &str) -> (&'static str, &'static str, Variant, bool) {
+/// The configuration a fixture's name records:
+/// `<first>-vs-<second>-<classic|contree>-<on|off>[-no-all-trumps]`, the announcements, then all
+/// trumps and no trumps when they were off. Bot names contain hyphens, so the bots are found among
+/// the arena bots.
+fn configuration(name: &str) -> (&'static str, &'static str, Variant, bool, bool) {
     let stem = name.strip_suffix(".txt").expect("a .txt fixture");
+    let (stem, all_trumps) = match stem.strip_suffix("-no-all-trumps") {
+        Some(stem) => (stem, false),
+        None => (stem, true),
+    };
     let (rest, announcements) = if let Some(rest) = stem.strip_suffix("-on") {
         (rest, true)
     } else if let Some(rest) = stem.strip_suffix("-off") {
@@ -61,7 +67,7 @@ fn configuration(name: &str) -> (&'static str, &'static str, Variant, bool) {
     for first in ARENA_BOTS {
         for second in ARENA_BOTS {
             if format!("{first}-vs-{second}") == bots {
-                return (first, second, variant, announcements);
+                return (first, second, variant, announcements, all_trumps);
             }
         }
     }
@@ -84,13 +90,15 @@ fn reports_match_java() {
         .filter(|name| name.ends_with(".txt"))
         .collect();
     names.sort();
-    assert_eq!(names.len(), 6, "{names:?}");
+    assert_eq!(names.len(), 9, "{names:?}");
     let mut failures = Vec::new();
     for name in &names {
         let expected = fs::read_to_string(directory.join(name)).unwrap();
-        let (first, second, variant, announcements) = configuration(name);
+        let (first, second, variant, announcements, all_trumps) = configuration(name);
         let arena = BotArena::new(arena_bot(first).unwrap(), arena_bot(second).unwrap());
-        let actual = arena.run(variant, 100, 1, announcements).format();
+        let actual = arena
+            .run(variant, 100, 1, announcements, all_trumps)
+            .format();
         if compared_lines(&actual) != compared_lines(&expected) {
             failures.push(format!(
                 "{name}:\n--- expected\n{expected}--- actual\n{actual}"

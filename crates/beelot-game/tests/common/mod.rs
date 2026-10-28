@@ -22,6 +22,8 @@ pub struct Deal {
     pub seed: i64,
     pub variant: Variant,
     pub announcements: bool,
+    /// Whether the table plays all trumps and no trumps (US-063).
+    pub all_trumps: bool,
     pub dealer: Seat,
     pub north_south: String,
     pub east_west: String,
@@ -104,7 +106,8 @@ pub fn replay(deal: &Deal, check: &mut dyn FnMut(&Step, &mut SplitMix64)) {
         deal.dealer,
         Box::new(JavaRandom::new(deal.seed)),
     )
-    .with_announcements(deal.announcements);
+    .with_announcements(deal.announcements)
+    .with_all_trumps(deal.all_trumps);
     let mut phase = Phase::Bidding(Box::new(bidding));
     let mut bots = SplitMix64::new(deal.seed);
 

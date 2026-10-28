@@ -12,6 +12,8 @@ const Z_95: f64 = 1.96;
 pub struct ArenaReport {
     pub variant: Variant,
     pub announcements: bool,
+    /// Whether Contrée deals played all trumps and no trumps (US-064).
+    pub all_trumps: bool,
     pub first: String,
     pub second: String,
     pub deal_pairs: usize,
@@ -23,6 +25,9 @@ pub struct ArenaReport {
     pub first_match_wins: Rate,
     pub first_contracts: Rate,
     pub second_contracts: Rate,
+    /// The all trumps and no trumps contracts each bot took, and how many it made.
+    pub first_all_trumps_contracts: Rate,
+    pub second_all_trumps_contracts: Rate,
     pub first_coinches: Rate,
     pub second_coinches: Rate,
     pub redeals: Rate,
@@ -40,11 +45,12 @@ impl ArenaReport {
         let margin = self.point_difference_margin;
         format!(
             "Bot arena — {variant}\n\
-             {first} vs {second}, {pairs} duplicate deal pairs, seed {seed}, announcements {announcements}\n\
+             {first} vs {second}, {pairs} duplicate deal pairs, seed {seed}, announcements {announcements}, tout-atout and sans-atout {all_trumps}\n\
              \n\
              Point difference per deal ({first} − {second}): {difference} ± {margin} (95% CI {lower} to {upper})\n\
              Matches to 1,000 won by {first}: {match_wins}\n\
              Contract success: {first} {first_contracts}; {second} {second_contracts}\n\
+             Tout-atout and sans-atout contracts: {first} {first_all_trumps}; {second} {second_all_trumps}\n\
              Coinche success: {first} {first_coinches}; {second} {second_coinches}\n\
              Redeal rate: {redeals}\n\
              Rounds with announcements: {announced}\n\
@@ -53,6 +59,7 @@ impl ArenaReport {
             pairs = self.deal_pairs,
             seed = self.seed,
             announcements = if self.announcements { "on" } else { "off" },
+            all_trumps = if self.all_trumps { "on" } else { "off" },
             difference = fixed(difference, 2, true),
             margin = fixed(margin, 2, false),
             lower = fixed(difference - margin, 2, true),
@@ -60,6 +67,8 @@ impl ArenaReport {
             match_wins = self.first_match_wins.format_with_interval(),
             first_contracts = self.first_contracts.format(),
             second_contracts = self.second_contracts.format(),
+            first_all_trumps = self.first_all_trumps_contracts.format(),
+            second_all_trumps = self.second_all_trumps_contracts.format(),
             first_coinches = self.first_coinches.format(),
             second_coinches = self.second_coinches.format(),
             redeals = self.redeals.format(),

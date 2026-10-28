@@ -12,7 +12,7 @@ fn arena(first: &str, second: &str) -> BotArena {
 }
 
 fn run(first: &str, second: &str, variant: Variant, seed: i64) -> ArenaReport {
-    arena(first, second).run(variant, DEAL_PAIRS, seed, true)
+    arena(first, second).run(variant, DEAL_PAIRS, seed, true, true)
 }
 
 #[test]
@@ -27,8 +27,8 @@ fn a_bot_playing_itself_scores_even_on_every_deal_pair() {
 fn the_same_seed_gives_the_same_results() {
     let arena = arena("current", "random");
 
-    let first_run = arena.run(Variant::Contree, DEAL_PAIRS, 42, true);
-    let second_run = arena.run(Variant::Contree, DEAL_PAIRS, 42, true);
+    let first_run = arena.run(Variant::Contree, DEAL_PAIRS, 42, true, true);
+    let second_run = arena.run(Variant::Contree, DEAL_PAIRS, 42, true, true);
 
     assert_eq!(first_run.point_difference, second_run.point_difference);
     assert_eq!(first_run.first_match_wins, second_run.first_match_wins);
@@ -92,8 +92,8 @@ fn current_card_play_beats_the_previous_card_play() {
 fn the_report_says_whether_announcements_were_on() {
     let arena = arena("current", "current");
 
-    let on = arena.run(Variant::Contree, 2, 1, true);
-    let off = arena.run(Variant::Contree, 2, 1, false);
+    let on = arena.run(Variant::Contree, 2, 1, true, true);
+    let off = arena.run(Variant::Contree, 2, 1, false, true);
 
     assert!(on.announcements);
     assert!(on.format().contains("announcements on"), "{}", on.format());
@@ -109,8 +109,8 @@ fn the_report_says_whether_announcements_were_on() {
 fn bots_declare_their_announcements_in_the_arena() {
     let arena = arena("current", "current");
 
-    let on = arena.run(Variant::Contree, DEAL_PAIRS, 1, true);
-    let off = arena.run(Variant::Contree, DEAL_PAIRS, 1, false);
+    let on = arena.run(Variant::Contree, DEAL_PAIRS, 1, true, true);
+    let off = arena.run(Variant::Contree, DEAL_PAIRS, 1, false, true);
 
     assert!(on.announced_rounds.successes > 0, "{}", on.format());
     assert!(
@@ -122,9 +122,73 @@ fn bots_declare_their_announcements_in_the_arena() {
 }
 
 #[test]
+fn classic_ignores_the_all_trumps_option() {
+    let arena = arena("current", "random");
+
+    let on = arena.run(Variant::Classic, DEAL_PAIRS, 1, true, true);
+    let off = arena.run(Variant::Classic, DEAL_PAIRS, 1, true, false);
+
+    assert_eq!(off.point_difference, on.point_difference);
+    assert_eq!(off.first_contracts, on.first_contracts);
+}
+
+#[test]
+fn the_report_says_whether_all_trumps_were_on() {
+    let arena = arena("current", "current");
+
+    let on = arena.run(Variant::Contree, 2, 1, true, true);
+    let off = arena.run(Variant::Contree, 2, 1, true, false);
+
+    assert!(on.all_trumps);
+    assert!(
+        on.format().contains("tout-atout and sans-atout on"),
+        "{}",
+        on.format()
+    );
+    assert!(
+        on.format()
+            .contains("Tout-atout and sans-atout contracts: "),
+        "{}",
+        on.format()
+    );
+    assert!(!off.all_trumps);
+    assert!(
+        off.format().contains("tout-atout and sans-atout off"),
+        "{}",
+        off.format()
+    );
+}
+
+#[test]
+fn with_the_option_off_no_bot_declares_all_trumps() {
+    let off =
+        arena("current", "no-all-trumps-bidding").run(Variant::Contree, DEAL_PAIRS, 1, true, false);
+
+    assert_eq!(off.first_all_trumps_contracts.attempts, 0);
+    assert_eq!(off.second_all_trumps_contracts.attempts, 0);
+}
+
+#[test]
+fn bots_bid_all_trumps_and_no_trumps_in_the_arena() {
+    let report = run("current", "no-all-trumps-bidding", Variant::Contree, 1);
+
+    assert!(
+        report.first_all_trumps_contracts.attempts > 0,
+        "{}",
+        report.format()
+    );
+    assert_eq!(
+        report.second_all_trumps_contracts.attempts,
+        0,
+        "{}",
+        report.format()
+    );
+}
+
+#[test]
 #[should_panic(expected = "at least two deal pairs")]
 fn the_arena_needs_two_deal_pairs() {
-    arena("current", "random").run(Variant::Contree, 1, 1, true);
+    arena("current", "random").run(Variant::Contree, 1, 1, true, true);
 }
 
 #[test]

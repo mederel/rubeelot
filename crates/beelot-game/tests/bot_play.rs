@@ -376,3 +376,92 @@ fn bots_play_all_trumps_and_no_trumps_legally() {
         }
     }
 }
+
+/// An all trumps contract declared by Ben, with Ana's full hand and the given cards for the
+/// others, who receive the rest of the deck in turn. The player after the dealer leads.
+fn all_trumps_board(dealer: usize, ana: &str, ben: &str, chloe: &str, david: &str) -> GameBoard {
+    use beelot_game::card::{Rank, Trump};
+
+    let mut hands = [cards(ana), cards(ben), cards(chloe), cards(david)];
+    let mut seat = 1;
+    for suit in Suit::ALL {
+        for rank in Rank::ALL {
+            let card = Card::new(rank, suit);
+            if hands.iter().any(|hand| hand.contains(&card)) {
+                continue;
+            }
+            while hands[seat].len() == 8 {
+                seat = seat % 3 + 1;
+            }
+            hands[seat].push(card);
+            seat = seat % 3 + 1;
+        }
+    }
+    GameBoard::from_contract(hands, Trump::AllTrumps, 1, 80, false, dealer, false)
+}
+
+/// All trumps, Ben declares and Ana leads the first trick holding the jack of spades and low cards.
+fn master_lead_in_defence() -> GameBoard {
+    all_trumps_board(3, "JS 7H 8H 7D 8D 7C 8C QH", "", "", "")
+}
+
+/// All trumps: Ben leads the seven of clubs, Chloe wins with the jack, David follows, and Ana is
+/// void in clubs.
+fn partner_wins_with_the_jack_of_clubs() -> GameBoard {
+    let mut board = all_trumps_board(0, "9D 7D 8D 7H 8H 7S 8S QS", "7C", "JC", "8C");
+    play(&mut board, 1, "7C");
+    play(&mut board, 2, "JC");
+    play(&mut board, 3, "8C");
+    board
+}
+
+/// All trumps: David leads the seven of hearts, and Ana holds the jack and eight of hearts.
+fn seven_of_hearts_led() -> GameBoard {
+    let mut board = all_trumps_board(2, "JH 8H 7S 8S 7D 8D 7C 8C", "", "", "7H");
+    play(&mut board, 3, "7H");
+    board
+}
+
+#[test]
+fn cashes_a_master_card_in_defence_under_all_trumps() {
+    let mut board = master_lead_in_defence();
+    bot_plays(&mut board);
+    assert_eq!(trick(&board), cards("JS"));
+}
+
+#[test]
+fn adds_points_to_its_partners_sure_trick_under_all_trumps() {
+    let mut board = partner_wins_with_the_jack_of_clubs();
+    bot_plays(&mut board);
+    assert_eq!(*trick(&board).last().unwrap(), card("9D"));
+}
+
+#[test]
+fn wins_a_cheap_trick_with_a_jack_under_all_trumps() {
+    let mut board = seven_of_hearts_led();
+    bot_plays(&mut board);
+    assert_eq!(trick(&board), cards("7H JH"));
+}
+
+#[test]
+fn without_all_trumps_tactics_the_bot_plays_as_in_us_063() {
+    use beelot_game::card::Trump;
+    use beelot_game::rules;
+
+    let previous = RuleBasedStrategy::without_all_trumps_tactics();
+
+    let mut lead = master_lead_in_defence();
+    play_turn(&mut lead, &previous).unwrap();
+    assert_ne!(trick(&lead)[0], card("JS"));
+
+    let mut partner = partner_wins_with_the_jack_of_clubs();
+    play_turn(&mut partner, &previous).unwrap();
+    assert_eq!(
+        rules::points(*trick(&partner).last().unwrap(), Trump::AllTrumps),
+        0
+    );
+
+    let mut cheap = seven_of_hearts_led();
+    play_turn(&mut cheap, &previous).unwrap();
+    assert_eq!(trick(&cheap), cards("7H 8H"));
+}

@@ -1,0 +1,11 @@
+Bot arena — Contrée
+current vs previous-all-trumps-play, 100 duplicate deal pairs, seed 1, announcements on, tout-atout and sans-atout on
+
+Point difference per deal (current − previous-all-trumps-play): +1.45 ± 5.81 (95% CI -4.36 to +7.26)
+Matches to 1,000 won by current: 47.8% (11/23), 95% CI 29.2%–67.0%
+Contract success: current 88.0% (88/100); previous-all-trumps-play 89.0% (89/100)
+Tout-atout and sans-atout contracts: current 82.4% (14/17); previous-all-trumps-play 88.2% (15/17)
+Coinche success: current 33.3% (2/6); previous-all-trumps-play 50.0% (3/6)
+Redeal rate: 0.0% (0/200)
+Rounds with announcements: 64.0% (128/200)
+Decision time per card: current avg 4.1 µs, p99 10.2 µs; previous-all-trumps-play avg 4.1 µs, p99 10.5 µs

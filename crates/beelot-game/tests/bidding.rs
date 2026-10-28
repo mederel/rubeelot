@@ -340,7 +340,7 @@ fn apply_dispatches_decisions_and_serde_matches_the_fixtures() {
             0,
             AuctionDecision::Bid {
                 value: 80,
-                suit: Suit::Hearts,
+                trump: Trump::Hearts,
             },
         )
         .unwrap();
@@ -367,7 +367,14 @@ fn apply_dispatches_decisions_and_serde_matches_the_fixtures() {
             r#"{"type":"BID","value":90,"suit":"HEARTS"}"#,
             AuctionDecision::Bid {
                 value: 90,
-                suit: Suit::Hearts,
+                trump: Trump::Hearts,
+            },
+        ),
+        (
+            r#"{"type":"BID","value":120,"suit":"NO_TRUMPS"}"#,
+            AuctionDecision::Bid {
+                value: 120,
+                trump: Trump::NoTrumps,
             },
         ),
         (
