@@ -1,6 +1,6 @@
 {
   "bidding": {
-    "activePlayer": "Luc",
+    "activePlayer": "Camille",
     "auction": [
       {
         "call": "80 Spades",
@@ -15,7 +15,7 @@
         "playerName": "Luc"
       },
       {
-        "call": "100 Clubs",
+        "call": "90 Spades",
         "playerName": "Manon"
       },
       {
@@ -27,8 +27,20 @@
         "playerName": "Camille"
       },
       {
-        "call": "Pass",
+        "call": "120 Hearts",
         "playerName": "Luc"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Manon"
+      },
+      {
+        "call": "Pass",
+        "playerName": "You"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Camille"
       }
     ],
     "auctionId": "<auction-id>",
@@ -39,18 +51,18 @@
         "playerName": "You"
       },
       {
-        "active": false,
+        "active": true,
         "call": "Pass",
         "playerName": "Camille"
       },
       {
-        "active": true,
-        "call": "Pass",
+        "active": false,
+        "call": "120 Hearts",
         "playerName": "Luc"
       },
       {
         "active": false,
-        "call": "100 Clubs",
+        "call": "Pass",
         "playerName": "Manon"
       }
     ],
@@ -60,17 +72,12 @@
     "dealerIndex": 3,
     "hand": [
       {
-        "rank": "8",
+        "rank": "9",
         "suit": "CLUBS",
         "symbol": "♣"
       },
       {
-        "rank": "K",
-        "suit": "CLUBS",
-        "symbol": "♣"
-      },
-      {
-        "rank": "10",
+        "rank": "J",
         "suit": "CLUBS",
         "symbol": "♣"
       },
@@ -80,48 +87,12 @@
         "symbol": "♦"
       },
       {
-        "rank": "8",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
-      },
-      {
         "rank": "9",
         "suit": "DIAMONDS",
         "symbol": "♦"
       },
       {
-        "rank": "K",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
-        "rank": "9",
-        "suit": "SPADES",
-        "symbol": "♠"
-      }
-    ],
-    "highestBid": 100,
-    "highestBidSuit": "CLUBS",
-    "highestBidder": "Manon",
-    "message": "The 100 Clubs contract is accepted.",
-    "playerTurn": false,
-    "round": 1,
-    "upturnedCard": null,
-    "variant": "CONTREE"
-  },
-  "board": {
-    "activePlayer": "Luc",
-    "activePlayerIndex": 2,
-    "announcements": true,
-    "beloteBonusPoints": 0,
-    "coinched": false,
-    "completedTricks": 8,
-    "contractValue": 100,
-    "currentPlayer": "You",
-    "currentPlayerIndex": 0,
-    "currentTrick": [
-      {
-        "rank": "A",
+        "rank": "Q",
         "suit": "DIAMONDS",
         "symbol": "♦"
       },
@@ -131,25 +102,66 @@
         "symbol": "♦"
       },
       {
+        "rank": "7",
+        "suit": "SPADES",
+        "symbol": "♠"
+      },
+      {
         "rank": "8",
+        "suit": "SPADES",
+        "symbol": "♠"
+      }
+    ],
+    "highestBid": 120,
+    "highestBidSuit": "HEARTS",
+    "highestBidder": "Luc",
+    "message": "The 120 Hearts contract is accepted.",
+    "playerTurn": false,
+    "round": 1,
+    "upturnedCard": null,
+    "variant": "CONTREE"
+  },
+  "board": {
+    "activePlayer": "Luc",
+    "activePlayerIndex": 2,
+    "announcements": true,
+    "beloteBonusPoints": 20,
+    "coinched": false,
+    "completedTricks": 8,
+    "contractValue": 120,
+    "currentPlayer": "You",
+    "currentPlayerIndex": 0,
+    "currentTrick": [
+      {
+        "rank": "K",
+        "suit": "HEARTS",
+        "symbol": "♥"
+      },
+      {
+        "rank": "J",
+        "suit": "SPADES",
+        "symbol": "♠"
+      },
+      {
+        "rank": "Q",
         "suit": "DIAMONDS",
         "symbol": "♦"
       },
       {
-        "rank": "J",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
+        "rank": "10",
+        "suit": "SPADES",
+        "symbol": "♠"
       }
     ],
     "dealerIndex": 3,
-    "declarationMessage": "",
+    "declarationMessage": "Luc declares Rebelote: 20 bonus points.",
     "declarers": [],
-    "declaringPlayerIndex": 3,
-    "declaringTeam": "East–West",
-    "eastWestScore": 108,
+    "declaringPlayerIndex": 2,
+    "declaringTeam": "North–South",
+    "eastWestScore": 36,
     "hand": [],
     "legalCards": [],
-    "northSouthScore": 74,
+    "northSouthScore": 166,
     "ownAnnouncements": [],
     "revealedAnnouncements": [
       {
@@ -157,34 +169,34 @@
           {
             "cards": [
               {
-                "rank": "7",
-                "suit": "DIAMONDS",
-                "symbol": "♦"
+                "rank": "J",
+                "suit": "HEARTS",
+                "symbol": "♥"
               },
               {
-                "rank": "8",
-                "suit": "DIAMONDS",
-                "symbol": "♦"
+                "rank": "Q",
+                "suit": "HEARTS",
+                "symbol": "♥"
               },
               {
-                "rank": "9",
-                "suit": "DIAMONDS",
-                "symbol": "♦"
+                "rank": "K",
+                "suit": "HEARTS",
+                "symbol": "♥"
               }
             ],
             "kind": "TIERCE",
-            "suit": "DIAMONDS",
+            "suit": "HEARTS",
             "topCard": {
-              "rank": "9",
-              "suit": "DIAMONDS",
-              "symbol": "♦"
+              "rank": "K",
+              "suit": "HEARTS",
+              "symbol": "♥"
             },
             "value": 20
           }
         ],
-        "player": "You",
+        "player": "Luc",
         "scored": true,
-        "seat": 0,
+        "seat": 2,
         "team": "North–South"
       }
     ],
@@ -196,48 +208,48 @@
             {
               "cards": [
                 {
-                  "rank": "7",
-                  "suit": "DIAMONDS",
-                  "symbol": "♦"
+                  "rank": "J",
+                  "suit": "HEARTS",
+                  "symbol": "♥"
                 },
                 {
-                  "rank": "8",
-                  "suit": "DIAMONDS",
-                  "symbol": "♦"
+                  "rank": "Q",
+                  "suit": "HEARTS",
+                  "symbol": "♥"
                 },
                 {
-                  "rank": "9",
-                  "suit": "DIAMONDS",
-                  "symbol": "♦"
+                  "rank": "K",
+                  "suit": "HEARTS",
+                  "symbol": "♥"
                 }
               ],
               "kind": "TIERCE",
-              "suit": "DIAMONDS",
+              "suit": "HEARTS",
               "topCard": {
-                "rank": "9",
-                "suit": "DIAMONDS",
-                "symbol": "♦"
+                "rank": "K",
+                "suit": "HEARTS",
+                "symbol": "♥"
               },
               "value": 20
             }
           ],
-          "player": "You",
+          "player": "Luc",
           "scored": true,
-          "seat": 0,
+          "seat": 2,
           "team": "North–South"
         }
       ],
       "capotTeam": null,
       "contractMade": true,
       "eastWestAnnouncements": 0,
-      "eastWestAwarded": 108,
+      "eastWestAwarded": 36,
       "eastWestBeloteBonus": 0,
-      "eastWestCardPoints": 108,
+      "eastWestCardPoints": 36,
       "eastWestDixDeDer": 0,
       "northSouthAnnouncements": 20,
-      "northSouthAwarded": 74,
-      "northSouthBeloteBonus": 0,
-      "northSouthCardPoints": 44,
+      "northSouthAwarded": 166,
+      "northSouthBeloteBonus": 20,
+      "northSouthCardPoints": 116,
       "northSouthDixDeDer": 10
     },
     "seats": [
@@ -266,16 +278,16 @@
         "team": "East–West"
       }
     ],
-    "trickPoints": 23,
+    "trickPoints": 19,
     "trickWinner": "Luc",
-    "trump": "Clubs",
+    "trump": "Hearts",
     "variant": "CONTREE"
   },
   "kind": "LOCAL",
   "match": {
     "complete": false,
-    "eastWest": 108,
-    "northSouth": 74,
+    "eastWest": 36,
+    "northSouth": 166,
     "target": 1000,
     "winner": null
   },
@@ -333,6 +345,6 @@
     "variantLabel": "Contrée"
   },
   "tableId": "01234567-89ab-cdef-0123-456789abcdef",
-  "version": 16,
+  "version": 17,
   "you": 0
 }

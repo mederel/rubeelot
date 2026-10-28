@@ -48,14 +48,14 @@
     "dealerIndex": 3,
     "hand": [
       {
-        "rank": "7",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
+        "rank": "8",
+        "suit": "CLUBS",
+        "symbol": "♣"
       },
       {
-        "rank": "Q",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
+        "rank": "10",
+        "suit": "CLUBS",
+        "symbol": "♣"
       },
       {
         "rank": "8",
@@ -63,12 +63,12 @@
         "symbol": "♥"
       },
       {
-        "rank": "Q",
-        "suit": "HEARTS",
-        "symbol": "♥"
+        "rank": "8",
+        "suit": "SPADES",
+        "symbol": "♠"
       },
       {
-        "rank": "J",
+        "rank": "9",
         "suit": "SPADES",
         "symbol": "♠"
       }
@@ -80,7 +80,7 @@
     "playerTurn": true,
     "round": 2,
     "upturnedCard": {
-      "rank": "7",
+      "rank": "A",
       "suit": "CLUBS",
       "symbol": "♣"
     },

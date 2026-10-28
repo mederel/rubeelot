@@ -11,7 +11,7 @@
         "playerName": "Camille"
       },
       {
-        "call": "110 Hearts",
+        "call": "100 Hearts",
         "playerName": "Luc"
       },
       {
@@ -33,7 +33,7 @@
       },
       {
         "active": false,
-        "call": "110 Hearts",
+        "call": "100 Hearts",
         "playerName": "Luc"
       },
       {
@@ -53,34 +53,34 @@
         "symbol": "♣"
       },
       {
-        "rank": "K",
-        "suit": "CLUBS",
-        "symbol": "♣"
-      },
-      {
         "rank": "10",
         "suit": "CLUBS",
         "symbol": "♣"
       },
       {
-        "rank": "7",
+        "rank": "A",
+        "suit": "CLUBS",
+        "symbol": "♣"
+      },
+      {
+        "rank": "10",
         "suit": "DIAMONDS",
         "symbol": "♦"
       },
       {
         "rank": "8",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
-      },
-      {
-        "rank": "9",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
-      },
-      {
-        "rank": "K",
         "suit": "HEARTS",
         "symbol": "♥"
+      },
+      {
+        "rank": "J",
+        "suit": "HEARTS",
+        "symbol": "♥"
+      },
+      {
+        "rank": "8",
+        "suit": "SPADES",
+        "symbol": "♠"
       },
       {
         "rank": "9",
@@ -88,7 +88,7 @@
         "symbol": "♠"
       }
     ],
-    "highestBid": 110,
+    "highestBid": 100,
     "highestBidSuit": "HEARTS",
     "highestBidder": "Luc",
     "message": "You is deciding.",

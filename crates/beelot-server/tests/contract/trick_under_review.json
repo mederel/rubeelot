@@ -1,13 +1,13 @@
 {
   "bidding": {
-    "activePlayer": "Ana",
+    "activePlayer": "Luc",
     "auction": [
       {
         "call": "80 Spades",
         "playerName": "Ana"
       },
       {
-        "call": "100 Diamonds",
+        "call": "Pass",
         "playerName": "Camille"
       },
       {
@@ -15,34 +15,42 @@
         "playerName": "Luc"
       },
       {
-        "call": "Pass",
+        "call": "120 Hearts",
         "playerName": "Manon"
       },
       {
         "call": "Pass",
         "playerName": "Ana"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Camille"
+      },
+      {
+        "call": "Pass",
+        "playerName": "Luc"
       }
     ],
     "auctionId": "<auction-id>",
     "calls": [
       {
-        "active": true,
+        "active": false,
         "call": "Pass",
         "playerName": "Ana"
       },
       {
         "active": false,
-        "call": "100 Diamonds",
+        "call": "Pass",
         "playerName": "Camille"
       },
       {
-        "active": false,
+        "active": true,
         "call": "Pass",
         "playerName": "Luc"
       },
       {
         "active": false,
-        "call": "Pass",
+        "call": "120 Hearts",
         "playerName": "Manon"
       }
     ],
@@ -57,9 +65,19 @@
         "symbol": "♣"
       },
       {
-        "rank": "10",
+        "rank": "A",
         "suit": "CLUBS",
         "symbol": "♣"
+      },
+      {
+        "rank": "9",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "K",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
       },
       {
         "rank": "10",
@@ -67,9 +85,9 @@
         "symbol": "♦"
       },
       {
-        "rank": "7",
-        "suit": "HEARTS",
-        "symbol": "♥"
+        "rank": "A",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
       },
       {
         "rank": "8",
@@ -77,26 +95,16 @@
         "symbol": "♥"
       },
       {
-        "rank": "K",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
-        "rank": "A",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
-        "rank": "7",
+        "rank": "Q",
         "suit": "SPADES",
         "symbol": "♠"
       }
     ],
-    "highestBid": 100,
-    "highestBidSuit": "DIAMONDS",
-    "highestBidder": "Camille",
-    "message": "The 100 Diamonds contract is accepted.",
-    "playerTurn": true,
+    "highestBid": 120,
+    "highestBidSuit": "HEARTS",
+    "highestBidder": "Manon",
+    "message": "The 120 Hearts contract is accepted.",
+    "playerTurn": false,
     "round": 1,
     "upturnedCard": null,
     "variant": "CONTREE"
@@ -108,72 +116,72 @@
     "beloteBonusPoints": 0,
     "coinched": false,
     "completedTricks": 1,
-    "contractValue": 100,
+    "contractValue": 120,
     "currentPlayer": "Ana",
     "currentPlayerIndex": 0,
     "currentTrick": [
       {
-        "rank": "7",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
-        "rank": "J",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
         "rank": "Q",
-        "suit": "HEARTS",
-        "symbol": "♥"
+        "suit": "SPADES",
+        "symbol": "♠"
       },
       {
         "rank": "10",
-        "suit": "HEARTS",
-        "symbol": "♥"
+        "suit": "SPADES",
+        "symbol": "♠"
+      },
+      {
+        "rank": "9",
+        "suit": "SPADES",
+        "symbol": "♠"
+      },
+      {
+        "rank": "7",
+        "suit": "SPADES",
+        "symbol": "♠"
       }
     ],
     "dealerIndex": 3,
     "declarationMessage": "",
     "declarers": [],
-    "declaringPlayerIndex": 1,
+    "declaringPlayerIndex": 3,
     "declaringTeam": "East–West",
-    "eastWestScore": 35,
+    "eastWestScore": 33,
     "hand": [
+      {
+        "rank": "8",
+        "suit": "HEARTS",
+        "symbol": "♥"
+      },
+      {
+        "rank": "8",
+        "suit": "CLUBS",
+        "symbol": "♣"
+      },
+      {
+        "rank": "A",
+        "suit": "CLUBS",
+        "symbol": "♣"
+      },
+      {
+        "rank": "9",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "K",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
       {
         "rank": "10",
         "suit": "DIAMONDS",
         "symbol": "♦"
       },
       {
-        "rank": "8",
-        "suit": "CLUBS",
-        "symbol": "♣"
-      },
-      {
-        "rank": "10",
-        "suit": "CLUBS",
-        "symbol": "♣"
-      },
-      {
-        "rank": "8",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
-        "rank": "K",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
         "rank": "A",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
-        "rank": "7",
-        "suit": "SPADES",
-        "symbol": "♠"
+        "suit": "DIAMONDS",
+        "symbol": "♦"
       }
     ],
     "legalCards": [],
@@ -185,34 +193,34 @@
           {
             "cards": [
               {
-                "rank": "Q",
-                "suit": "SPADES",
-                "symbol": "♠"
+                "rank": "9",
+                "suit": "HEARTS",
+                "symbol": "♥"
               },
               {
-                "rank": "K",
-                "suit": "SPADES",
-                "symbol": "♠"
+                "rank": "10",
+                "suit": "HEARTS",
+                "symbol": "♥"
               },
               {
-                "rank": "A",
-                "suit": "SPADES",
-                "symbol": "♠"
+                "rank": "J",
+                "suit": "HEARTS",
+                "symbol": "♥"
               }
             ],
             "kind": "TIERCE",
-            "suit": "SPADES",
+            "suit": "HEARTS",
             "topCard": {
-              "rank": "A",
-              "suit": "SPADES",
-              "symbol": "♠"
+              "rank": "J",
+              "suit": "HEARTS",
+              "symbol": "♥"
             },
             "value": 20
           }
         ],
-        "player": "Camille",
+        "player": "Manon",
         "scored": true,
-        "seat": 1,
+        "seat": 3,
         "team": "East–West"
       }
     ],
@@ -244,9 +252,9 @@
         "team": "East–West"
       }
     ],
-    "trickPoints": 15,
-    "trickWinner": "Manon",
-    "trump": "Diamonds",
+    "trickPoints": 13,
+    "trickWinner": "Camille",
+    "trump": "Hearts",
     "variant": "CONTREE"
   },
   "kind": "PRIVATE",
