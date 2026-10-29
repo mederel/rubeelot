@@ -3,8 +3,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use beelot_arena::BotArena;
 use beelot_arena::java_format::{fixed, java_sum};
+use beelot_arena::{BotArena, Dealing};
 use beelot_game::Variant;
 use beelot_game::bot::arena::{ARENA_BOTS, arena_bot};
 
@@ -40,12 +40,26 @@ fn java_sum_keeps_an_infinite_simple_sum() {
     assert_eq!(java_sum([]), 0.0);
 }
 
+/// A fixture's arena run.
+struct Configuration {
+    first: &'static str,
+    second: &'static str,
+    variant: Variant,
+    announcements: bool,
+    all_trumps: bool,
+    dealing: Dealing,
+}
+
 /// The configuration a fixture's name records:
-/// `<first>-vs-<second>-<classic|contree>-<on|off>[-no-all-trumps]`, the announcements, then all
-/// trumps and no trumps when they were off. Bot names contain hyphens, so the bots are found among
-/// the arena bots.
-fn configuration(name: &str) -> (&'static str, &'static str, Variant, bool, bool) {
+/// `<first>-vs-<second>-<classic|contree>-<on|off>[-no-all-trumps][-table]`: the announcements,
+/// then all trumps and no trumps when they were off, then table dealing. Bot names contain
+/// hyphens, so the bots are found among the arena bots.
+fn configuration(name: &str) -> Configuration {
     let stem = name.strip_suffix(".txt").expect("a .txt fixture");
+    let (stem, dealing) = match stem.strip_suffix("-table") {
+        Some(stem) => (stem, Dealing::Table),
+        None => (stem, Dealing::Shuffled),
+    };
     let (stem, all_trumps) = match stem.strip_suffix("-no-all-trumps") {
         Some(stem) => (stem, false),
         None => (stem, true),
@@ -67,7 +81,14 @@ fn configuration(name: &str) -> (&'static str, &'static str, Variant, bool, bool
     for first in ARENA_BOTS {
         for second in ARENA_BOTS {
             if format!("{first}-vs-{second}") == bots {
-                return (first, second, variant, announcements, all_trumps);
+                return Configuration {
+                    first,
+                    second,
+                    variant,
+                    announcements,
+                    all_trumps,
+                    dealing,
+                };
             }
         }
     }
@@ -90,14 +111,18 @@ fn reports_match_java() {
         .filter(|name| name.ends_with(".txt"))
         .collect();
     names.sort();
-    assert_eq!(names.len(), 9, "{names:?}");
+    assert_eq!(names.len(), 11, "{names:?}");
     let mut failures = Vec::new();
     for name in &names {
         let expected = fs::read_to_string(directory.join(name)).unwrap();
-        let (first, second, variant, announcements, all_trumps) = configuration(name);
-        let arena = BotArena::new(arena_bot(first).unwrap(), arena_bot(second).unwrap());
+        let run = configuration(name);
+        let arena = BotArena::with_dealing(
+            arena_bot(run.first).unwrap(),
+            arena_bot(run.second).unwrap(),
+            run.dealing,
+        );
         let actual = arena
-            .run(variant, 100, 1, announcements, all_trumps)
+            .run(run.variant, 100, 1, run.announcements, run.all_trumps)
             .format();
         if compared_lines(&actual) != compared_lines(&expected) {
             failures.push(format!(

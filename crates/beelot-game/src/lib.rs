@@ -3,6 +3,7 @@ pub mod bidding;
 pub mod board;
 pub mod bot;
 pub mod card;
+pub mod deck;
 pub mod error;
 pub mod match_score;
 pub mod rng;

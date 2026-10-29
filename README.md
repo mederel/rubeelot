@@ -135,7 +135,14 @@ cargo run --release -p beelot-arena -- --first current --second random
 | `--variant`       | `classic`, `contree` or `both`           | `both`                        |
 | `--announcements` | `on` or `off`                            | `on`                          |
 | `--all-trumps`    | Contrée tout-atout and sans-atout        | `on`                          |
+| `--dealing`       | `shuffled` or `table` (see below)        | `shuffled`                    |
 | `--report`        | the report file                          | `target/bot-arena/report.txt` |
+
+Games deal like at a real table: only a match's first deal is shuffled, and
+each later deal is cut from the previous deal's gathered tricks. The arena
+shuffles every deal pair by default, so that bot strength is measured on
+independent hands; `--dealing table` deals each pair from the previous pair's
+gathered cards instead.
 
 The arena bots are `current`, `challenging`, `baseline`, `previous-play`,
 `previous-trumps`, `previous-all-trumps-play`, `no-coinche`,

@@ -10,6 +10,7 @@ use std::time::Duration;
 use beelot_game::bidding::BiddingState;
 use beelot_game::board::GameBoard;
 use beelot_game::bot::{BotStrategy, strategies, turns};
+use beelot_game::deck::Deck;
 use beelot_game::match_score::MatchScore;
 use beelot_game::{Card, Difficulty, GameError, JavaRandom, RandomSource, Rank};
 use time::OffsetDateTime;
@@ -441,7 +442,7 @@ impl Table {
                 if score.complete() {
                     return Err(conflict("match-ended", msg::MATCH_ENDED));
                 }
-                return self.deal_next_round(now);
+                return self.deal_next_round(now, true);
             }
             Action::Rematch => {
                 self.seat_of(actor)?;
@@ -454,7 +455,7 @@ impl Table {
                 }
                 self.match_score = Some(self.new_match_score());
                 self.match_id = Uuid::new_v4();
-                self.deal_next_round(now)?;
+                self.deal_next_round(now, false)?;
             }
             Action::React { reaction } => {
                 let seat = self.seat_of(actor)?;
@@ -512,31 +513,39 @@ impl Table {
     fn begin_match(&mut self, now: OffsetDateTime) -> Result<(), AppError> {
         self.match_score = Some(self.new_match_score());
         self.match_id = Uuid::new_v4();
-        self.deal(FIRST_DEALER);
+        self.deal(FIRST_DEALER, None);
         self.drive_bots(now)
     }
 
-    /// Deals the next round once the current one is finished. Several players may click at once, so a call made
+    /// Deals the next round once the current one is finished. Within a match, its cards are gathered without a
+    /// shuffle (US-085); a rematch starts from a shuffled deck. Several players may click at once, so a call made
     /// after the new deal has already happened is a no-op.
-    fn deal_next_round(&mut self, now: OffsetDateTime) -> Result<bool, AppError> {
+    fn deal_next_round(&mut self, now: OffsetDateTime, same_match: bool) -> Result<bool, AppError> {
         let Some(board) = &self.board else {
             return Ok(false);
         };
         if board.round_result().is_none() {
             return Err(conflict("round-not-finished", msg::ROUND_NOT_FINISHED));
         }
-        let dealer = self
+        let dealer = (self
             .bidding
             .as_ref()
-            .map_or(FIRST_DEALER, BiddingState::dealer);
-        self.deal((dealer + 1) % 4);
+            .map_or(FIRST_DEALER, BiddingState::dealer)
+            + 1)
+            % 4;
+        let deck = if same_match {
+            board.gathered_deck(dealer)
+        } else {
+            None
+        };
+        self.deal(dealer, deck);
         self.drive_bots(now)?;
         Ok(true)
     }
 
-    /// Every deal of the table keeps its variant and its options.
-    fn deal(&mut self, dealer: usize) {
-        let bidding = BiddingState::new(self.lobby.variant(), dealer, (self.rng)())
+    /// Every deal of the table keeps its variant and its options. A match's first deal has no deck and is shuffled.
+    fn deal(&mut self, dealer: usize, deck: Option<Deck>) {
+        let bidding = BiddingState::dealt_from(self.lobby.variant(), dealer, (self.rng)(), deck)
             .with_announcements(self.lobby.announcements())
             .with_all_trumps(self.lobby.all_trumps());
         self.auction_deals = bidding.deals();

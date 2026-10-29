@@ -1621,3 +1621,49 @@ fn a_round_is_added_to_the_score_once_whatever_happens_after_it() {
         "the round is not counted twice"
     );
 }
+
+/// Within a match, the next round is dealt from the finished round's tricks, gathered and cut
+/// without a shuffle; a rematch starts from a shuffled deck (US-085).
+#[test]
+fn the_next_round_is_dealt_from_the_gathered_tricks_and_a_rematch_is_shuffled() {
+    use beelot_game::deck::Gathering;
+
+    let mut table = Table::local(
+        Uuid::new_v4(),
+        Difficulty::Relaxed,
+        Lobby::local(
+            local_seats(None).unwrap(),
+            Variant::Contree,
+            true,
+            false,
+            1_000,
+        ),
+        setup(9),
+        T0,
+    );
+    assert_eq!(
+        table.bidding().unwrap().deal_summary().gathering,
+        Gathering::Shuffled
+    );
+    finish_auction_at_80(&mut table, Actor::Device);
+    play_round(&mut table, Actor::Device);
+    let next_dealer = (table.bidding().unwrap().dealer() + 1) % 4;
+    let gathered = table.board().unwrap().gathered_deck(next_dealer).unwrap();
+
+    act(&mut table, Actor::Device, Action::NextRound);
+
+    let bidding = table.bidding().unwrap();
+    let deal = bidding.deal_summary();
+    assert_eq!(deal.gathering, Gathering::Tricks);
+    assert_eq!(deal.dealer_seat, next_dealer);
+    let cut = gathered.cut_at(deal.cut_lifted).cards;
+    let first = (next_dealer + 1) % 4;
+    assert_eq!(bidding.hand(first)[..3], cut[..3], "the first packet");
+
+    play_match(&mut table, Actor::Device);
+    act(&mut table, Actor::Device, Action::Rematch);
+    assert_eq!(
+        table.bidding().unwrap().deal_summary().gathering,
+        Gathering::Shuffled
+    );
+}

@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::board::GameBoard;
 use crate::card::{Card, Seat, Suit, Trump, Variant};
+use crate::deck::{Deck, Gathering};
 use crate::error::GameError;
-use crate::rng::{RandomSource, java_shuffle};
+use crate::rng::RandomSource;
 
 /// Serializes `Option<Seat>` as the seat, or `-1` for `None`.
 mod minus_one_none {
@@ -105,6 +106,29 @@ pub enum AuctionDecision {
     },
 }
 
+/// How the cards of a deal came to the players, without showing any card (US-085): how the deck
+/// was put together (with the trick piles' sizes and which went on top), who dealt, who cut and how
+/// many cards they lifted, and the packets dealt in order. Seats are numbered in play order from 0.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DealSummary {
+    pub gathering: Gathering,
+    pub north_south_pile: usize,
+    pub east_west_pile: usize,
+    pub north_south_on_top: bool,
+    pub dealer_seat: Seat,
+    pub cutter_seat: Seat,
+    pub cut_lifted: usize,
+    pub packets: Vec<DealPacket>,
+}
+
+/// A packet of cards dealt face down to the given seat.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DealPacket {
+    pub seat: Seat,
+    pub cards: usize,
+}
+
 pub struct BiddingState {
     variant: Variant,
     rng: Box<dyn RandomSource + Send>,
@@ -112,6 +136,7 @@ pub struct BiddingState {
     hands: [Vec<Card>; 4],
     remaining_deck: Vec<Card>,
     upturned_card: Option<Card>,
+    deal_summary: Option<DealSummary>,
     dealer: Seat,
     active: Seat,
     round: i32,
@@ -135,6 +160,7 @@ impl std::fmt::Debug for BiddingState {
             .field("hands", &self.hands)
             .field("remaining_deck", &self.remaining_deck)
             .field("upturned_card", &self.upturned_card)
+            .field("deal_summary", &self.deal_summary)
             .field("dealer", &self.dealer)
             .field("active", &self.active)
             .field("round", &self.round)
@@ -152,8 +178,21 @@ impl std::fmt::Debug for BiddingState {
 }
 
 impl BiddingState {
-    /// The dealer deals, then the seat to the dealer's left speaks first and leads the first trick.
+    /// The first deal of a match, from a shuffled deck: the same seeded generator gives the same
+    /// deals. The seat to the dealer's left speaks first and leads the first trick.
     pub fn new(variant: Variant, dealer: Seat, rng: Box<dyn RandomSource + Send>) -> Self {
+        Self::dealt_from(variant, dealer, rng, None)
+    }
+
+    /// Deals from the given deck, gathered from the previous deal (US-085): the player before the
+    /// dealer cuts it at a random point, then the dealer deals. Without a deck, a shuffled one is
+    /// dealt, for the first deal of a match.
+    pub fn dealt_from(
+        variant: Variant,
+        dealer: Seat,
+        rng: Box<dyn RandomSource + Send>,
+        deck: Option<Deck>,
+    ) -> Self {
         let mut state = BiddingState {
             variant,
             rng,
@@ -161,6 +200,7 @@ impl BiddingState {
             hands: Default::default(),
             remaining_deck: Vec::new(),
             upturned_card: None,
+            deal_summary: None,
             dealer: dealer % 4,
             active: 0,
             round: 1,
@@ -174,7 +214,8 @@ impl BiddingState {
             announcements: false,
             all_trumps: false,
         };
-        state.deal_again();
+        let deck = deck.unwrap_or_else(|| Deck::shuffled(&mut *state.rng));
+        state.deal(deck);
         state
     }
 
@@ -216,8 +257,7 @@ impl BiddingState {
             self.active = self.first_bidder();
             return Ok(());
         }
-        self.dealer = (self.dealer + 1) % 4;
-        self.deal_again();
+        self.redeal();
         Ok(())
     }
 
@@ -238,11 +278,14 @@ impl BiddingState {
         }
         self.record_call(seat, CallType::Trump, 0, Some(trump.into()));
         let mut hands = self.hands.clone();
-        for (index, hand) in hands.iter_mut().enumerate() {
-            let extra = if index == self.active { 2 } else { 3 };
-            hand.extend(self.remaining_deck.drain(..extra));
-        }
+        // The taker picks up the upturned card; the dealer then deals the rest from the player
+        // after them.
         hands[seat].push(self.upturned_card.expect("Classic deals an upturned card"));
+        for offset in 1..=4 {
+            let dealt = (self.dealer + offset) % 4;
+            let extra = if dealt == self.active { 2 } else { 3 };
+            hands[dealt].extend(self.remaining_deck.drain(..extra));
+        }
         self.completed_board = Some(GameBoard::from_bidding(
             hands,
             trump,
@@ -326,6 +369,13 @@ impl BiddingState {
         self.dealer
     }
 
+    /// How the cards of the current deal were dealt.
+    pub fn deal_summary(&self) -> &DealSummary {
+        self.deal_summary
+            .as_ref()
+            .expect("a bidding state has dealt")
+    }
+
     /// How many times the cards have been dealt, counting redeals after everyone passed.
     pub fn deals(&self) -> u32 {
         self.deals
@@ -389,25 +439,58 @@ impl BiddingState {
         (self.dealer + 1) % 4
     }
 
-    fn deal_again(&mut self) {
-        let mut deck = Card::deck();
-        java_shuffle(&mut deck, &mut *self.rng);
+    /// After everyone passed, the dealer gathers the hands without a shuffle, from the player after
+    /// them in play order, each hand in the order it was dealt, then the upturned card and the rest
+    /// of the deck. The deal passes to the next player.
+    fn redeal(&mut self) {
+        let mut gathered = Vec::with_capacity(crate::deck::SIZE);
+        for offset in 1..=4 {
+            gathered.extend_from_slice(&self.hands[(self.dealer + offset) % 4]);
+        }
+        gathered.extend(self.upturned_card);
+        gathered.append(&mut self.remaining_deck);
+        self.dealer = (self.dealer + 1) % 4;
+        self.deal(Deck::gathered_hands(gathered));
+    }
+
+    /// The player before the dealer cuts, then the dealer deals packets of 3 then 2 cards (then 3
+    /// more in Contrée) to each player, from the player after them; in classic Belote the next card
+    /// is turned up.
+    fn deal(&mut self, deck: Deck) {
+        let cutter = (self.dealer + 3) % 4;
+        let cut = deck.cut(&mut *self.rng);
+        let mut cards = cut.cards.into_iter();
         self.deals += 1;
-        let per_seat = if self.variant == Variant::Contree {
-            8
+        self.hands = Default::default();
+        let sizes: &[usize] = if self.variant == Variant::Contree {
+            &[3, 2, 3]
         } else {
-            5
+            &[3, 2]
         };
-        let mut rest = deck.split_off(per_seat * 4);
-        for (seat, hand) in self.hands.iter_mut().enumerate() {
-            *hand = deck[seat * per_seat..(seat + 1) * per_seat].to_vec();
+        let mut packets = Vec::with_capacity(sizes.len() * 4);
+        for &size in sizes {
+            for offset in 1..=4 {
+                let seat = (self.dealer + offset) % 4;
+                self.hands[seat].extend(cards.by_ref().take(size));
+                packets.push(DealPacket { seat, cards: size });
+            }
         }
         self.upturned_card = if self.variant == Variant::Classic {
-            Some(rest.remove(0))
+            cards.next()
         } else {
             None
         };
-        self.remaining_deck = rest;
+        self.remaining_deck = cards.collect();
+        self.deal_summary = Some(DealSummary {
+            gathering: deck.gathering(),
+            north_south_pile: deck.north_south_pile(),
+            east_west_pile: deck.east_west_pile(),
+            north_south_on_top: deck.north_south_on_top(),
+            dealer_seat: self.dealer,
+            cutter_seat: cutter,
+            cut_lifted: cut.lifted,
+            packets,
+        });
         self.active = self.first_bidder();
         self.round = 1;
         self.consecutive_passes = 0;
@@ -427,8 +510,7 @@ impl BiddingState {
         }
         self.active = (self.active + 1) % 4;
         if self.highest_bidder.is_none() && self.consecutive_passes == 4 {
-            self.dealer = (self.dealer + 1) % 4;
-            self.deal_again();
+            self.redeal();
         }
     }
 

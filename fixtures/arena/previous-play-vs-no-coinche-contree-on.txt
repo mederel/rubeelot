@@ -1,11 +1,11 @@
 Bot arena — Contrée
 previous-play vs no-coinche, 100 duplicate deal pairs, seed 1, announcements on, tout-atout and sans-atout on
 
-Point difference per deal (previous-play − no-coinche): -41.41 ± 14.78 (95% CI -56.19 to -26.63)
-Matches to 1,000 won by previous-play: 20.8% (5/24), 95% CI 9.2%–40.5%
-Contract success: previous-play 73.7% (73/99); no-coinche 89.1% (90/101)
-Tout-atout and sans-atout contracts: previous-play 64.7% (11/17); no-coinche 82.4% (14/17)
-Coinche success: previous-play 33.3% (2/6); no-coinche n/a (0/0)
+Point difference per deal (previous-play − no-coinche): -43.13 ± 13.22 (95% CI -56.35 to -29.91)
+Matches to 1,000 won by previous-play: 16.7% (4/24), 95% CI 6.7%–35.9%
+Contract success: previous-play 74.0% (74/100); no-coinche 93.0% (93/100)
+Tout-atout and sans-atout contracts: previous-play 70.0% (14/20); no-coinche 100.0% (20/20)
+Coinche success: previous-play 0.0% (0/3); no-coinche n/a (0/0)
 Redeal rate: 0.0% (0/200)
-Rounds with announcements: 64.0% (128/200)
-Decision time per card: previous-play avg 2.5 µs, p99 12.4 µs; no-coinche avg 4.6 µs, p99 11.2 µs
+Rounds with announcements: 54.0% (108/200)
+Decision time per card: previous-play avg 2.1 µs, p99 8.1 µs; no-coinche avg 4.1 µs, p99 9.9 µs
