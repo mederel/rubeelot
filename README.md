@@ -77,6 +77,16 @@ The snapshots the table API sends are pinned by the files in
 with `UPDATE_CONTRACT=1 cargo test -p beelot-server --test api_contract` and
 review the diff.
 
+CI measures the tests' coverage with
+[cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov), shows it per crate
+in the run summary and in a comment on the pull request, and keeps the
+`lcov.info` report as the run's `coverage` artifact. To measure it locally:
+
+```sh
+cargo install cargo-llvm-cov
+cargo llvm-cov --workspace --html --open
+```
+
 ## Verify
 
 Before a release, check in a browser, with the console open, that these work

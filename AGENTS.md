@@ -22,7 +22,8 @@ cargo clippy --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-CI (`.github/workflows/build.yml`) runs the same three commands. The server's
+CI (`.github/workflows/build.yml`) runs the same three commands, the tests
+under `cargo llvm-cov` to report their coverage on the pull request. The server's
 database tests start MariaDB with Testcontainers: Docker must be running.
 
 ## Working conventions
