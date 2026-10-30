@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/logo.svg" alt="Beelot logo" width="96">
+</p>
+
 # Beelot
 
 [![Build](https://github.com/mederel/rubeelot/actions/workflows/build.yml/badge.svg)](https://github.com/mederel/rubeelot/actions/workflows/build.yml)
@@ -7,6 +11,11 @@
 
 **Deal in. Good times await.** French Belote and Contrée in the browser:
 against sharp bots, around one device, or online with friends.
+
+<p align="center">
+  <img src="docs/images/home.jpg" alt="Beelot home screen" width="49%">
+  <img src="docs/images/bidding.jpg" alt="A Contrée auction against bots" width="49%">
+</p>
 
 | | |
 | --- | --- |
@@ -23,6 +32,13 @@ Spring Boot backend of [`mederel/beelot`](https://github.com/mederel/beelot);
 [ADR-001](docs/adr/001-rust-platform.md) records the decision and
 [the design](docs/superpowers/specs/2026-10-23-rust-backend-design.md) the
 details.
+
+The other documents came over from `beelot`: the
+[product backlog](docs/product-backlog.md), ADR-002 to ADR-005 in `docs/adr/`,
+the [data breach procedure](docs/privacy/data-breach-procedure.md), and the
+feature specs and plans in `docs/superpowers/`. Apart from the Rust backend's
+design and its phase plans, those specs and plans describe the Java
+implementation, with its class and Gradle task names.
 
 ## Quick start
 
