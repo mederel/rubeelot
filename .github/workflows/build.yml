@@ -9,7 +9,35 @@ permissions:
   contents: read
 
 jobs:
+  # Tells whether anything besides documentation changed. The check job is
+  # skipped otherwise; a skipped job still satisfies the required check, which
+  # paths-ignore would leave pending.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: filter
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        # Documentation is Markdown and anything under docs/. When the diff
+        # cannot be computed, or is empty, the code counts as changed.
+        run: |
+          if git diff --name-only "$BASE...$GITHUB_SHA" > changed.txt \
+            && [ -s changed.txt ] \
+            && ! grep -qvE '(^docs/|\.md$)' changed.txt; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          fi
+          cat changed.txt
+
   check:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
