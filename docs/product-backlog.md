@@ -856,7 +856,7 @@ six phases, in the recommended order. Each phase can ship on its own.
 | 3 — Compete and connect | Give signed-in players reasons to come back | US-068 to US-072 |
 | 4 — Reach more players | Install the game and play it without a mouse | US-073 to US-074 |
 | 5 — Accounts and privacy | Keep my history under my own name, and control my data | US-075 to US-084 (US-084 supersedes US-075, US-077 and US-079, ADR-005; US-076, US-078 and US-080 dropped or merged, ADR-004) |
-| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-094 (build US-094 first, with US-086) |
+| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-095 (build US-094 first, with US-086) |
 
 Why this order:
 
@@ -1491,6 +1491,26 @@ Acceptance criteria:
   instant.
 - Every effect of US-086 to US-093 honours the level.
 - The animations stay smooth on a mid-range phone.
+- New texts are translated into French and Dutch.
+
+**US-095 — Read the suits at a glance**
+
+As a player who struggles to tell the suits apart, I want large, distinct suit
+symbols on the cards, so that I can identify every suit without effort.
+
+Acceptance criteria:
+
+- Each suit has a large, bold symbol on the card, in the corner indices as well
+  as the centre. The symbols are much bigger than the rank letters beside them.
+- The four suits differ by shape, not only by colour, and the symbols are
+  distinct from one another at a small size: for example spades and clubs are
+  not mistaken, and hearts and diamonds are not mistaken.
+- Red and black keep a high contrast against the card face (WCAG AA at least).
+- Settings offers a "Large suit symbols" option, and an option for four
+  colours, one per suit, for players who need more help. Both are remembered in
+  the browser and apply to the hand, the trick, the trump badge (US-091) and the
+  bidding buttons.
+- The suit names stay available to screen readers (US-074).
 - New texts are translated into French and Dutch.
 
 ### Decisions required for the roadmap
