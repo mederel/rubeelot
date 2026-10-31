@@ -53,9 +53,9 @@ names are the contract with US-087, which overrides them per theme.
 | `--card-ink` (new; the existing `--ink` is the light text colour) | outlines and hard shadows | near-black |
 | `--outline-width` | outline of cards, seats, controls on the table | `3px` |
 | `--radius-card`, `--radius-chip` | corner radii of cards and seat stickers | `7px`, `999px` |
-| `--shadow-hard` | offset shadow of cards and stickers | `4px 4px 0 var(--ink)` |
+| `--shadow-hard` | offset shadow of cards and stickers | `4px 4px 0 var(--card-ink)` |
 | `--felt`, `--felt-dot` | felt colour and halftone dot colour | teal, translucent black |
-| `--rim`, `--rim-edge` | table rim and its outer outline | purple, `var(--ink)` |
+| `--rim`, `--rim-edge` | table rim and its outer outline | purple, `var(--card-ink)` |
 | `--card-paper`, `--card-red`, `--card-black` | card face and suit colours | cream, red, ink |
 | `--card-back-a`, `--card-back-b` | the two colours of the card back | purple, gold |
 
