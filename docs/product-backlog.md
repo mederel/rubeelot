@@ -856,7 +856,7 @@ six phases, in the recommended order. Each phase can ship on its own.
 | 3 — Compete and connect | Give signed-in players reasons to come back | US-068 to US-072 |
 | 4 — Reach more players | Install the game and play it without a mouse | US-073 to US-074 |
 | 5 — Accounts and privacy | Keep my history under my own name, and control my data | US-075 to US-084 (US-084 supersedes US-075, US-077 and US-079, ADR-005; US-076, US-078 and US-080 dropped or merged, ADR-004) |
-| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-094 (build US-094 first, with US-086) |
+| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-099 (build US-094 first, with US-086) |
 
 Why this order:
 
@@ -1445,14 +1445,13 @@ Acceptance criteria:
 
 **US-091 — Watch the score move**
 
-As a player, I want scores that count up and a badge for the contract, so that
-I follow the match at a glance.
+As a player, I want scores that count up and a progress bar, so that I follow
+the match at a glance.
 
 Acceptance criteria:
 
 - Round and match scores count from the old value to the new one.
 - A progress bar shows each team's distance to the match target (US-062).
-- The trump suit and the contract show as a badge that bounces when set.
 
 **US-092 — Enjoy a livelier home screen**
 
@@ -1491,6 +1490,110 @@ Acceptance criteria:
   instant.
 - Every effect of US-086 to US-093 honours the level.
 - The animations stay smooth on a mid-range phone.
+- New texts are translated into French and Dutch.
+
+**US-095 — Read the suits at a glance**
+
+As a player who struggles to tell the suits apart, I want large, distinct suit
+symbols on the cards, so that I can identify every suit without effort.
+
+Acceptance criteria:
+
+- Each suit has a large, bold symbol on the card, in the corner indices as well
+  as the centre. The symbols are much bigger than the rank letters beside them.
+- The four suits differ by shape, not only by colour, and the symbols are
+  distinct from one another at a small size: for example spades and clubs are
+  not mistaken, and hearts and diamonds are not mistaken.
+- Red and black keep a high contrast against the card face (WCAG AA at least).
+- Settings offers a "Large suit symbols" option, and an option for four
+  colours, one per suit, for players who need more help. Both are remembered in
+  the browser and apply to the hand, the trick, the contract at the bidder's seat (US-099) and the
+  bidding buttons.
+- The suit names stay available to screen readers (US-074).
+- New texts are translated into French and Dutch.
+
+**US-096 — Keep the match score in view**
+
+As a player, I want the score of the whole match to stay visible during the
+game, so that I always know how close each team is to winning.
+
+Acceptance criteria:
+
+- A score bar stays on screen for the whole game: while dealing, bidding,
+  playing tricks and between rounds. It shows the match score of each team and
+  the match target (US-062), and names my team.
+- It is shown in bot games, at private tables and in pass-and-play, and it
+  never scrolls out of view or hides the cards, on a laptop screen (US-039) and
+  on a phone.
+- It also shows the points of each team so far in the round. The contract is
+  not repeated there: it is shown at the bidder's seat (US-099).
+- Both values update as soon as a round ends, with the count-up of US-091.
+- It is exposed to screen readers as a live region that announces changes
+  without interrupting play (US-074).
+- New texts are translated into French and Dutch.
+
+**US-097 — Show the dealer with a symbol**
+
+As a player, I want the dealer marked by a symbol rather than a letter, so that
+I recognise the dealer whatever language the game is in.
+
+Acceptance criteria:
+
+- The dealer marker is a pictogram, for example a dealer button or a hand
+  holding a deck, with no letter and no text in it.
+- It looks the same in English, French and Dutch, in bot games, at private
+  tables and in pass-and-play.
+- It is large enough to recognise at a glance and does not rely on colour
+  alone, and it fits the cartoon style of US-086.
+- It moves to the next seat when the deal passes, with a short animation
+  (US-094 applies).
+- Hovering it, or focusing it, still shows the translated text "Dealer", and
+  screen readers still announce "Dealer" (US-074).
+
+**US-098 — Show suit symbols next to suit names**
+
+As a player, I want every suit named in the text to appear with its symbol, so
+that I recognise the suit at a glance and without reading the word.
+
+Acceptance criteria:
+
+- Wherever the text names a suit, the suit symbol is shown next to the name,
+  with the symbol first (for example "♠ Spades"): the trump line, the contract
+  and the current contract, the bid and trump calls, the hints (US-065), the
+  table messages and the tutorial.
+- Where the symbol is already shown with a name close by (a call bubble, a
+  bidding button), the name may be dropped when the symbol is enough.
+- The symbol uses the style of US-095, including its large-symbol and
+  four-colour options.
+- The symbols come from one shared function next to `suitName`, so that every
+  sentence uses the same display, in English, French and Dutch.
+- Screen readers read the suit name once, not the name and the symbol
+  (US-074).
+- Existing translations are not duplicated: the suit names stay in the
+  language files.
+
+**US-099 — Show the contract at the bidder's seat**
+
+As a player, I want the ongoing bet printed next to the avatar of the player
+who made it, so that I see at once who is playing which contract, without
+looking elsewhere on the screen.
+
+Acceptance criteria:
+
+- The current contract (value and trump suit in Contrée, the trump suit in
+  classic Belote; with the suit symbol of US-098) appears next to the avatar of
+  the player who holds it, as a badge that bounces when it is set or raised.
+- During bidding the badge follows the highest bid: it moves to the new bidder
+  when a bid is raised. Players who passed show nothing.
+- Once the bidding ends the badge stays at the taker's seat for the whole
+  round, with a mark when the contract is coinched or surcoinched.
+- The contract is no longer printed anywhere else on the screen: the contract
+  summary line, the current contract label and the trump line are removed, in
+  bot games, at private tables and in pass-and-play. The score bar (US-096)
+  does not repeat it.
+- The badge is exposed to screen readers as part of the seat, naming the
+  player, the value and the suit (US-074).
+- Nothing is shown before the first bid.
 - New texts are translated into French and Dutch.
 
 ### Decisions required for the roadmap
