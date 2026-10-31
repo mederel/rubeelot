@@ -291,6 +291,19 @@ async fn a_target_that_is_not_offered_is_refused() {
 }
 
 #[tokio::test]
+async fn hints_are_offered_at_local_tables_only() {
+    let (app, _) = app();
+    let local = solo(&app, "CONTREE").await;
+    assert_eq!(snapshot(&app, &local).await["table"]["hints"], json!(true));
+
+    let (online, _) = private(&app, "Ana", "CONTREE").await;
+    assert_eq!(
+        snapshot(&app, &online).await["table"]["hints"],
+        json!(false)
+    );
+}
+
+#[tokio::test]
 async fn plays_a_legal_card_from_the_human_hand() {
     let (app, _) = app();
     let player = solo(&app, "CONTREE").await;

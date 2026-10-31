@@ -145,6 +145,7 @@ window.beelotLocales = window.beelotLocales || {};
     "Each player needs a different name.": "Elke speler heeft een andere naam nodig.",
     "Fill in the four seats.": "Vul de vier plaatsen in.",
     "It is not your turn.": "Je bent niet aan de beurt.",
+    "There is no hint to give now.": "Er is nu geen hint te geven.",
     "Player names are limited to 30 characters.": "Spelersnamen zijn beperkt tot 30 tekens.",
     "My statistics": "Mijn statistieken",
     "Your progress": "Jouw voortgang",

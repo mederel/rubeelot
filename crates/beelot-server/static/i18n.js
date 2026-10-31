@@ -157,6 +157,7 @@ const fr = {
   "Each player needs a different name.": "Chaque joueur doit avoir un nom différent.",
   "Fill in the four seats.": "Remplissez les quatre places.",
   "It is not your turn.": "Ce n'est pas votre tour.",
+  "There is no hint to give now.": "Il n'y a pas d'indice à donner pour le moment.",
   "Player names are limited to 30 characters.": "Les noms de joueur sont limités à 30 caractères.",
   "My statistics": "Mes statistiques",
   "Your progress": "Votre progression",
