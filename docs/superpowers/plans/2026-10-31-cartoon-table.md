@@ -39,7 +39,7 @@
 - Create (scratch, not committed): `.superpowers/brainstorm/<session>/content/court-gallery.html`
 
 **Interfaces:**
-- Produces: sprite symbols `court-<rank>-<suit>` for rank in `J Q K`, suit in `clubs diamonds hearts spades`, served at `/cards.svg`. Colours used inside are `var(--card-red, #d62839)`, `var(--card-black, #1b1b2f)`, `var(--ink, #111)`, `var(--card-paper, #fff8e6)` plus a fixed accent palette (skin, gold, and per-suit accents) declared once as the `ACCENTS` list in the test.
+- Produces: sprite symbols `court-<rank>-<suit>` for rank in `J Q K`, suit in `clubs diamonds hearts spades`, served at `/cards.svg`. Colours used inside are `var(--card-red, #d62839)`, `var(--card-black, #1b1b2f)`, `var(--card-ink, #111)`, `var(--card-paper, #fff8e6)` plus a fixed accent palette (skin, gold, and per-suit accents) declared once as the `ACCENTS` list in the test.
 
 - [ ] **Step 1: Write the failing test** `cards-sprite.test.cjs` (reads `../static/cards.svg` as text, no XML dependency; split on `<symbol`):
   - `has exactly twelve court symbols with the expected ids` (assert the sorted list of ids equals the 12 `court-<rank>-<suit>` ids and no other symbol exists).
