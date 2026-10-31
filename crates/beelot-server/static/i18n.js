@@ -473,6 +473,12 @@ const fr = {
   "Full": "Complets",
   "Reduced": "Réduits",
   "No effects": "Aucun effet",
+  "Table theme": "Thème de la table",
+  "Choose the colours of the table and the card back.": "Choisissez les couleurs de la table et du dos des cartes.",
+  "Comic": "BD",
+  "Classic green": "Vert classique",
+  "Midnight": "Minuit",
+  "Sunset": "Coucher de soleil",
   "Cards always use both a suit symbol and colour. Controls support touch and keyboard use.":
     "Les cartes utilisent toujours à la fois un symbole et une couleur. Les commandes fonctionnent au toucher et au clavier.",
 

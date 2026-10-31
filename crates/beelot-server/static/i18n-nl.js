@@ -460,6 +460,12 @@ window.beelotLocales = window.beelotLocales || {};
     "Full": "Volledig",
     "Reduced": "Beperkt",
     "No effects": "Geen effecten",
+    "Table theme": "Tafelthema",
+    "Choose the colours of the table and the card back.": "Kies de kleuren van de tafel en de achterkant van de kaarten.",
+    "Comic": "Strip",
+    "Classic green": "Klassiek groen",
+    "Midnight": "Middernacht",
+    "Sunset": "Zonsondergang",
     "Cards always use both a suit symbol and colour. Controls support touch and keyboard use.":
       "Kaarten gebruiken altijd zowel een kleursymbool als een kleur. De bediening werkt met aanraking en toetsenbord.",
 

@@ -1962,12 +1962,16 @@ document.querySelector("#reactions-enabled").addEventListener("change", (event) 
 
 // Without storage the chosen level lasts until the page is reloaded.
 let sessionEffects = null;
+let sessionTheme = null;
 
 function applySettings() {
   const level = resolveEffectsLevel(storedSetting("beelot.effects") ?? sessionEffects, storedSetting("beelot.reduced-motion"),
     window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   document.body.dataset.effects = level;
   setChoice("effects", level);
+  const theme = resolveTheme(storedSetting("beelot.theme") ?? sessionTheme);
+  document.body.dataset.theme = theme;
+  setChoice("theme", theme);
   document.querySelector("#sound-enabled").checked = window.localStorage.getItem("beelot.sound-enabled") !== "false";
   document.querySelector("#reactions-enabled").checked = reactionsEnabled();
   if (!reactionsEnabled()) {
@@ -1990,6 +1994,14 @@ choiceInputs("effects").forEach((input) => input.addEventListener("change", (eve
     window.localStorage.removeItem("beelot.reduced-motion");
   } catch (_) {
     sessionEffects = event.target.value;
+  }
+  applySettings();
+}));
+choiceInputs("theme").forEach((input) => input.addEventListener("change", (event) => {
+  try {
+    window.localStorage.setItem("beelot.theme", event.target.value);
+  } catch (_) {
+    sessionTheme = event.target.value;
   }
   applySettings();
 }));
