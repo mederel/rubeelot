@@ -27,8 +27,8 @@ US-087.
   once, in a sprite, `static/suits.svg`, with ids `suit-hearts`,
   `suit-diamonds`, `suit-spades` and `suit-clubs`, each filled with
   `currentColor`.
-- **Corners only.** The symbol appears in the two corner indices, under the
-  rank (top left, and upside down at the bottom right). The centre symbol is
+- **One corner only.** The symbol appears in a single index, under the rank at
+  the top left. The upside-down bottom-right index and the centre symbol are
   gone: number cards (7, 8, 9, 10) and aces have a plain cream centre, with no
   pips and no numeral. This replaces the backlog wording "in the corner indices
   as well as the centre", which is updated. Court cards keep their portraits.
@@ -67,8 +67,9 @@ US-087.
 
 ### Cards (`cardElement` in `app.js`, `.playing-card` rules in `styles.css`)
 
-- The corner index is the rank above `suitSymbol(card.suit)`; the font glyph
-  from `card.symbol` is no longer drawn.
+- The top-left index is the rank above `suitSymbol(card.suit)`; the font glyph
+  from `card.symbol` is no longer drawn, and the rotated bottom-right index is
+  removed (with its CSS).
 - The pip layouts, the ace's centre symbol and the `.pip-field`, `.card-pip`
   and `.ace-face` rules are removed. Court cards keep the portrait (US-086) and
   the paper halo behind the index.
