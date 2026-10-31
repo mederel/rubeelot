@@ -856,7 +856,7 @@ six phases, in the recommended order. Each phase can ship on its own.
 | 3 — Compete and connect | Give signed-in players reasons to come back | US-068 to US-072 |
 | 4 — Reach more players | Install the game and play it without a mouse | US-073 to US-074 |
 | 5 — Accounts and privacy | Keep my history under my own name, and control my data | US-075 to US-084 (US-084 supersedes US-075, US-077 and US-079, ADR-005; US-076, US-078 and US-080 dropped or merged, ADR-004) |
-| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-095 (build US-094 first, with US-086) |
+| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-096 (build US-094 first, with US-086) |
 
 Why this order:
 
@@ -1511,6 +1511,26 @@ Acceptance criteria:
   the browser and apply to the hand, the trick, the trump badge (US-091) and the
   bidding buttons.
 - The suit names stay available to screen readers (US-074).
+- New texts are translated into French and Dutch.
+
+**US-096 — Keep the match score in view**
+
+As a player, I want the score of the whole match to stay visible during the
+game, so that I always know how close each team is to winning.
+
+Acceptance criteria:
+
+- A score bar stays on screen for the whole game: while dealing, bidding,
+  playing tricks and between rounds. It shows the match score of each team and
+  the match target (US-062), and names my team.
+- It is shown in bot games, at private tables and in pass-and-play, and it
+  never scrolls out of view or hides the cards, on a laptop screen (US-039) and
+  on a phone.
+- It also shows the current round: the contract and trump (US-091) and the
+  points of each team so far in the round.
+- Both values update as soon as a round ends, with the count-up of US-091.
+- It is exposed to screen readers as a live region that announces changes
+  without interrupting play (US-074).
 - New texts are translated into French and Dutch.
 
 ### Decisions required for the roadmap
