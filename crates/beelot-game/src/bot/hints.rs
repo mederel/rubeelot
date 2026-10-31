@@ -5,6 +5,7 @@ use serde::Serialize;
 
 use super::memory::CardMemory;
 use super::rule_based::by_value;
+use crate::bidding::{AuctionDecision, AuctionView};
 use crate::board::PlayView;
 use crate::card::Card;
 use crate::rules;
@@ -90,11 +91,36 @@ fn follow_reason(view: &PlayView, memory: &CardMemory, card: Card) -> CardReason
     CardReason::BestForRound
 }
 
+/// Why a bid or pass is the hint. Serialized as the code the client translates.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum AuctionReason {
+    Take,
+    SupportPartner,
+    BidHandValue,
+    Coinche,
+    PassWeak,
+}
+
+pub(crate) fn auction_reason(view: &AuctionView, decision: &AuctionDecision) -> AuctionReason {
+    match decision {
+        AuctionDecision::Trump { .. } => AuctionReason::Take,
+        AuctionDecision::Bid { trump, .. }
+            if view.partner_holds_contract() && Some(*trump) == view.highest_bid_suit =>
+        {
+            AuctionReason::SupportPartner
+        }
+        AuctionDecision::Bid { .. } => AuctionReason::BidHandValue,
+        AuctionDecision::Coinche => AuctionReason::Coinche,
+        AuctionDecision::Pass => AuctionReason::PassWeak,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::board::SeatCard;
-    use crate::card::{Seat, Trump, Variant};
+    use crate::card::{Seat, Suit, Trump, Variant};
 
     fn card(code: &str) -> Card {
         code.parse().unwrap()
@@ -200,5 +226,83 @@ mod tests {
 
         let all_trumps = play_view(Variant::Contree, Trump::AllTrumps, "JH 7C", &[]);
         assert_eq!(card_reason(&all_trumps, card("JH")), CardReason::CashMaster);
+    }
+
+    fn auction_view(variant: Variant, partner_holds: Option<Trump>) -> AuctionView {
+        AuctionView {
+            seat: 1,
+            hand: cards("JS 9S AS 10S AH AC 7D 8D"),
+            upturned_card: (variant == Variant::Classic).then(|| card("7H")),
+            round: 1,
+            variant,
+            dealer_index: 0,
+            auction: Vec::new(),
+            highest_bid: partner_holds.map_or(0, |_| 80),
+            highest_bid_suit: partner_holds,
+            highest_bidder_seat: partner_holds.map(|_| 3),
+            coinche_allowed: false,
+            announcements: false,
+            all_trumps: true,
+        }
+    }
+
+    #[test]
+    fn choosing_a_trump_takes() {
+        let first_round = auction_view(Variant::Classic, None);
+        let take = AuctionDecision::Trump { suit: Suit::Hearts };
+        assert_eq!(auction_reason(&first_round, &take), AuctionReason::Take);
+
+        let second_round = AuctionView {
+            round: 2,
+            ..auction_view(Variant::Classic, None)
+        };
+        let other = AuctionDecision::Trump { suit: Suit::Spades };
+        assert_eq!(auction_reason(&second_round, &other), AuctionReason::Take);
+    }
+
+    #[test]
+    fn bidding_the_trump_the_partner_holds_supports_them() {
+        let view = auction_view(Variant::Contree, Some(Trump::Hearts));
+        let bid = AuctionDecision::Bid {
+            value: 90,
+            trump: Trump::Hearts,
+        };
+        assert_eq!(auction_reason(&view, &bid), AuctionReason::SupportPartner);
+    }
+
+    #[test]
+    fn any_other_bid_is_worth_the_hand() {
+        let spades = AuctionDecision::Bid {
+            value: 90,
+            trump: Trump::Spades,
+        };
+        let over_partner = auction_view(Variant::Contree, Some(Trump::Hearts));
+        assert_eq!(
+            auction_reason(&over_partner, &spades),
+            AuctionReason::BidHandValue
+        );
+        let opening = auction_view(Variant::Contree, None);
+        assert_eq!(
+            auction_reason(&opening, &spades),
+            AuctionReason::BidHandValue
+        );
+    }
+
+    #[test]
+    fn coinching_coinches() {
+        let view = auction_view(Variant::Contree, None);
+        assert_eq!(
+            auction_reason(&view, &AuctionDecision::Coinche),
+            AuctionReason::Coinche
+        );
+    }
+
+    #[test]
+    fn passing_passes_weak() {
+        let view = auction_view(Variant::Contree, None);
+        assert_eq!(
+            auction_reason(&view, &AuctionDecision::Pass),
+            AuctionReason::PassWeak
+        );
     }
 }
