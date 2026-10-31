@@ -2,7 +2,7 @@
 
 ## Goal
 
-Replace the Java 21 / Spring Boot 4 backend with a Rust one that offers the same
+Build Beelot's backend in Rust, offering these
 features: solo games against bots, pass-and-play, private tables, public
 matchmaking, passkey accounts, match history and statistics, GDPR export,
 deletion and retention, and the bot arena. The API, schema and architecture may
@@ -15,43 +15,34 @@ match. MariaDB stays.
   the schema and the frontend's networking code change; game rules and bot
   behaviour do not.
 - **No data to keep.** The schema starts again from one fresh migration; there
-  is no migration path from the Flyway schema.
+  is no earlier schema to migrate from.
 - **MariaDB stays** (ADR-002), through `sqlx` with its MySQL driver and embedded
-  migrations, in place of JPA/Hibernate and Flyway.
+  migrations.
 - **Online tables get Server-Sent Events** in place of the 3-second poll.
-- **Bots reproduce Java's decisions exactly**: same seed and same view give the
-  same bid and the same card. Fixtures recorded from Java prove it.
-- **Two repositories.** The Rust backend lives in
+- **Bots are deterministic**: same seed and same view give the same bid and the
+  same card. Recorded deals check it.
+- **One repository.** The Rust backend and the static frontend live in
   [`mederel/rubeelot`](https://github.com/mederel/rubeelot), started with a
-  fresh history: no Java, no Gradle. The Java backend stays in
-  [`mederel/beelot`](https://github.com/mederel/beelot) and remains the product
-  until the cutover. The only change made in `beelot` for this work is the
-  fixture recorder (phase 1).
+  fresh history.
 - **Incremental.** `rubeelot` grows in three phases, each its own PR or set of
-  PRs; Java stays the product until the cutover in phase 3.
+  PRs; the cutover is phase 3.
 - **Rejected:** a big-bang rewrite on a long-lived branch (one huge PR, features
-  landing on `master` ported twice), and a server-first port calling the Java
+  landing meanwhile ported twice), and a server-first port calling the old
   rules over FFI (glue thrown away entirely). WebSocket was rejected for
   updates: nothing needs to travel from the client over the socket, and SSE is
   simpler to build, test and proxy. OpenAPI was rejected: there is one client,
   shipped from the same repository.
 
-## Repositories
-
-`rubeelot`:
+## Repository
 
 ```
 Cargo.toml                 workspace
 crates/beelot-game/        rules, scoring, announcements, bots, solver (no I/O, no async)
 crates/beelot-arena/       binary: the bot arena CLI
 crates/beelot-server/      binary: axum server, serves the static frontend
-fixtures/                  JSON lines recorded from Java, copied from beelot
+fixtures/                  JSON lines of recorded deals
 docs/                      this spec, plans, ADRs of the Rust backend
 ```
-
-`beelot` keeps the Java backend, its frontend, its ADRs and its specs. Rules or
-bot changes made in `beelot` before the cutover are ported to `rubeelot` with
-freshly recorded fixtures.
 
 ## Phase 1: `beelot-game` and `beelot-arena`
 
@@ -67,26 +58,23 @@ Every decision is a function of the seed and the view, with two exceptions:
 - **Decision times** in the arena report differ by nature; that line is left
   out of the comparison.
 
-`SamplingStrategy.mix` hashes `card.rank().hashCode()`: the rank is a `String`,
-whose hash Java defines exactly, so Rust reproduces it with a constant per
-rank. No change to the Java code is needed.
+`SamplingStrategy` mixes a hash of each rank's label into its seeds, so Rust
+uses a constant per rank (`Rank::label_hash`).
 
-### Randomness reproduced exactly
+### Randomness
 
 A `rng` module in `beelot-game` implements:
 
-- `JavaRandom`: `java.util.Random`'s 48-bit linear congruential generator,
-  including `nextInt(bound)`. The arena deals with it.
-- `SplitMix64`: `java.util.SplittableRandom`, including `nextInt(bound)` and
-  `nextLong`. The arena bots and `SamplingStrategy` use it.
-- `java_shuffle`: `Collections.shuffle`'s backward Fisher–Yates.
+- `SplitMix64`: a 64-bit generator with `next_int(bound)` and `next_long`. The
+  arena, the arena bots and `SamplingStrategy` use it.
+- `shuffle`: a backward Fisher–Yates.
 
-Production deals use a cryptographic RNG (today `SecureRandom`); they need no
+Production deals use the operating system's random generator and need no
 parity.
 
 ### Crate shape
 
-- Modules follow `fr.beelot.game`: `card`, `bidding`, `board`, `scoring`
+- Modules: `card`, `bidding`, `board`, `scoring`
   (`RoundScoring`), `announcements`, `match_score`, `rules` (`BeloteRules`),
   `bot::{rule_based, sampling, solver, memory, turns}`.
 - `Suit`, `Rank`, `Variant`, `Difficulty` and `Team` are `Copy` enums; `Card`
@@ -97,46 +85,35 @@ parity.
 - `BiddingState` and `GameBoard` are structs whose operations return
   `Result<_, GameError>`; `GameError` is a `thiserror` enum with one variant per
   rejected move, and each variant has a stable code for the API. The English
-  messages of the Java engine move to the server and the frontend in phase 2,
+  messages of the engine move to the server and the frontend in phase 2,
   as do the player-facing views (`BiddingView`, `GameBoardView`).
 - Production bots implement
   `trait BotStrategy { fn decide_auction(&self, view: &AuctionView) -> AuctionDecision; fn choose_card(&self, view: &PlayView) -> Card; }`;
   arena bots implement `ArenaBot`, which also receives a
   `&mut dyn RandomSource`.
 - `RandomSource` is the crate's own one-method trait
-  (`next_int(bound) -> i32`), implemented by `JavaRandom` and `SplitMix64` with
-  Java's exact algorithms; the server implements it over an OS RNG in phase 2.
+  (`next_int(bound) -> i32`), implemented by `SplitMix64`; the server implements it over an OS RNG in phase 2.
 - Dependencies: `thiserror` and `serde`.
 
 ### `beelot-arena`
 
-A `clap` binary that replaces the `botArena` Gradle task with the same options
-and defaults: `--first`, `--second`, `--deals`, `--seed`, `--variant`,
-`--announcements`. It offers the same bots as `ArenaBot` (current, challenging,
-baseline, previous-play, previous-trumps, no-coinche,
-no-announcement-bidding, random) and prints the same report as `ArenaReport`.
-`SolverBenchmark` becomes a `criterion` benchmark in `beelot-game`.
+A `clap` binary with the options `--first`, `--second`, `--deals`, `--seed`,
+`--variant` and `--announcements`. It offers these bots: current, challenging,
+baseline, previous-play, previous-trumps, no-coinche, no-announcement-bidding
+and random. A `criterion` benchmark in `beelot-game` times the solver.
 
 ### Fixtures
 
-- `FixtureRecorder`, a new test-scope class in `beelot`, plays seeded arena
-  deals: both variants, announcements on and off, every arena bot. It writes
-  one JSON line per deal: the seed, the dealer, the bots, then every step (each
-  bot's view and decision, each trick continuation) and the round result. It
-  also writes test vectors for the random generators.
-- About 100 deals (some 3,500 decisions) are copied into `rubeelot/fixtures/`,
-  with a `fixtures/SOURCE` file naming the `beelot` commit they were recorded
-  from. A Rust test replays every deal, checking each view, each decision and
-  the result.
-- Arena parity: for a fixed seed and a handful of configurations without the
-  `challenging` bot, the Java and Rust arena reports must be identical apart
-  from the decision-time line; the expected reports are checked in next to the
-  fixtures.
+- About 100 seeded arena deals (some 3,500 decisions) are recorded in
+  `fixtures/`: both variants, announcements on and off, every arena bot. Each
+  JSON line holds the seed, the dealer, the bots, then every step (each bot's
+  view and decision, each trick continuation) and the round result.
+  `fixtures/SOURCE` says when they were recorded. Rust tests check the sampling
+  bot's choices against the recorded views.
 
 ### Tests
 
-The Java tests under `src/test/java/fr/beelot/game` are ported one-for-one as
-Rust `#[test]`s, so each rule keeps a readable test of its own beside the
+Each rule has a readable Rust `#[test]` of its own beside the
 fixtures. `PrivateTableTest`, `PublicTableTest` and `PlayerViewsTest` test the
 table lifecycle and player-facing views, so they are ported in phase 2.
 
@@ -329,7 +306,7 @@ WebAuthn JSON that `webauthn-rs` produces.
 
 Every error body is `{error: <stable code>, message}`. The frontend's i18n
 uses English text as its key, including patterns such as `"(.+) bids (\d+) …"`,
-so the server keeps sending Java's exact English messages (errors, auction
+so the server keeps sending the same English messages (errors, auction
 messages, call labels, Belote announcements) and the frontend keeps
 translating `message`. The code is for the frontend's logic, such as
 `reauthenticate`.
@@ -356,9 +333,7 @@ the files being updated. `app.js` refers to them in its comments.
 
 ## Frontend changes
 
-The frontend is copied from `beelot` at the start of phase 2 (the commit is
-named in the copying commit's message) and changed only in `rubeelot`; the
-`beelot` frontend keeps talking to the Java API.
+The frontend starts phase 2 as it was and is changed in `rubeelot`.
 
 - `app.js`: one `api.table(id)` and one `api.act(id, action)` replace the
   separate bot-game and private-table calls; the renderers take one snapshot.
@@ -367,22 +342,19 @@ named in the copying commit's message) and changed only in `rubeelot`; the
 - The new sign-in, sign-up and sign-out URLs.
 - Translations added to `i18n.js` and `i18n-nl.js` only for new English
   messages; the existing ones are unchanged.
-- Unknown paths that are not API routes fall back to `index.html`, as
-  `HomeController` does today.
+- Unknown paths that are not API routes fall back to `index.html`.
 
 ## Testing
 
-| Java today | Rust |
+| Kind of test | How |
 |---|---|
-| `game/**Test` | `beelot-game` unit tests and `tests/fixtures.rs` (phase 1) |
-| `*ServiceTest`, `TableReactionsTest`, `MemoryBoundsTest`, limiter tests | Unit tests on `Table`, `TableRegistry`, matchmaking and the limiters, with a fake `Clock` |
-| `*ControllerTest`, `RequestLimitFiltersTest`, `SessionLifetimeFilterTest` | Router tests with `tower::ServiceExt::oneshot` on the real `Router`, CSRF and SSE included |
-| `*IntegrationTest` (Testcontainers MariaDB) | `testcontainers-modules` MariaDB: one container per test binary, a fresh database per test |
-| `SoftwarePasskey` (webauthn4j-test) | `webauthn-authenticator-rs`'s `SoftPasskey`, driving sign-up and sign-in through the router |
-| `PasskeysMigrationTest` | Dropped: no data to migrate |
+| Rules and bots | `beelot-game` unit tests and `tests/*.rs` (phase 1) |
+| Tables, registry, matchmaking, limiters | Unit tests on `Table`, `TableRegistry`, matchmaking and the limiters, with a fake `Clock` |
+| Routes, CSRF, SSE | Router tests with `tower::ServiceExt::oneshot` on the real `Router` |
+| Database | `testcontainers-modules` MariaDB: one container per test binary, a fresh database per test |
+| Passkeys | `webauthn-authenticator-rs`'s `SoftPasskey`, driving sign-up and sign-in through the router |
 
-Coverage moves from JaCoCo to `cargo llvm-cov`, reported without a threshold, as
-today.
+Coverage is reported by `cargo llvm-cov`, without a threshold.
 
 Before the cutover, a manual browser check: a solo game, pass-and-play, a
 private table in two browsers (live updates over SSE), quick-match with bots
@@ -390,21 +362,16 @@ filling seats, and sign-up, sign-in, export and account deletion.
 
 ## Phase 3: cutover
 
-Production switches from the `beelot` build to the `rubeelot` build. In
-`rubeelot`:
+Production switches to the `rubeelot` build. In this repository:
 
-- `docs/adr/001-rust-platform.md` records the Rust platform, superseding
-  `beelot`'s ADR-001 and noting that `sqlx` replaces JPA and Flyway under
-  `beelot`'s ADR-002 (MariaDB).
-- README: what Beelot is (from `beelot`'s README), Quick start
+- `docs/adr/001-rust-platform.md` records the Rust platform and notes that
+  `sqlx` serves the MariaDB decision of ADR-002.
+- README: what Beelot is, Quick start
   (`docker compose up -d --wait && cargo run -p beelot-server`), Verify, Bot
   arena (`cargo run --release -p beelot-arena -- …`), Solver benchmark
   (`cargo bench -p beelot-game`), Release build (`cargo build --release`), and
   the badges.
 - AGENTS.md: build, test and formatting commands.
-
-In `beelot`: a README note pointing to `rubeelot`. Whether to archive `beelot`
-is decided at that point, not in this spec.
 
 Configuration keeps its environment variables: `BEELOT_DATABASE_URL` (now a
 `mysql://` URL), `BEELOT_DATABASE_USERNAME`, `BEELOT_DATABASE_PASSWORD`, the

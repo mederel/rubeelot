@@ -1,4 +1,4 @@
-//! The per-client limits on `/api/*` requests, ported from Java's `RequestRateLimitFilter`.
+//! The per-client limits on `/api/*` requests.
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;

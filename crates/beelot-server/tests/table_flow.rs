@@ -1,5 +1,4 @@
-//! The game flow at a table, ported from Java's `BotGameServiceTest`, `PassAndPlayServiceTest` (flow cases) and the
-//! game-flow cases of `PrivateTableServiceTest`.
+//! The game flow at a table: solo, pass-and-play and private tables.
 
 use std::time::Duration;
 
@@ -127,7 +126,7 @@ fn auction_complete(table: &Table) -> bool {
     table.board().is_some()
 }
 
-/// Bids 160 Spades, coinches when allowed, or passes, until the auction ends: Java's `playRound` auction.
+/// Bids 160 Spades, coinches when allowed, or passes, until the auction ends.
 fn finish_auction_at_160(table: &mut Table, actor: Actor) {
     for guard in 0.. {
         assert!(guard <= 20, "the auction did not complete");

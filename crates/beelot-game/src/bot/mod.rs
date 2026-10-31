@@ -1,6 +1,5 @@
 //! Bot players. A strategy only receives what its seat can see, so it cannot look at the other
-//! hands, and strategies can be swapped without touching the rules engine. Port of the Java
-//! `fr.beelot.game.bot` package.
+//! hands, and strategies can be swapped without touching the rules engine.
 
 pub mod arena;
 pub mod hand_features;

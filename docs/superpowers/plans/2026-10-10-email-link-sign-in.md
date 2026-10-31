@@ -4,9 +4,9 @@
 
 **Goal:** Players sign in with a one-time link emailed by Spring, or with Google or GitHub directly; Zitadel is removed.
 
-**Architecture:** Spring Security's `oneTimeTokenLogin()` runs the link flow with a Beelot token store (hashed tokens in MariaDB) and a Beelot sender (plain-text email through `JavaMailSender`). A filter in front of token generation validates the address and applies rate limits. Google and GitHub return as `spring.security.oauth2.client` registrations bound at run time. The client gains a sign-in panel and a `/sign-in` view that posts the token.
+**Architecture:** Spring Security's `oneTimeTokenLogin()` runs the link flow with a Beelot token store (hashed tokens in MariaDB) and a Beelot sender (plain-text email through `MailSender`). A filter in front of token generation validates the address and applies rate limits. Google and GitHub return as `spring.security.oauth2.client` registrations bound at run time. The client gains a sign-in panel and a `/sign-in` view that posts the token.
 
-**Tech Stack:** Java 21, Spring Boot 4.1.1, Spring Security 7.1.1, Spring Data JPA, `JdbcClient`, Flyway on MariaDB 11.4, `spring-boot-starter-mail`, Mailpit, vanilla JS client, JUnit 5, MockMvc, Testcontainers.
+**Tech Stack:** Spring Boot 4.1.1, Spring Security 7.1.1, Spring Data JPA, `JdbcClient`, Flyway on MariaDB 11.4, `spring-boot-starter-mail`, Mailpit, vanilla JS client, JUnit 5, MockMvc, Testcontainers.
 
 **Spec:** `docs/superpowers/specs/2026-10-10-email-link-sign-in-design.md` (and ADR-004).
 
@@ -38,14 +38,14 @@
 ### Task 1: Google and GitHub sign in directly; Zitadel is removed
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/application/security/SecurityConfiguration.java`
-- Modify: `src/main/java/fr/beelot/application/account/AccountController.java`
+- Modify: `application/security/SecurityConfiguration`
+- Modify: `application/account/AccountController`
 - Modify: `src/main/resources/application.properties`, `compose.yaml`, `.gitignore`, `src/main/resources/static/app.js`, `src/main/resources/static/index.html` (only the account bar)
 - Delete: `zitadel/`, `ZitadelProperties`, `ZitadelUsers`, `ZitadelApiException`, `ZitadelLogoutSuccessHandler`, `RegisterAuthorizationRequestResolver`, `UnconfirmedAccountCleanup`, and the tests `ZitadelUsersTest`, `RegisterAuthorizationRequestResolverTest`, `UnconfirmedAccountCleanupTest`
-- Test: `src/test/java/fr/beelot/application/security/ClientRegistrationsTest.java` (rewrite), `account/AccountIntegrationTest.java`, `account/NotConfiguredAccountTest.java`, `history/MatchHistoryIntegrationTest.java`, `AccountUiTest.java`
+- Test: `tests/application/security/ClientRegistrationsTest` (rewrite), `account/AccountIntegrationTest`, `account/NotConfiguredAccountTest`, `history/MatchHistoryIntegrationTest`, `AccountUiTest`
 
 **Interfaces:**
-- Produces: the `ClientRegistrationRepository` bean, bound from `spring.security.oauth2.client` at run time (US-057's version: `git show 0e789ba^:src/main/java/fr/beelot/application/security/SecurityConfiguration.java`, including its `Hints` registrar). GitHub's registration is rebuilt with an empty scope set.
+- Produces: the `ClientRegistrationRepository` bean, bound from `spring.security.oauth2.client` at run time (US-057's version: `git show 0e789ba^:application/security/SecurityConfiguration`, including its `Hints` registrar). GitHub's registration is rebuilt with an empty scope set.
 - Produces: `GET /api/account` returns `AccountView(boolean signedIn, String name, Boolean emailSignIn, List<Provider> providers)`, with `@JsonInclude(NON_NULL)`, where `Provider(String id, String name, String signInUrl)` covers each configured provider in the order `google`, `github`. A guest gets `providers` and, from Task 6, `emailSignIn: true`. A signed-in player gets `signedIn` and `name` only.
 - Produces: `POST /logout` answers 204 (`HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT)`).
 - Keeps: the `Clock` bean, the CSRF rule, `SignInSuccessHandler` for `oauth2Login`, and `failureUrl("/?signin=failed")`.
@@ -94,9 +94,9 @@
 ### Task 2: Email accounts
 
 **Files:**
-- Create: `src/main/resources/db/migration/V4__email_accounts.sql`, `account/AccountEmail.java`, `account/AccountEmailRepository.java`
-- Modify: `account/Account.java`, `account/AccountService.java`
-- Test: `account/AccountServiceTest.java`, `account/AccountRepositoryIntegrationTest.java`
+- Create: `src/main/resources/db/migration/V4__email_accounts.sql`, `account/AccountEmail`, `account/AccountEmailRepository`
+- Modify: `account/Account`, `account/AccountService`
+- Test: `account/AccountServiceTest`, `account/AccountRepositoryIntegrationTest`
 
 **Interfaces:**
 - Produces: `AccountService.signInWithEmail(String email, Locale locale) -> Account`, which expects an already normalised address.
@@ -166,8 +166,8 @@
 ### Task 3: Hashed one-time tokens
 
 **Files:**
-- Create: `account/SignInTokenService.java`
-- Test: `account/SignInTokenServiceTest.java` (`@SpringBootTest` with a MariaDB Testcontainer, like `AccountRepositoryIntegrationTest`)
+- Create: `account/SignInTokenService`
+- Test: `account/SignInTokenServiceTest` (`@SpringBootTest` with a MariaDB Testcontainer, like `AccountRepositoryIntegrationTest`)
 
 **Interfaces:**
 - Produces: `SignInTokenService implements OneTimeTokenService`, a `@Component` built from `(JdbcClient jdbc, Clock clock, @Value("${beelot.sign-in.link-lifetime:PT15M}") Duration lifetime)`.
@@ -202,8 +202,8 @@
 ### Task 4: Validate and limit link requests
 
 **Files:**
-- Create: `account/SignInRateLimiter.java`, `account/SignInRequestFilter.java`
-- Test: `account/SignInRateLimiterTest.java`, `account/SignInRequestFilterTest.java`
+- Create: `account/SignInRateLimiter`, `account/SignInRequestFilter`
+- Test: `account/SignInRateLimiterTest`, `account/SignInRequestFilterTest`
 
 **Interfaces:**
 - Consumes: `EmailAddresses.normalise` (Task 2).
@@ -242,13 +242,13 @@
 
 **Files:**
 - Modify: `build.gradle` (add `implementation 'org.springframework.boot:spring-boot-starter-mail'`), `application.properties`
-- Create: `account/SignInEmail.java`, `account/SignInLinkSender.java`
-- Test: `account/SignInEmailTest.java`, `account/SignInLinkSenderTest.java`
+- Create: `account/SignInEmail`, `account/SignInLinkSender`
+- Test: `account/SignInEmailTest`, `account/SignInLinkSenderTest`
 
 **Interfaces:**
 - Produces: `record SignInEmail(String subject, String body)` with `static SignInEmail of(Locale locale, String link)`. `fr` and `nl` get their texts and anything else gets English.
 - Produces: `static Locale SignInEmail.language(HttpServletRequest request)`, following the Global Constraints rule.
-- Produces: `SignInLinkSender implements OneTimeTokenGenerationSuccessHandler`, a `@Component` built from `(JavaMailSender mail, JsonMapper json, @Value("${beelot.public-url}") String publicUrl, @Value("${beelot.mail.from}") String from)`.
+- Produces: `SignInLinkSender implements OneTimeTokenGenerationSuccessHandler`, a `@Component` built from `(MailSender mail, JsonMapper json, @Value("${beelot.public-url}") String publicUrl, @Value("${beelot.mail.from}") String from)`.
   - It sends a `SimpleMailMessage` to `token.getUsername()` and answers 204.
   - On a `MailException`, it logs `WARN "Could not send a sign-in link: {}"` with the exception's class name only, and answers 503 with the JSON message.
 
@@ -267,7 +267,7 @@ Configuration added to `application.properties`: the spec's block (`beelot.publi
     - each language's subject;
     - the body contains the link on a line of its own;
     - `language` picks `fr` from `language=fr`, then from `Accept-Language: nl-BE` when the parameter is missing, and gives English for `language=de`.
-  - `SignInLinkSenderTest`, with a Mockito `JavaMailSender` and an `ArgumentCaptor<SimpleMailMessage>`:
+  - `SignInLinkSenderTest`, with a Mockito `MailSender` and an `ArgumentCaptor<SimpleMailMessage>`:
     - `theLinkUsesThePublicUrlWhateverTheHost`: the request has `Host: evil.example`, and `publicUrl` is `"https://beelot.fr/"`; the body contains `https://beelot.fr/sign-in?token=TOKEN` and not `evil`.
     - `sendsFromTheConfiguredAddressToThePlayer`.
     - `anSmtpFailureAnswers503WithoutTheAddress`: `send` throws `MailSendException("jane@example.com refused")`; the status is 503, and the captured log output (`OutputCaptureExtension`) does not contain `jane`.
@@ -289,9 +289,9 @@ Configuration added to `application.properties`: the spec's block (`beelot.publi
 ### Task 6: Wire the link sign-in
 
 **Files:**
-- Create: `account/EmailUserDetailsService.java`
-- Modify: `security/SecurityConfiguration.java`, `account/SignInSuccessHandler.java`, `account/AccountController.java`
-- Test: `account/EmailSignInIntegrationTest.java` (`@SpringBootTest`, MockMvc, MariaDB Testcontainer, `@MockitoBean JavaMailSender`)
+- Create: `account/EmailUserDetailsService`
+- Modify: `security/SecurityConfiguration`, `account/SignInSuccessHandler`, `account/AccountController`
+- Test: `account/EmailSignInIntegrationTest` (`@SpringBootTest`, MockMvc, MariaDB Testcontainer, `@MockitoBean MailSender`)
 
 **Interfaces:**
 - Consumes: `SignInTokenService`, `SignInLinkSender`, `SignInRequestFilter` and `SignInRateLimiter`, `AccountService.signInWithEmail`, and `SignInEmail.language` (as the pseudonym's locale too).
@@ -338,7 +338,7 @@ Configuration added to `application.properties`: the spec's block (`beelot.publi
 
 **Files:**
 - Modify: `static/index.html`, `static/app.js`, `static/styles.css`, `static/i18n.js`, `static/i18n-nl.js`
-- Test: `AccountUiTest.java`, plus a headless-browser check (Step 4)
+- Test: `AccountUiTest`, plus a headless-browser check (Step 4)
 
 **Interfaces:**
 - Consumes: `/api/account` (`emailSignIn`, `providers`), `POST /api/sign-in/link` (form fields `username` and `language`), `POST /login/ott` (form field `token`), and the `X-XSRF-TOKEN` header through the existing `withCsrfToken`.

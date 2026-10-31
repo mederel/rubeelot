@@ -1,5 +1,5 @@
 //! Fits the bots' all trumps and no trumps estimates on seeded bot play (US-064) and prints each
-//! feature's weight with its standard error. Port of the Java `EstimateFit` command.
+//! feature's weight with its standard error.
 
 use std::process::ExitCode;
 

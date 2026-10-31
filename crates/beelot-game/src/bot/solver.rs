@@ -2,7 +2,7 @@
 //! North–South maximise their points and East–West minimise them, by alpha-beta search with a
 //! transposition table at the start of each trick. The result counts the card points, the
 //! last-trick bonus (dix de der) and the belote. A solver keeps its table between calls, so it is
-//! borrowed mutably. Port of the Java `DoubleDummySolver`, with the same search order, so the
+//! borrowed mutably. The search order is fixed, so a position always gives the
 //! same best card.
 
 use crate::board::SeatCard;
@@ -302,7 +302,7 @@ impl DoubleDummySolver {
             let higher = follow & above(winning_card);
             return if higher != 0 { higher } else { follow };
         }
-        // Java compares with `position - 2`, which is -1 for the second card.
+        // Compared as `winner + 2 == position` below: `position - 2` would be -1 for the second card.
         let Some(trump_suit) = self.trump_suit else {
             return hand;
         };

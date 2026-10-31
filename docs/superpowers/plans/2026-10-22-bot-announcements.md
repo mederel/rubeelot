@@ -6,7 +6,7 @@
 
 **Architecture:** The bot views (`BiddingState.AuctionView`, `GameBoard.PlayView`) gain the announcement switch and the revealed declarations. `RuleBasedStrategy` adds a weighted announcement term to its estimates. `CardMemory` tracks revealed cards still in other hands; `SamplingStrategy` deals them to their owners and scores samples through `RoundScoring.score`. `BotArena` gains an announcements switch and a reference bot that bids without them.
 
-**Tech Stack:** Java 21, JUnit 5, Gradle (`./gradlew test`, `./gradlew build`), the bot arena (`fr.beelot.game.arena.BotArenaMain`).
+**Tech Stack:** JUnit 5, Gradle (`./gradlew test`, `./gradlew build`), the bot arena (`fr.beelot.game.arena.BotArenaMain`).
 
 **Spec:** `docs/superpowers/specs/2026-10-22-bot-announcements-design.md`
 
@@ -31,10 +31,10 @@
 
 ## File map
 
-- Modify `src/main/java/fr/beelot/game/BiddingState.java` (AuctionView), `game/GameBoard.java` (PlayView).
-- Modify `game/bot/RuleBasedStrategy.java`, `game/bot/CardMemory.java`, `game/bot/SamplingStrategy.java`.
-- Modify `game/arena/BotArena.java`, `game/arena/BotArenaMain.java`, `game/arena/ArenaReport.java`, `game/arena/ArenaBot.java`; create `game/arena/NoAnnouncementBiddingBot.java`.
-- Tests: `src/test/java/fr/beelot/game/bot/{RuleBasedStrategyBiddingTest,CardMemoryTest,SamplingStrategyTest}.java`, `src/test/java/fr/beelot/game/GameBoardAnnouncementsTest.java`, `src/test/java/fr/beelot/game/arena/BotArenaTest.java`.
+- Modify `game/BiddingState` (AuctionView), `game/GameBoard` (PlayView).
+- Modify `game/bot/RuleBasedStrategy`, `game/bot/CardMemory`, `game/bot/SamplingStrategy`.
+- Modify `game/arena/BotArena`, `game/arena/BotArenaMain`, `game/arena/ArenaReport`, `game/arena/ArenaBot`; create `game/arena/NoAnnouncementBiddingBot`.
+- Tests: `tests/game/bot/{RuleBasedStrategyBiddingTest,CardMemoryTest,SamplingStrategyTest}`, `tests/game/GameBoardAnnouncementsTest`, `tests/game/arena/BotArenaTest`.
 - Docs: the spec's "Arena results", `docs/product-backlog.md` (US-061 delivered).
 
 ---
@@ -42,10 +42,10 @@
 ### Task 1: Bot views carry announcements
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/BiddingState.java:172-176, 297-299`
-- Modify: `src/main/java/fr/beelot/game/GameBoard.java:188-193, 360-367`
-- Modify (constructor calls): `src/test/java/fr/beelot/game/bot/RuleBasedStrategyBiddingTest.java:246-257`, `CardMemoryTest.java:85`, `SamplingStrategyTest.java:81`
-- Test: `src/test/java/fr/beelot/game/GameBoardAnnouncementsTest.java`
+- Modify: `game/BiddingState:172-176, 297-299`
+- Modify: `game/GameBoard:188-193, 360-367`
+- Modify (constructor calls): `tests/game/bot/RuleBasedStrategyBiddingTest:246-257`, `CardMemoryTest:85`, `SamplingStrategyTest:81`
+- Test: `tests/game/GameBoardAnnouncementsTest`
 
 **Interfaces:**
 - Produces: `BiddingState.AuctionView(..., boolean coincheAllowed, boolean announcements)` — new last component, filled from `BiddingState.announcements`.
@@ -53,7 +53,7 @@
 
 - [ ] **Step 1: Write the failing tests** in `GameBoardAnnouncementsTest`:
 
-```java
+```
 @Test
 void botsSeeTheRevealOnlyAfterTheFirstTrick() {
     GameBoard board = board(true);
@@ -85,8 +85,8 @@ And in `RuleBasedStrategyBiddingTest` (or a new `BiddingStateTest` case if one e
 ### Task 2: Bidding counts the bot's announcements
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/bot/RuleBasedStrategy.java`
-- Test: `src/test/java/fr/beelot/game/bot/RuleBasedStrategyBiddingTest.java`
+- Modify: `game/bot/RuleBasedStrategy`
+- Test: `tests/game/bot/RuleBasedStrategyBiddingTest`
 
 **Interfaces:**
 - Consumes: `AuctionView.announcements()` (Task 1); `Announcements.find(List<GameCard>) -> List<Announcement>`, `Announcement.value()`.
@@ -100,15 +100,15 @@ And in `RuleBasedStrategyBiddingTest` (or a new `BiddingStateTest` case if one e
   - `withAnnouncementsOffBidsAsBefore`: the carré hands above, with `announcements` false, give the same decision as the current code (pass / the original level).
   - `aCarreMakesTheBotCoinche`: a defensive hand just below the coinche limit coinches with a carré and announcements on.
 - [ ] **Step 2: Run** `./gradlew test --tests 'fr.beelot.game.bot.RuleBasedStrategyBiddingTest'` — expected: FAIL.
-- [ ] **Step 3: Implement** `announcementPoints` and the terms in `contreeDecision`, `expectsToDefeat`, `classicDecision`; extend the Javadoc of the decision methods with one sentence on the term (match the file's tone: what it adds and that the weight was tuned in the arena).
+- [ ] **Step 3: Implement** `announcementPoints` and the terms in `contreeDecision`, `expectsToDefeat`, `classicDecision`; extend the doc comment of the decision methods with one sentence on the term (match the file's tone: what it adds and that the weight was tuned in the arena).
 - [ ] **Step 4: Run** `./gradlew test` — expected: all pass (existing bidding tests unchanged: their views have announcements off).
 - [ ] **Step 5: Commit** `feat(bot): bots bid on their announcements (US-061)`.
 
 ### Task 3: Card memory knows revealed cards
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/bot/CardMemory.java`
-- Test: `src/test/java/fr/beelot/game/bot/CardMemoryTest.java`
+- Modify: `game/bot/CardMemory`
+- Test: `tests/game/bot/CardMemoryTest`
 
 **Interfaces:**
 - Consumes: `PlayView.revealedAnnouncements()` (Task 1): each `Declaration.seat()` and its announcements' `cards()`.
@@ -121,15 +121,15 @@ And in `RuleBasedStrategyBiddingTest` (or a new `BiddingStateTest` case if one e
   - `ownRevealedCardsAreNotKnownElsewhere`: the bot's own declaration gives `knownCards(view.seat())` empty.
   - `aCardHeldByThePartnerCannotBeatForAnOpponent`: the bot (seat 0) wins a spade trick with the Q♠; the only higher unseen spade, K♠, was revealed by seat 2 (partner) → `mayBeat(1, Q♠, SPADES)` and `mayBeat(3, Q♠, SPADES)` false; without the reveal, true.
 - [ ] **Step 2: Run** `./gradlew test --tests 'fr.beelot.game.bot.CardMemoryTest'` — expected: FAIL.
-- [ ] **Step 3: Implement**: a `List<Set<GameCard>> known` filled from the declarations (skipping the bot's seat), each card removed when `remember` sees it played; update `mayBeat` and the class Javadoc.
+- [ ] **Step 3: Implement**: a `List<Set<GameCard>> known` filled from the declarations (skipping the bot's seat), each card removed when `remember` sees it played; update `mayBeat` and the class doc comment.
 - [ ] **Step 4: Run** `./gradlew test` — expected: all pass.
 - [ ] **Step 5: Commit** `feat(bot): bots remember revealed announcements (US-061)`.
 
 ### Task 4: The Challenging bot deals and scores with announcements
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/bot/SamplingStrategy.java:111-224`
-- Test: `src/test/java/fr/beelot/game/bot/SamplingStrategyTest.java`
+- Modify: `game/bot/SamplingStrategy:111-224`
+- Test: `tests/game/bot/SamplingStrategyTest`
 
 **Interfaces:**
 - Consumes: `CardMemory.knownCards(int)` (Task 3); `RoundScoring.score(RoundScoring.Totals, List<Declaration>) -> GameBoard.RoundResult`; `PlayView.revealedAnnouncements()`.
@@ -142,16 +142,16 @@ And in `RuleBasedStrategyBiddingTest` (or a new `BiddingStateTest` case if one e
   - `unscoredDeclarationsAddNothing`: the same Classic 81/81 with a declaration that has `scored()` false for North–South still fails.
   - Update `scoresAFailedContractAsTheDefendersWinningEverything` only if the constructor calls need it (its expected values stay 162 and −58).
 - [ ] **Step 2: Run** `./gradlew test --tests 'fr.beelot.game.bot.SamplingStrategyTest'` — expected: FAIL.
-- [ ] **Step 3: Implement** the known-cards pre-deal in `deal`/`tryDeal` and `outcome` via `RoundScoring`; update the Javadocs of `deal` and `outcome` (drop the "card points without Belote" wording).
+- [ ] **Step 3: Implement** the known-cards pre-deal in `deal`/`tryDeal` and `outcome` via `RoundScoring`; update the doc comments of `deal` and `outcome` (drop the "card points without Belote" wording).
 - [ ] **Step 4: Run** `./gradlew test` — expected: all pass.
 - [ ] **Step 5: Commit** `feat(bot): the Challenging bot deals and scores with announcements (US-061)`.
 
 ### Task 5: The arena plays with announcements
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/arena/BotArena.java`, `BotArenaMain.java`, `ArenaReport.java`, `ArenaBot.java`, `build.gradle:56-63` (`-Pannouncements=on`, passed as `--announcements`, listed in the options comment)
-- Create: `src/main/java/fr/beelot/game/arena/NoAnnouncementBiddingBot.java`
-- Test: `src/test/java/fr/beelot/game/arena/BotArenaTest.java`
+- Modify: `game/arena/BotArena`, `BotArenaMain`, `ArenaReport`, `ArenaBot`, `build.gradle:56-63` (`-Pannouncements=on`, passed as `--announcements`, listed in the options comment)
+- Create: `game/arena/NoAnnouncementBiddingBot`
+- Test: `tests/game/arena/BotArenaTest`
 
 **Interfaces:**
 - Consumes: `BiddingState.announcements(boolean)`; `AuctionView` record (Task 1).
@@ -165,14 +165,14 @@ And in `RuleBasedStrategyBiddingTest` (or a new `BiddingStateTest` case if one e
   - `theNoAnnouncementBiddingBotIsAvailable`: `ArenaBot.named("no-announcement-bidding").name()` equals it.
   - Existing arena tests keep passing (they now run with announcements on).
 - [ ] **Step 2: Run** `./gradlew test --tests 'fr.beelot.game.arena.BotArenaTest'` — expected: FAIL.
-- [ ] **Step 3: Implement** as above; update the Javadoc of `BotArenaMain` (options list) and `BotArena` (announcements).
+- [ ] **Step 3: Implement** as above; update the doc comment of `BotArenaMain` (options list) and `BotArena` (announcements).
 - [ ] **Step 4: Run** `./gradlew test` — expected: all pass.
 - [ ] **Step 5: Commit** `feat(arena): the arena plays with announcements (US-061)`.
 
 ### Task 6: Tune and record
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/bot/RuleBasedStrategy.java` (the two constants, if tuning moves them)
+- Modify: `game/bot/RuleBasedStrategy` (the two constants, if tuning moves them)
 - Modify: `docs/superpowers/specs/2026-10-22-bot-announcements-design.md` ("Arena results"), `docs/product-backlog.md` (US-061 "Delivered" line, like US-060's)
 
 - [ ] **Step 1: Baseline run** with the starting values, each variant, 5,000 deal pairs:

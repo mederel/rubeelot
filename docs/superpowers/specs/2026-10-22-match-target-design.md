@@ -28,7 +28,7 @@ it. Public matchmaking stays at 1,000.
 
 - `MatchScore(int target)` throws `IllegalArgumentException` for a value not in
   `TARGETS`. `new MatchScore()` is `new MatchScore(1000)`. `target()` returns
-  it. The class Javadoc states the rule in terms of the target.
+  it. The class doc comment states the rule in terms of the target.
 - `BotGame` gains `int target`.
 - `PrivateTable` gains `target` (1,000 by default) and
   `setTarget(UUID playerId, int target)`, with the same guards as

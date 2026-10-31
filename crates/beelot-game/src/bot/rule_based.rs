@@ -1,7 +1,5 @@
 //! The bot players meet in the application: hand-written bidding rules (US-050, US-051, US-055,
-//! US-064) and card-play rules (US-053, US-054). Port of the Java `RuleBasedStrategy`, with the same order
-//! of operations and the same tie-breaks: the first of equal maximums or minimums wins, as with
-//! Java's `Stream.max` and `Stream.min`.
+//! US-064) and card-play rules (US-053, US-054). The first of equal maximums or minimums wins a tie.
 
 use std::cmp::Ordering;
 
@@ -376,7 +374,7 @@ fn expects_to_defeat(view: &AuctionView) -> bool {
 /// plays with them.
 fn announcement_bonus(view: &AuctionView, trump: Trump) -> i32 {
     if view.announcements {
-        java_round(ANNOUNCEMENT_WEIGHT * f64::from(announcement_points(&view.hand, trump)))
+        round_half_up(ANNOUNCEMENT_WEIGHT * f64::from(announcement_points(&view.hand, trump)))
     } else {
         0
     }
@@ -412,7 +410,7 @@ pub(crate) fn defensive_estimate(hand: &[Card], trump: Trump, contract: i32) -> 
         suit => return suit_defensive_estimate(hand, suit.suit(), contract),
     };
     let cards = weighted(hand, hand_features::defence(trump), intercept, &weights);
-    java_round(f64::from(cards) - slope * f64::from(contract))
+    round_half_up(f64::from(cards) - slope * f64::from(contract))
 }
 
 /// The points the bot's team can expect to make in defence against the given suit contract,
@@ -437,12 +435,11 @@ pub(crate) fn suit_defensive_estimate(hand: &[Card], trump: Option<Suit>, contra
             estimate += 3.0;
         }
     }
-    java_round(estimate)
+    round_half_up(estimate)
 }
 
-/// Java's `(int) Math.round(value)`: the closest integer, halves rounded up (towards positive
-/// infinity). The estimates here are far from the `int` range.
-fn java_round(value: f64) -> i32 {
+/// The closest integer, halves rounded up (towards positive infinity). The estimates here are far from the `int` range.
+fn round_half_up(value: f64) -> i32 {
     let floor = value.floor();
     let rounded = if value - floor >= 0.5 {
         floor + 1.0
@@ -547,7 +544,7 @@ pub(crate) fn by_value(trump: Trump) -> impl Fn(&Card, &Card) -> Ordering + Copy
     }
 }
 
-/// Java's `Stream.max`: the first of equal maximums.
+/// The first of the equal maximums.
 fn first_max(
     cards: impl IntoIterator<Item = Card>,
     compare: impl Fn(&Card, &Card) -> Ordering,
@@ -561,7 +558,7 @@ fn first_max(
     })
 }
 
-/// Java's `Stream.min`: the first of equal minimums.
+/// The first of the equal minimums.
 pub(crate) fn first_min(
     cards: impl IntoIterator<Item = Card>,
     compare: impl Fn(&Card, &Card) -> Ordering,
@@ -591,15 +588,14 @@ pub(crate) fn preferring(cards: &[Card], preferred: impl Fn(&Card) -> bool) -> V
 
 #[cfg(test)]
 mod tests {
-    //! Port of the Java `RuleBasedStrategyBiddingTest`. The bot sits in seat 1; its partner is
-    //! seat 3.
+    //! The bot sits in seat 1; its partner is seat 3.
 
     use super::*;
     use crate::bidding::{AuctionDecision, AuctionView, BiddingState};
     use crate::bot::BotStrategy;
     use crate::bot::turns::take_auction_turn;
     use crate::card::{Card, Seat, Suit, Variant};
-    use crate::rng::JavaRandom;
+    use crate::rng::SplitMix64;
 
     const BID_SUIT: Suit = Suit::Hearts;
 
@@ -678,9 +674,9 @@ mod tests {
         RuleBasedStrategy::new().decide_auction(view)
     }
 
-    /// The first seat to speak is seat 0, as in the Java tests.
+    /// The first seat to speak is seat 0.
     fn contree_bidding(seed: i64) -> BiddingState {
-        BiddingState::new(Variant::Contree, 3, Box::new(JavaRandom::new(seed)))
+        BiddingState::new(Variant::Contree, 3, Box::new(SplitMix64::new(seed)))
     }
 
     #[test]
@@ -1188,16 +1184,16 @@ mod tests {
         }
     }
 
-    /// Java's `Math.round` rounds half up, also for negative values.
+    /// Rounding goes half up, also for negative values.
     #[test]
-    fn java_round_rounds_half_up() {
-        assert_eq!(java_round(2.5), 3);
-        assert_eq!(java_round(-2.5), -2);
-        assert_eq!(java_round(-2.6), -3);
-        assert_eq!(java_round(0.499_999_999_999_999_94), 0);
+    fn round_half_up_rounds_half_up() {
+        assert_eq!(round_half_up(2.5), 3);
+        assert_eq!(round_half_up(-2.5), -2);
+        assert_eq!(round_half_up(-2.6), -3);
+        assert_eq!(round_half_up(0.499_999_999_999_999_94), 0);
     }
 
-    /// Java's `Stream.max` keeps the first of equal maximums, as `Stream.min` does.
+    /// The first of equal maximums wins, as the first of equal minimums does.
     #[test]
     fn first_max_keeps_the_first_of_equal_cards() {
         let hand = cards("8C 8D 7S");

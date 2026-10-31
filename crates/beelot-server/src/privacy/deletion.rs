@@ -1,7 +1,7 @@
 //! Deleting an account and everything Beelot keeps about it: its security events and, by cascade, its passkey and
 //! sessions. Finished matches stay in the other players' history, with the account's seats renamed "Deleted player"
 //! and linked to no account. Once that is committed, the account's live table seats go to bots and an anonymous
-//! deletion event is recorded. Ports Java's `AccountDeletionService`.
+//! deletion event is recorded.
 
 use std::net::IpAddr;
 

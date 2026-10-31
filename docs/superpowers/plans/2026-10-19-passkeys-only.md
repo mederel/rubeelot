@@ -6,7 +6,7 @@
 
 **Architecture:** Spring Security's `webAuthn()` handles passkey sign-in, with its JDBC repositories on MariaDB and one `WebAuthnRelyingPartyOperations` bean shared with Beelot's own sign-up endpoints. Spring's registration endpoints need a signed-in user, so sign-up is a Beelot controller that calls the same bean for a not-yet-created account, then signs the browser in. The WebAuthn user entity's `name` is the account id, so `WebAuthnAuthentication.getName()` finds the account; no extra column is needed.
 
-**Tech Stack:** Java 21, Spring Boot 4.1.1, Spring Security 7.1.1 (`spring-security-webauthn`, webauthn4j-core 0.31.9), MariaDB with Flyway, Testcontainers, `com.webauthn4j:webauthn4j-test` as a software authenticator in tests, vanilla JS client, Playwright (headless) for browser checks.
+**Tech Stack:** Spring Boot 4.1.1, Spring Security 7.1.1 (`spring-security-webauthn`, webauthn4j-core 0.31.9), MariaDB with Flyway, Testcontainers, `com.webauthn4j:webauthn4j-test` as a software authenticator in tests, vanilla JS client, Playwright (headless) for browser checks.
 
 **Spec:** `docs/superpowers/specs/2026-10-19-passkeys-only-design.md`
 
@@ -35,15 +35,15 @@
 ## File map
 
 - `src/main/resources/db/migration/V8__passkeys_only.sql`: the clean break and the WebAuthn tables (Task 1).
-- `account/RelyingParty.java`: rp id and origin from the public URL (Task 2).
-- `security/WebAuthnConfiguration.java`: relying party operations, JDBC repositories, the `UserDetailsService` and the WebAuthn JSON mapper (Tasks 2, 3).
-- `account/PasskeySignUpController.java`: `POST /api/sign-up/options`, `POST /api/sign-up` (Task 2).
-- `account/SignInSuccessHandler.java`: one place that starts a signed-in session, for sign-up and sign-in (Tasks 2, 3).
-- `account/PasskeyRateLimiter.java`, `account/PasskeyRequestFilter.java`: per-IP limits, renamed from `SignInRateLimiter` and `SignInRequestFilter` (Task 4).
+- `account/RelyingParty`: rp id and origin from the public URL (Task 2).
+- `security/WebAuthnConfiguration`: relying party operations, JDBC repositories, the `UserDetailsService` and the WebAuthn JSON mapper (Tasks 2, 3).
+- `account/PasskeySignUpController`: `POST /api/sign-up/options`, `POST /api/sign-up` (Task 2).
+- `account/SignInSuccessHandler`: one place that starts a signed-in session, for sign-up and sign-in (Tasks 2, 3).
+- `account/PasskeyRateLimiter`, `account/PasskeyRequestFilter`: per-IP limits, renamed from `SignInRateLimiter` and `SignInRequestFilter` (Task 4).
 - Privacy classes in `privacy/` (Task 5); client files in `static/` (Task 6); docs (Task 7).
-- Test helper `src/test/java/fr/beelot/application/account/SoftwarePasskey.java` (Task 2), used by Tasks 2 to 5.
+- Test helper `tests/application/account/SoftwarePasskey` (Task 2), used by Tasks 2 to 5.
 
-Paths below under `account/`, `security/`, `privacy/` are relative to `src/main/java/fr/beelot/application/` (and `src/test/java/fr/beelot/application/` for tests).
+Paths below under `account/`, `security/`, `privacy/` are relative to `application/` (and `tests/application/` for tests).
 
 ---
 
@@ -53,12 +53,12 @@ The branch has no sign-in method between this task and Task 3, but tests sign in
 
 **Files:**
 - Create: `src/main/resources/db/migration/V8__passkeys_only.sql`
-- Create: `account/PasskeysMigrationTest.java` (replaces `EmailAccountsMigrationTest.java`, same style: Flyway only, no Spring context)
+- Create: `account/PasskeysMigrationTest` (replaces `EmailAccountsMigrationTest`, same style: Flyway only, no Spring context)
 - Delete (main): `SignInEmail`, `SignInLinkSender`, `SignInTokenService`, `Tokens`, `EmailUserDetailsService`, `EmailAddresses`, `AccountEmail`, `AccountEmailRepository`, `EmailChangeController`, `EmailChangeService`, `EmailChangeEmail` (all in `account/`), `privacy/InactivityWarningEmail`
 - Delete (test): `EmailAccountsMigrationTest`, `EmailAddressesTest`, `EmailChange*Test` (4), `EmailSignInIntegrationTest`, `SignInEmailTest`, `SignInLinkSenderTest`, `SignInTokenServiceTest`, `security/ClientRegistrationsTest`, `account/NotConfiguredAccountTest`
 - Keep for Task 4 (do not delete): `SignInRateLimiter`, `SignInRequestFilter` and their tests; unwire them from `SecurityConfiguration` now.
-- Create (test): `account/PasskeySignIn.java`
-- Modify: `account/Account.java`, `AccountRepository.java`, `AccountService.java`, `AccountController.java`, `SignInSuccessHandler.java`, `security/SecurityConfiguration.java`, `privacy/AccountDeletionService.java`, `privacy/RetentionJob.java`, `privacy/SecurityEvents.java`, `privacy/DataExport*.java`, `privacy/PrivacyController.java`, `privacy/PrivacyProperties.java`, `HomeController.java` (drop `/settings/email`, `/sign-in`), `build.gradle` (also add `implementation 'org.springframework.security:spring-security-webauthn'`), `application.properties`, `compose.yaml`, `WebSliceTestConfiguration.java`, and every test that creates accounts with `accounts.signIn("google", …)` or authenticates with `oauth2Login()`/`OneTimeTokenAuthentication`
+- Create (test): `account/PasskeySignIn`
+- Modify: `account/Account`, `AccountRepository`, `AccountService`, `AccountController`, `SignInSuccessHandler`, `security/SecurityConfiguration`, `privacy/AccountDeletionService`, `privacy/RetentionJob`, `privacy/SecurityEvents`, `privacy/DataExport*`, `privacy/PrivacyController`, `privacy/PrivacyProperties`, `HomeController` (drop `/settings/email`, `/sign-in`), `build.gradle` (also add `implementation 'org.springframework.security:spring-security-webauthn'`), `application.properties`, `compose.yaml`, `WebSliceTestConfiguration`, and every test that creates accounts with `accounts.signIn("google", …)` or authenticates with `oauth2Login()`/`OneTimeTokenAuthentication`
 
 **Interfaces:**
 - Produces:
@@ -71,7 +71,7 @@ The branch has no sign-in method between this task and Task 3, but tests sign in
 
 - [ ] **Step 1: Write the failing migration test** `PasskeysMigrationTest.v8DeletesEveryAccountAndKeepsMatches`: migrate to target `"7"`; insert two accounts (one `google`, one `email` with an `account_email`, a `sign_in_token` and an `email_change_token`), a match whose seat 0 is the email account (name `Ann`) and seat 1 a bot, security events for each account plus one anonymous `LINK_REQUESTED` and one anonymous `DELETION`. Migrate fully. Assert:
 
-```java
+```
 assertEquals(0, count(s, "SELECT COUNT(*) FROM account"));
 assertEquals(1, count(s, "SELECT COUNT(*) FROM match_record"));
 assertEquals(1, count(s, "SELECT COUNT(*) FROM match_seat WHERE position = 0 AND account_id IS NULL AND name = 'Deleted player'"));
@@ -139,7 +139,7 @@ Replace `accounts.signIn("google", "301", Locale.ENGLISH)` with `accounts.create
 
 - [ ] **Step 7: Verify no reference is left and the suite passes**
 
-Run: `grep -rniE "oauth2|smtp|mailpit|javamail|sign_in_token|account_email|EmailChange|signInWithEmail" src build.gradle compose.yaml` → no output.
+Run: `grep -rniE "oauth2|smtp|mailpit|sign_in_token|account_email|EmailChange|signInWithEmail" src build.gradle compose.yaml` → no output.
 Run: `./gradlew build`
 Expected: BUILD SUCCESSFUL.
 
@@ -156,9 +156,9 @@ git commit -m "feat(account): remove email, Google and GitHub sign-in, migrate t
 
 **Files:**
 - Modify: `build.gradle` (add `testImplementation 'com.webauthn4j:webauthn4j-test:0.31.9.RELEASE'`)
-- Create: `account/RelyingParty.java`, `security/WebAuthnConfiguration.java`, `account/PasskeySignUpController.java`
-- Modify: `account/AccountService.java`, `account/SignInSuccessHandler.java`, `security/SecurityConfiguration.java`, `privacy/SecurityEvents.java`
-- Create (test): `account/SoftwarePasskey.java`, `account/RelyingPartyTest.java`, `account/PasskeySignUpIntegrationTest.java`
+- Create: `account/RelyingParty`, `security/WebAuthnConfiguration`, `account/PasskeySignUpController`
+- Modify: `account/AccountService`, `account/SignInSuccessHandler`, `security/SecurityConfiguration`, `privacy/SecurityEvents`
+- Create (test): `account/SoftwarePasskey`, `account/RelyingPartyTest`, `account/PasskeySignUpIntegrationTest`
 
 **Interfaces:**
 - Consumes: `AccountService.create`/`signIn` (Task 1), the V8 tables.
@@ -175,7 +175,7 @@ git commit -m "feat(account): remove email, Google and GitHub sign-in, migrate t
 
 `RelyingPartyTest.relyingPartyFromPublicUrl`:
 
-```java
+```
 assertEquals(new RelyingParty("localhost", "http://localhost:8080"), RelyingParty.of("http://localhost:8080"));
 assertEquals(new RelyingParty("beelot.fr", "https://beelot.fr"), RelyingParty.of("https://beelot.fr/"));
 assertEquals(new RelyingParty("beelot.fr", "https://beelot.fr"), RelyingParty.of("https://beelot.fr:443"));
@@ -217,8 +217,8 @@ git commit -m "feat(account): sign up with a passkey (US-084)"
 ### Task 3: Passkey sign-in
 
 **Files:**
-- Modify: `security/SecurityConfiguration.java`, `security/WebAuthnConfiguration.java`, `account/SignInSuccessHandler.java`, `account/AccountController.java`
-- Create (test): `account/PasskeySignInIntegrationTest.java`
+- Modify: `security/SecurityConfiguration`, `security/WebAuthnConfiguration`, `account/SignInSuccessHandler`, `account/AccountController`
+- Create (test): `account/PasskeySignInIntegrationTest`
 
 **Interfaces:**
 - Consumes: Task 2's beans, `startSession`, `SoftwarePasskey`.
@@ -259,8 +259,8 @@ git commit -m "feat(account): sign in with a passkey (US-084)"
 ### Task 4: Rate limits on sign-up and sign-in
 
 **Files:**
-- Rename: `account/SignInRateLimiter.java` → `account/PasskeyRateLimiter.java`, `account/SignInRequestFilter.java` → `account/PasskeyRequestFilter.java`, and their tests (`git mv`)
-- Modify: `security/SecurityConfiguration.java`, `application.properties`, `WebSliceTestConfiguration.java`
+- Rename: `account/SignInRateLimiter` → `account/PasskeyRateLimiter`, `account/SignInRequestFilter` → `account/PasskeyRequestFilter`, and their tests (`git mv`)
+- Modify: `security/SecurityConfiguration`, `application.properties`, `WebSliceTestConfiguration`
 
 **Interfaces:**
 - Produces: `PasskeyRateLimiter(Clock, @Value("${beelot.passkey.limit-per-ip}") int limitPerIp)` with `boolean tryAcquire(String ip)`, one fixed 1-hour window per IP, same bounded map as today. `PasskeyRequestFilter(PasskeyRateLimiter, SecurityEvents)` matches `POST /api/sign-up/options` and `POST /webauthn/authenticate/options`; above the limit it answers 429 with `Retry-After: 3600` and records `RATE_LIMITED REFUSED` with the IP and no account. Property `beelot.passkey.limit-per-ip=30`, comment "ceremonies started per client IP per hour (US-084)".
@@ -291,8 +291,8 @@ git commit -m "feat(account): limit passkey ceremonies per IP address (US-084)"
 ### Task 5: Privacy with passkeys: deletion, export, retention, events
 
 **Files:**
-- Modify: `privacy/AccountDeletionService.java`, `privacy/DataExport.java`, `privacy/DataExportService.java`, `privacy/RetentionJob.java`, `privacy/SecurityEvents.java` (class comment only)
-- Test: `privacy/AccountDeletionIntegrationTest.java`, `privacy/DataExportIntegrationTest.java`, `privacy/RetentionJobIntegrationTest.java`, `account/PasskeySignInIntegrationTest.java`
+- Modify: `privacy/AccountDeletionService`, `privacy/DataExport`, `privacy/DataExportService`, `privacy/RetentionJob`, `privacy/SecurityEvents` (class comment only)
+- Test: `privacy/AccountDeletionIntegrationTest`, `privacy/DataExportIntegrationTest`, `privacy/RetentionJobIntegrationTest`, `account/PasskeySignInIntegrationTest`
 
 **Interfaces:**
 - Produces: `DataExport.FORMAT = "beelot-export-2"`; `DataExport.Account(String id, String displayName, String createdAt, String lastSignInAt, String previousSignInAt, Passkey passkey)`; `record Passkey(String createdAt, String lastUsedAt)`.
@@ -329,7 +329,7 @@ git commit -m "feat(privacy): delete, export and retain passkey accounts (US-084
 
 **Files:**
 - Modify: `src/main/resources/static/index.html`, `app.js`, `i18n.js`, `i18n-nl.js`
-- Test: `AccountUiTest.java`, `PrivacyPageUiTest.java`, `FrenchTranslationUiTest.java`, `DutchTranslationUiTest.java`
+- Test: `AccountUiTest`, `PrivacyPageUiTest`, `FrenchTranslationUiTest`, `DutchTranslationUiTest`
 
 **Interfaces:**
 - Consumes: Task 2 and Task 3 endpoints; `/api/account` → `{signedIn, name, lastSignInAt}`; Spring's JSON formats as in `org/springframework/security/spring-security-webauthn.js` inside `spring-security-web-7.1.1.jar` (copy its base64url encode/decode and body shapes, not the file).

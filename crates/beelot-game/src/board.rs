@@ -1,5 +1,4 @@
 //! Card play of one round: turn order, legal cards, belote, announcements, tricks and scoring.
-//! Port of the game logic of the Java `GameBoard`.
 
 use serde::{Deserialize, Serialize};
 

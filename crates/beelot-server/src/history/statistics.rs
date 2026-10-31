@@ -1,5 +1,5 @@
 //! A player's results, from the stored matches in which their account held a seat. Contracts, coinches, capots,
-//! belotes and points count for the player's team. Ports Java's `PlayerStatistics`, field names included.
+//! belotes and points count for the player's team.
 
 use beelot_game::Team;
 use serde::Serialize;
@@ -189,7 +189,7 @@ pub fn of(account: Uuid, matches: &[StoredMatch]) -> PlayerStatistics {
 
 #[cfg(test)]
 mod tests {
-    //! Ports Java's `PlayerStatisticsTest`: Ana plays East (seat 1) with Chloé (seat 3) against Ben and David.
+    //! Ana plays East (seat 1) with Chloé (seat 3) against Ben and David.
 
     use beelot_game::{Difficulty, Trump, Variant};
     use time::macros::datetime;
@@ -434,7 +434,7 @@ mod tests {
     }
 
     #[test]
-    fn the_json_keeps_javas_field_names() {
+    fn the_json_keeps_the_field_names_the_frontend_reads() {
         let json = serde_json::to_value(of(ANA, &[])).unwrap();
         for field in [
             "overall",

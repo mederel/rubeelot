@@ -1,5 +1,5 @@
 //! Beelot as the relying party of passkeys: the host players reach it at, which a passkey is bound to, and the one
-//! origin its pages are served from. Ports Java's `RelyingParty`.
+//! origin its pages are served from.
 
 use url::Url;
 
@@ -30,7 +30,7 @@ impl RelyingParty {
 
 #[cfg(test)]
 mod tests {
-    //! Ports Java's `RelyingPartyTest`.
+    //! Tests of the relying party.
 
     use super::*;
 

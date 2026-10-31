@@ -12,7 +12,7 @@ with the `openid` scope only. `AccountService` keys accounts on
 Zitadel stack runs in Docker Compose and is configured by
 `zitadel/provision.sh`.
 
-**Tech Stack:** Java 21, Spring Boot 4 (Security OAuth2 client, Data JPA,
+**Tech Stack:** Spring Boot 4 (Security OAuth2 client, Data JPA,
 Flyway), MariaDB 11.4, Testcontainers, vanilla JS client, Docker Compose,
 Zitadel v4.19.4, Traefik, Mailpit, bash + curl + jq.
 
@@ -64,8 +64,8 @@ Zitadel v4.19.4, Traefik, Mailpit, bash + curl + jq.
 ### Task 1: Pseudonym generator
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/account/PseudonymGenerator.java`
-- Test: `src/test/java/fr/beelot/application/account/PseudonymGeneratorTest.java`
+- Create: `application/account/PseudonymGenerator`
+- Test: `tests/application/account/PseudonymGeneratorTest`
 
 **Interfaces:**
 - Produces: `@Component public class PseudonymGenerator` with
@@ -86,7 +86,7 @@ Word lists: 16 adjectives × 16 animals per language, capitalised.
 
 - [ ] **Step 1: Write the failing tests**
 
-```java
+```
 @Test void namesInTheRequestedLanguage() {
     var fixed = new PseudonymGenerator(new SplittableRandom(7));
     assertTrue(fixed.generate(Locale.FRENCH).matches("\\p{Lu}\\S* \\p{Lu}\\S* \\d\\d"));
@@ -133,12 +133,12 @@ Expected: 4 tests PASS.
 ### Task 2: Accounts keyed on the Zitadel user id, with a pseudonym
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/application/account/AccountService.java`
-- Modify: `src/main/java/fr/beelot/application/account/Account.java`
+- Modify: `application/account/AccountService`
+- Modify: `application/account/Account`
   (`signedIn(Instant now)` no longer takes a name)
 - Create: `src/main/resources/db/migration/V3__reset_accounts_for_zitadel.sql`
-- Modify: `src/test/java/fr/beelot/application/account/AccountServiceTest.java`
-- Modify: `src/test/java/fr/beelot/application/history/MatchHistoryIntegrationTest.java`
+- Modify: `tests/application/account/AccountServiceTest`
+- Modify: `tests/application/history/MatchHistoryIntegrationTest`
   (callers of `signIn`; name assertions read `account.displayName()`)
 
 **Interfaces:**
@@ -156,7 +156,7 @@ Expected: 4 tests PASS.
   `PseudonymGenerator` on `new SplittableRandom(3)`; replace the four
   profile-name tests.
 
-```java
+```
 @Test void theFirstSignInCreatesAnAccountWithAPseudonym() {
     when(repository.findByProviderAndProviderSubject("zitadel", "u-1")).thenReturn(Optional.empty());
     Account account = service.signIn("zitadel", "u-1", Locale.FRENCH);
@@ -206,16 +206,16 @@ Expected: PASS (Flyway applies V3 on the Testcontainers MariaDB).
 ### Task 3: Zitadel sign-in, registration and sign-out
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/security/ZitadelProperties.java`
-- Create: `src/main/java/fr/beelot/application/security/RegisterAuthorizationRequestResolver.java`
-- Create: `src/main/java/fr/beelot/application/security/ZitadelLogoutSuccessHandler.java`
-- Modify: `src/main/java/fr/beelot/application/security/SecurityConfiguration.java`
-- Modify: `src/main/java/fr/beelot/application/account/AccountController.java`
+- Create: `application/security/ZitadelProperties`
+- Create: `application/security/RegisterAuthorizationRequestResolver`
+- Create: `application/security/ZitadelLogoutSuccessHandler`
+- Modify: `application/security/SecurityConfiguration`
+- Modify: `application/account/AccountController`
 - Modify: `src/main/resources/application.properties`
 - Modify: `.gitignore` (add `.env`)
-- Test: `src/test/java/fr/beelot/application/security/RegisterAuthorizationRequestResolverTest.java`
-- Modify: `src/test/java/fr/beelot/application/account/AccountIntegrationTest.java`
-- Modify: `src/test/java/fr/beelot/application/history/MatchHistoryIntegrationTest.java`
+- Test: `tests/application/security/RegisterAuthorizationRequestResolverTest`
+- Modify: `tests/application/account/AccountIntegrationTest`
+- Modify: `tests/application/history/MatchHistoryIntegrationTest`
   (properties and `oauth2Login()` → `oidcLogin()` on `zitadel`)
 
 **Interfaces:**
@@ -252,7 +252,7 @@ Expected: PASS (Flyway applies V3 on the Testcontainers MariaDB).
 
 - [ ] **Step 1: Write the failing resolver tests**
 
-```java
+```
 @Test void theRegisterLinkOpensZitadelsRegistrationForm() {
     var request = new MockHttpServletRequest("GET", "/oauth2/authorization/zitadel");
     request.setServletPath("/oauth2/authorization/zitadel");
@@ -273,7 +273,7 @@ Expected: PASS (Flyway applies V3 on the Testcontainers MariaDB).
   `client-secret=test-secret`. Keep the three CSRF/guest tests (the sign-out
   one now expects `status().isOk()`). Replace the others:
 
-```java
+```
 @Test void aGuestIsOfferedToSignInOrCreateAnAccount() {
     // GET /api/account → signedIn false, signInUrl "/oauth2/authorization/zitadel",
     // registerUrl "/oauth2/authorization/zitadel?register", no "name"

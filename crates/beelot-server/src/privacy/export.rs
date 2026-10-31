@@ -1,7 +1,7 @@
 //! The data a player downloads: their account, their security events and their matches, newest first, in format
 //! `beelot-export-2`. Other players appear by the names shown in the history; no account id but the player's own is
 //! ever part of it, and of the passkey only its dates. A player may download it once an hour; each download is
-//! recorded as an `EXPORT` event, which sets the next. Ports Java's `DataExport` and `DataExportService`.
+//! recorded as an `EXPORT` event, which sets the next.
 
 use std::net::IpAddr;
 

@@ -1,52 +1,13 @@
-const JAVA_MULTIPLIER: i64 = 0x5DEECE66D;
-const JAVA_MASK: i64 = (1 << 48) - 1;
-
 /// A source of bounded random integers.
 pub trait RandomSource {
     /// Returns a value in `0..bound`; `bound` must be positive.
     fn next_int(&mut self, bound: i32) -> i32;
 }
 
-/// `java.util.Random`, bit for bit.
-pub struct JavaRandom {
-    seed: i64,
-}
-
-impl JavaRandom {
-    pub fn new(seed: i64) -> Self {
-        Self {
-            seed: (seed ^ JAVA_MULTIPLIER) & JAVA_MASK,
-        }
-    }
-
-    fn next(&mut self, bits: u32) -> i32 {
-        self.seed = self.seed.wrapping_mul(JAVA_MULTIPLIER).wrapping_add(0xB) & JAVA_MASK;
-        (self.seed >> (48 - bits)) as i32
-    }
-}
-
-impl RandomSource for JavaRandom {
-    fn next_int(&mut self, bound: i32) -> i32 {
-        assert!(bound > 0, "bound must be positive");
-        let mut r = self.next(31);
-        let m = bound.wrapping_sub(1);
-        if bound & m == 0 {
-            return ((bound as i64).wrapping_mul(r as i64) >> 31) as i32;
-        }
-        let mut u = r;
-        loop {
-            r = u % bound;
-            if u.wrapping_sub(r).wrapping_add(m) >= 0 {
-                return r;
-            }
-            u = self.next(31);
-        }
-    }
-}
-
 const GAMMA: i64 = 0x9E3779B97F4A7C15_u64 as i64;
 
-/// `java.util.SplittableRandom`, bit for bit.
+/// SplitMix64, a small, fast generator with a 64-bit state: every seed gives a different, reproducible
+/// sequence.
 pub struct SplitMix64 {
     seed: i64,
 }
@@ -94,8 +55,8 @@ impl RandomSource for SplitMix64 {
     }
 }
 
-/// `java.util.Collections.shuffle(list, rnd)`.
-pub fn java_shuffle<T>(items: &mut [T], rng: &mut dyn RandomSource) {
+/// Fisher-Yates: shuffles the items in place, from the last one down.
+pub fn shuffle<T>(items: &mut [T], rng: &mut dyn RandomSource) {
     for i in (2..=items.len()).rev() {
         items.swap(i - 1, rng.next_int(i as i32) as usize);
     }
@@ -104,12 +65,6 @@ pub fn java_shuffle<T>(items: &mut [T], rng: &mut dyn RandomSource) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    #[should_panic(expected = "bound must be positive")]
-    fn java_random_rejects_a_non_positive_bound() {
-        JavaRandom::new(1).next_int(0);
-    }
 
     #[test]
     #[should_panic(expected = "bound must be positive")]

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build `beelot-server`: an axum server with the same features as Beelot's Java application layer, serving the frontend, with one table model, Server-Sent Events, MariaDB through sqlx, and passkeys through webauthn-rs.
+**Goal:** Build `beelot-server`: an axum server with all of Beelot's server features, serving the frontend, with one table model, Server-Sent Events, MariaDB through sqlx, and passkeys through webauthn-rs.
 
 **Architecture:** `tables/` is a synchronous domain layer (seats, lobby, game flow, snapshots), with a `TableRegistry` of `Mutex`-guarded tables that publishes versions on `watch` channels. HTTP handlers in `routes/` turn requests into actions on it. Persistence (`db/`), auth (`auth/`), history and privacy sit beside it and never reach inside a table. Background jobs are tokio loops.
 
@@ -17,7 +17,7 @@
 
 **Prerequisite:** phase 1 is merged: `beelot-game` provides `BiddingState`, `GameBoard`, `MatchScore`, the bots and `RandomSource`.
 
-**Java sources:** `beelot/src/main/java/fr/beelot/application/**`, `beelot/src/main/java/fr/beelot/game/PrivateTable*.java`, and their tests under `beelot/src/test/java/…`. **The Java code is the behavioural spec**, wherever this plan doesn't explicitly change behaviour. Port each Java test named in a task as a Rust test with the same scenario and assertions, adapted to the new API.
+**Behaviour:** the spec lists what the server does. Each task's tests are Rust tests of the new API.
 
 ## Global Constraints
 
@@ -30,13 +30,13 @@
     - seats lose `playerId` and gain `you: bool`;
     - the table gains `kind`, `difficulty`, `difficultyLabel` and `passAndPlay`.
   - `match` is `MatchResponse`, and `reactions` is a list of `ReactionResponse`.
-- **English strings stay identical to Java's:**
+- **English strings:**
   - auction and board messages (`"… is deciding."`, `"… bids 90 Hearts."`, `"… declares Belote."`, and so on);
   - call labels (`"Pass"`, `"90 Hearts"`, `"Coinche!"`, the suit display names);
   - every conflict message.
 
-  The frontend translates them with English text as the key, including regex keys in `i18n.js`. They all live in `crates/beelot-server/src/tables/messages.rs`, copied verbatim from the Java source.
-- **Error bodies** are `{"error": "<kebab-case code>", "message": "<Java's English message>"}`. The frontend keeps showing `t(body.message)`.
+  The frontend translates them with English text as the key, including regex keys in `i18n.js`. They all live in `crates/beelot-server/src/tables/messages.rs`, kept as they are.
+- **Error bodies** are `{"error": "<kebab-case code>", "message": "<English message>"}`. The frontend keeps showing `t(body.message)`.
 - **Names:**
   - a solo human seat is named `"You"`;
   - the local bots are `Camille`, `Luc`, `Manon` and `Hugo`;
@@ -81,7 +81,7 @@
 ## Review Focus
 
 1. **Two tabs on one seat.** A seat becomes `DISCONNECTED` only when its *last* SSE stream closes, and it's `CONNECTED` again as soon as one opens. Bot takeover happens only 2 min after the last stream closed. Pinned in Task 7 by `second_stream_keeps_seat_connected`.
-2. **Concurrent clicks.** Two players sending `nextRound` (or `rematch`) at once deal only one new round. A `nextRound` for an already-dealt round is a no-op, as in Java. Pinned in Task 4 by `next_round_twice_deals_once`.
+2. **Concurrent clicks.** Two players sending `nextRound` (or `rematch`) at once deal only one new round. A `nextRound` for an already-dealt round is a no-op. Pinned in Task 4 by `next_round_twice_deals_once`.
 3. **Session limits.** A session ends 7 days after its last use or 30 days after its sign-in, whichever comes first. Each end the server notices is recorded once as `SESSION_EXPIRED`. Deleting an account needs a sign-in less than 10 minutes old. Pinned in Task 9 by `session_ends_after_thirty_days_even_when_active` and in Task 12 by `deletion_needs_recent_sign_in`.
 4. **An account deleted mid-match.** Its seats go to bots named `"Deleted player"`, its table tokens stop working, and the finished match is recorded without the account. Pinned in Task 12 by `deleted_account_seat_goes_to_bot`.
 5. **The SSE token in the query string.** `?token=` must never appear in logs or error bodies. Pinned in Task 1 by `trace_spans_omit_query_strings`.
@@ -94,7 +94,7 @@
 - Create: `crates/beelot-server/Cargo.toml`
 - Create: `src/{main.rs, lib.rs, config.rs, error.rs, clock.rs, app.rs}`
 - Create: `tests/skeleton.rs`
-- Create: `crates/beelot-server/static/`, copied from `beelot/src/main/resources/static` with the `beelot` commit named in the commit message.
+- Create: `crates/beelot-server/static/`, the existing frontend, copied in as it is.
 
 **Interfaces:**
 - Produces:
@@ -130,7 +130,7 @@
 **Files:**
 - Create: `src/limits/{mod.rs, window.rs, rate.rs, size.rs}`
 - Create: `tests/limits.rs`
-- Port tests: `RequestLimitFiltersTest`; the limiter cases of `PasskeyRateLimiterTest` go into `window.rs` unit tests.
+- Tests: the request limits, and the passkey limiter cases as `window.rs` unit tests.
 
 **Interfaces:**
 - Produces:
@@ -144,7 +144,7 @@
     - `RequestBodyLimitLayer(4096)`. A declared or streamed body over the limit gives 413.
 
 - [ ] **Step 1: Write the failing tests.**
-  - Port `RequestLimitFiltersTest`.
+  - Test the request limits.
   - Add `forwarded_header_ignored_unless_trusted`.
   - Add `creation_limit_is_separate`: 21 creations give 429 while ordinary GETs still pass.
 - [ ] **Step 2: Run them to make sure they fail.** Run `cargo test -p beelot-server --test limits`; expect failures.
@@ -158,8 +158,8 @@
 
 **Files:**
 - Create: `src/tables/{mod.rs, seats.rs}`
-- Port from Java: `PrivateTable`, `PrivateTableSeat`, `ConnectionState` and `PrivateTableStatus`, plus the local seat rules of `BotGameService.create` and `createPassAndPlay`.
-- Port tests: `PrivateTableTest` and `PublicTableTest` (game package), and the name-validation cases of `PassAndPlayServiceTest`, as unit tests in `seats.rs`.
+- Build: private-table seats, connection state and status, plus the local seat rules for solo and pass-and-play tables.
+- Tests: the private and public table lifecycle and the name validation of pass-and-play, as unit tests in `seats.rs`.
 
 **Interfaces:**
 - Produces:
@@ -168,17 +168,17 @@
   - `pub enum Connection { Connected, Disconnected { since: OffsetDateTime }, BotTakeover }`
   - `pub struct Seat { pub name: String, pub kind: SeatKind, pub ready: bool, pub connection: Connection, pub account: Option<Uuid> }`
   - `pub enum Status { WaitingForPlayers, InProgress }`
-  - `pub struct Lobby { seats: [Option<Seat>; 4], owner: usize, status, variant, announcements: bool, turn_timer_seconds: u32, bot_fill_at: Option<OffsetDateTime> }`, with methods that port `PrivateTable` one-for-one and return `Result<_, AppError>` (conflicts carry Java's message):
+  - `pub struct Lobby { seats: [Option<Seat>; 4], owner: usize, status, variant, announcements: bool, turn_timer_seconds: u32, bot_fill_at: Option<OffsetDateTime> }`, with the seat methods below, returning `Result<_, AppError>` (conflicts carry their English message):
     - `join(name, account) -> Result<usize, AppError>`
     - `leave(pos)`, `choose_seat(pos, to)`, `set_ready(pos, bool)`, `start(pos)`, `start_with_bots(pos)` and `fill_with_bots_if_due(now) -> bool`
     - `disconnect(pos, now)`, `reconnect(pos)`, `replace_expired_disconnections(now, timeout)` and `hand_to_bot(pos, name)`
     - `set_turn_timer(pos, secs)` and `set_announcements(pos, on)`
 
-    The turn timer stays a stored setting, as in Java; nothing enforces it.
+    The turn timer stays a stored setting; nothing enforces it.
   - `pub fn local_seats(seats: Option<&[Option<String>]>) -> Result<[Seat; 4], AppError>`. With `None`, it gives a solo table: `You`, `Camille`, `Luc` and `Manon`. With four names, it gives pass-and-play, applying `createPassAndPlay`'s validation, messages and bot naming.
   - `pub fn required_name(name: &str) -> Result<String, AppError>`: trims the name; empty gives `"Enter a player name."`; over 30 characters gives `"Player names are limited to 30 characters."`.
 
-- [ ] **Step 1: Write the failing tests.** Port the three Java test classes.
+- [ ] **Step 1: Write the failing tests** for the lobby, the seats and the local tables.
 - [ ] **Step 2: Run them to make sure they fail.** Run `cargo test -p beelot-server tables::seats`; expect failures.
 - [ ] **Step 3: Implement `seats.rs`.**
 - [ ] **Step 4: Run the tests to make sure they pass.** Run `cargo test -p beelot-server tables::seats`; expect PASS.
@@ -190,7 +190,7 @@
 
 **Files:**
 - Create: `src/tables/{table.rs, actions.rs, finished.rs}`
-- Port from Java: the game-flow parts of `BotGameService` and `PrivateTableService`:
+- Build: the game flow of solo, pass-and-play and private tables:
   - bot driving
   - `storeCompletedBoard`
   - `recordRoundIfComplete`
@@ -198,7 +198,7 @@
   - `collectTrickIfReviewed` (now timer-driven, see `trick_review_due`)
   - `releaseAccount`
   - the pass-and-play `viewer` logic
-- Port tests: `BotGameServiceTest`, `PassAndPlayServiceTest` (flow cases) and the game-flow cases of `PrivateTableServiceTest`, in `tests/table_flow.rs`, driving `Table` directly with a `FakeClock`.
+- Tests: the flow of solo, pass-and-play and private tables, in `tests/table_flow.rs`, driving `Table` directly with a `FakeClock`.
 
 **Interfaces:**
 - Consumes:
@@ -214,18 +214,18 @@
     - `ContinueTrick`, `NextRound` and `Rematch`
     - `React { reaction: TableReaction }` and `Leave`
   - `impl Table`:
-    - `fn apply(&mut self, actor: Actor, action: Action, now: OffsetDateTime) -> Result<Outcome, AppError>`. `Actor` is `Seat(usize)` for an online player, or `Device` for the one token of a local table, which acts for the human whose turn it is (Java's `humanToAct`). Every accepted action increments `version`.
+    - `fn apply(&mut self, actor: Actor, action: Action, now: OffsetDateTime) -> Result<Outcome, AppError>`. `Actor` is `Seat(usize)` for an online player, or `Device` for the one token of a local table, which acts for the human whose turn it is. Every accepted action increments `version`.
     - `fn trick_review_due(&self) -> Option<usize>`: the completed-trick count, while an online table shows a completed trick.
     - `fn collect_trick(&mut self, expected_tricks: usize) -> Outcome`: a no-op unless the count still matches.
     - `fn release_account(&mut self, account: Uuid) -> Outcome`
     - `fn needs_blocking_bot(&self) -> bool`: true when a Challenging bot is to move.
   - `pub struct Outcome { pub finished: Option<FinishedMatch>, pub removed: bool }`
-  - `pub struct FinishedMatch`: ports `history/FinishedMatch`, with `Mode { Solo, Private, Public }`. The mode is `Solo` for every local table; pass-and-play matches are never handed over, as in Java.
-- Behaviour that changes from Java:
+  - `pub struct FinishedMatch`: a finished match for the history, with `Mode { Solo, Private, Public }`. The mode is `Solo` for every local table; pass-and-play matches are never handed over.
+- Behaviour notes:
   - **Local tables at online pace.** Local tables keep the client-driven `continueTrick`. At online tables a completed trick is collected by the registry's timer 4 s after it completes (Task 7), instead of on the first poll 4 s later.
-  - **Deals come from an OS RNG.** Production deals use `OsRandom`, a `RandomSource` over `getrandom` in `tables/mod.rs`. Tests inject a seeded `JavaRandom` through `Table::with_rng`.
+  - **Deals come from an OS RNG.** Production deals use `OsRandom`, a `RandomSource` over `getrandom` in `tables/mod.rs`. Tests inject a seeded `SplitMix64` through `Table::with_rng`.
 
-- [ ] **Step 1: Write the failing tests.** Port the Java test classes listed above. Add:
+- [ ] **Step 1: Write the failing tests.** Write the flow tests listed above. Add:
   - `next_round_twice_deals_once` (Review Focus 2)
   - `rematch_only_after_complete_match`
   - `device_acts_for_whoever_is_to_play`: a pass-and-play table with two humans, where a `Card` action from `Actor::Device` is played by the active human.
@@ -241,15 +241,15 @@
 **Files:**
 - Create: `src/api/{mod.rs, snapshot.rs}` and `src/tables/messages.rs`
 - Create: `tests/api_contract.rs` and `tests/contract/*.json`
-- Port from Java: `BiddingState.viewFor` (with `message`, `calls`, `auction` and `auctionId`), `GameBoard.viewFor` (with `declarationMessage`, `trickWinner`, `trickPoints` and `ownAnnouncements`), and the controller response records.
-- Port tests: `PlayerViewsTest`.
+- Build: the bidding view (with `message`, `calls`, `auction` and `auctionId`), the board view (with `declarationMessage`, `trickWinner`, `trickPoints` and `ownAnnouncements`), and the response records.
+- Tests: the player views.
 
 **Interfaces:**
 - Consumes: Task 4's `Table`.
 - Produces:
   - `pub struct Snapshot { version: u64, table_id: Uuid, kind: TableKind, you: Option<usize>, table: TableView, bidding: Option<BiddingView>, board: Option<BoardView>, r#match: Option<MatchView>, reactions: Vec<ReactionView> }`, built with these field names, from the Global Constraints:
     - `TableView` has `id`, `invitationCode`, `ownerPosition`, `status`, `variant`, `variantLabel`, `turnTimerSeconds`, `seats[{name, ready, connectionState, position, you}]`, `publicTable`, `botFillAt`, `announcements`, `kind`, `difficulty`, `difficultyLabel` and `passAndPlay`.
-    - `BiddingView` is the union of both Java `BiddingResponse`s, plus `currentPlayerIndex`.
+    - `BiddingView` covers the Classic and Contrée auctions, plus `currentPlayerIndex`.
     - `BoardView` is the union of `GameBoardResponse` and `BoardResponse`.
     - `MatchView` is `{northSouth, eastWest, complete, winner}`.
     - `ReactionView` is `{sequence, position, reaction}`.
@@ -258,11 +258,11 @@
   - `auctionId` is a `Uuid` the table generates on each new deal (`BiddingState::deals()` changing, or a new `BiddingState`).
 
 - [ ] **Step 1: Write the failing tests.**
-  - Port `PlayerViewsTest`.
+  - Test the player views.
   - Add `api_contract`, which builds snapshots for 5 fixed scenarios with a seeded table and compares each serialized snapshot with `tests/contract/<scenario>.json`. The scenarios are: lobby waiting, classic auction round 2, contrée bidding, trick under review, and round over with announcements. Setting `UPDATE_CONTRACT=1` rewrites the files.
-  - Add `messages_match_java`: asserts the exact strings for a pass, a bid, a coinche, Belote, Rebelote and a redeal.
+  - Add `messages_are_the_expected_english_text`: asserts the exact strings for a pass, a bid, a coinche, Belote, Rebelote and a redeal.
 - [ ] **Step 2: Run them to make sure they fail.** Run `cargo test -p beelot-server --test api_contract`; expect failures.
-- [ ] **Step 3: Implement the module**, then generate the contract files once with `UPDATE_CONTRACT=1` and review them by hand against the Java record field lists.
+- [ ] **Step 3: Implement the module**, then generate the contract files once with `UPDATE_CONTRACT=1` and review them by hand against the frontend's field names.
 - [ ] **Step 4: Run the tests to make sure they pass.** Run `cargo test -p beelot-server`; expect PASS.
 - [ ] **Step 5: Commit** with the message `feat(api): table snapshots`.
 
@@ -272,8 +272,8 @@
 
 **Files:**
 - Create: `src/tables/{registry.rs, matchmaking.rs, reactions.rs, codes.rs}`
-- Port from Java: the registry parts of `PrivateTableService` (capacity, `evictIdle`, invitation codes, `join`, `openPublicTables`, `fillPublicTablesWithBots` and `releaseAccount` across tables), plus `MatchmakingService` and `TableReactions`.
-- Port tests: `MatchmakingServiceTest`, `PublicTableServiceTest`, `TableReactionsTest` and `MemoryBoundsTest`, plus the registry cases of `PrivateTableServiceTest`.
+- Build: the table registry (capacity, idle eviction, invitation codes, joining, open public tables, filling public tables with bots and releasing an account across tables), plus matchmaking and table reactions.
+- Tests: matchmaking, public tables, table reactions, the memory bounds and the registry's private tables.
 
 **Interfaces:**
 - Produces:
@@ -282,7 +282,7 @@
     - `fn create_local(&self, variant, difficulty, announcements, seats: Option<Vec<Option<String>>>, account) -> Result<Access, AppError>`
     - `fn create_private(&self, name, variant, account) -> Result<Access, AppError>`
     - `fn join(&self, code: &str, name, account) -> Result<Access, AppError>`
-    - `fn quick_match(&self, name, variant, account) -> Result<Access, AppError>`: fullest table first, then the earliest `bot_fill_at`, falling back to a new public table, under one registry-wide `Mutex<()>` as Java's `synchronized` does.
+    - `fn quick_match(&self, name, variant, account) -> Result<Access, AppError>`: fullest table first, then the earliest `bot_fill_at`, falling back to a new public table, under one registry-wide `Mutex<()>`.
     - `fn handle(&self, id: Uuid) -> Option<Arc<TableHandle>>`
     - `fn authorize(&self, id: Uuid, token: &str) -> Result<(Arc<TableHandle>, Actor), AppError>`. A bad token gives `Unauthorized`.
     - `fn evict_idle(&self, now)`, `fn sweep(&self, now) -> Vec<Outcome>` (bot fill plus expired disconnections) and `fn release_account(&self, account) -> Vec<Outcome>`
@@ -293,7 +293,7 @@
   - Capacity: when a cap is reached, idle tables are evicted first, then the request gets `CapacityExceeded`.
   - Every mutation ends with `changes.send_replace(version)`.
 
-- [ ] **Step 1: Write the failing tests.** Port the Java tests listed above, all with a `FakeClock`. Add `quick_match_prefers_fullest_table`, and `token_hash_only`: the registry's debug output never contains the plain token.
+- [ ] **Step 1: Write the failing tests.** Write the registry, matchmaking and reaction tests, all with a `FakeClock`. Add `quick_match_prefers_fullest_table`, and `token_hash_only`: the registry's debug output never contains the plain token.
 - [ ] **Step 2: Run them to make sure they fail.** Run `cargo test -p beelot-server tables::`; expect failures.
 - [ ] **Step 3: Implement the modules.**
 - [ ] **Step 4: Run the tests to make sure they pass.** Run `cargo test -p beelot-server`; expect PASS.
@@ -306,7 +306,7 @@
 **Files:**
 - Create: `src/routes/{mod.rs, tables.rs, events.rs}` and `src/jobs.rs`
 - Create: `tests/table_routes.rs` and `tests/sse.rs`
-- Port tests: `BotGameControllerTest`, `PrivateTableControllerTest` and `MatchmakingControllerTest`, adapted to `/api/tables`.
+- Tests: the solo, private and matchmaking routes, under `/api/tables`.
 
 **Interfaces:**
 - Consumes: Tasks 4–6. `FinishedMatch` is handed to a `MatchSink`, a trait implemented by history in Task 11 and by a `NoopSink` until then.
@@ -322,7 +322,7 @@
     The `actions` handler locks the table, calls `apply`, publishes the version, releases the lock, then hands `Outcome.finished` to the sink with `tokio::spawn`. It runs inside `spawn_blocking` when `needs_blocking_bot()`.
   - Auth: `Authorization: Bearer <token>`, or `?token=` on `/events` only. A missing or bad token gives 401 `{"error":"unauthorized","message":"You are not authorized for this table."}`.
   - SSE (`axum::response::sse`):
-    - on connect it increments `streams[seat]`, reconnects the seat (a `BotTakeover` seat gets the Java conflict message as a single `error` event, then the stream closes), and sends the current snapshot at once;
+    - on connect it increments `streams[seat]`, reconnects the seat (a `BotTakeover` seat gets its conflict message as a single `error` event, then the stream closes), and sends the current snapshot at once;
     - after that, each `watch` change sends `event: snapshot`;
     - keep-alive every 15 s;
     - on drop, a guard decrements `streams[seat]` and, at 0, calls `disconnect(seat, now)`.
@@ -335,7 +335,7 @@
     A failure is logged with `tracing::warn!` and the loop goes on.
 
 - [ ] **Step 1: Write the failing tests.**
-  - Port the Java controller tests.
+  - Test the table routes.
   - In `tests/sse.rs`, read the first events from the response body stream:
     - `stream_sends_snapshot_on_connect`
     - `stream_sends_snapshot_after_other_players_action`
@@ -356,7 +356,7 @@
 - Create: `crates/beelot-server/migrations/0001_initial.sql`
 - Create: `src/db/{mod.rs, accounts.rs, passkeys.rs, sessions.rs, matches.rs, events.rs}`
 - Create: `tests/common/db.rs`
-- Copy: `compose.yaml` from `beelot`, unchanged, so `cargo run` works locally from now on. The spec scheduled this for phase 3; it's needed earlier.
+- Create: `compose.yaml`, so `cargo run` works locally from now on. The spec scheduled this for phase 3; it's needed earlier.
 
 **Interfaces:**
 - Produces:
@@ -364,8 +364,8 @@
     - `account (id UUID PK, display_name VARCHAR(30), created_at, last_sign_in_at, previous_sign_in_at NULL)`
     - `passkey (account_id UUID PK FK→account ON DELETE CASCADE, credential_id VARBINARY(1023) UNIQUE, passkey JSON, created_at, last_used_at NULL)`
     - `session (token_hash BINARY(32) PK, account_id UUID FK→account ON DELETE CASCADE, signed_in_at, last_seen_at, INDEX(account_id))`
-    - `match_record`, `match_seat` and `match_round`: exactly as `beelot` V2 plus V9 (announcements); `match_seat.account_id` has `ON DELETE SET NULL`
-    - `security_event`: as `beelot` V5, with its two indexes
+    - `match_record`, `match_seat` and `match_round`: with the announcements column; `match_seat.account_id` has `ON DELETE SET NULL`
+    - `security_event`, with its two indexes
   - `pub async fn connect(config: &Config) -> Result<MySqlPool>`, which runs `sqlx::migrate!()`.
   - Repository functions taking `&MySqlPool` or `&mut MySqlConnection`. Each later task adds only the queries it needs; this task provides `accounts::{insert, find, record_sign_in, delete}` and `events::insert`.
   - `tests/common/db.rs`:
@@ -385,7 +385,7 @@
 **Files:**
 - Create: `src/auth/{mod.rs, sessions.rs, csrf.rs}` and `src/routes/account.rs`
 - Create: `tests/sessions.rs`
-- Port tests: `SessionLifetimeFilterTest`, `AccountSessionsTest`, the CSRF cases of `AccountIntegrationTest` (with `BrowserCsrf` as a helper) and `AccountIntegrationTest`'s `/api/account` cases.
+- Tests: the session lifetime, the account sessions, the CSRF cases (with a `BrowserCsrf` helper) and the `/api/account` routes.
 
 **Interfaces:**
 - Produces:
@@ -404,7 +404,7 @@
   - `GET /api/account` returns `{signedIn, name?, lastSignInAt?}`, with `AccountController`'s "last sign-in elsewhere" rule.
   - `POST /api/sign-out` returns 204: it ends the session, records `SIGN_OUT`, and expires the session cookie.
 
-- [ ] **Step 1: Write the failing tests.** Port the Java tests above. Add:
+- [ ] **Step 1: Write the failing tests.** Write the tests for these routes. Add:
   - `session_ends_after_thirty_days_even_when_active` (Review Focus 3)
   - `idle_session_ends_after_seven_days`
   - `guest_post_needs_no_csrf`
@@ -421,25 +421,25 @@
 **Files:**
 - Create: `src/auth/{passkeys.rs, pseudonyms.rs, relying_party.rs}` and `src/routes/passkeys.rs`
 - Create: `tests/passkeys.rs`
-- Port tests:
-  - `RelyingPartyTest`, `PseudonymGeneratorTest`, `PasskeyRateLimiterTest` and `PasskeyRequestFilterTest`
-  - `CounterCheckingRelyingPartyOperationsTest`
-  - `PasskeySignUpIntegrationTest`, `PasskeySignInIntegrationTest`, `SignInSuccessHandlerTest` and `AccountServiceTest`
+- Tests:
+  - the relying party, the pseudonym generator, the passkey rate limiter and the passkey request filter
+  - the signature counter check
+  - passkey sign-up and sign-in, the sign-in success handler and the account service
 
-  `SoftwarePasskey` becomes `webauthn-authenticator-rs`'s `SoftPasskey`.
+  Sign-up and sign-in are driven by `webauthn-authenticator-rs`'s `SoftPasskey`.
 
 **Interfaces:**
 - Produces:
-  - `RelyingParty::of(public_url: &str) -> Result<RelyingParty, String>`: the Java rules (lower-cased scheme and host, http or https only, no default port).
+  - `RelyingParty::of(public_url: &str) -> Result<RelyingParty, String>`: the rules (lower-cased scheme and host, http or https only, no default port).
   - `pseudonyms::generate(language: Language, rng) -> String`: the three word lists copied verbatim.
   - `pseudonyms::language(form_language: Option<&str>, accept_language: Option<&str>) -> Language`: ports `PseudonymGenerator.language`.
   - Routes, all `POST`; the two `options` routes are limited by a `FixedWindowLimiter` of 30 per IP per hour, refusing with 429, `Retry-After: 3600` and a `RATE_LIMITED` event:
     - `/api/passkeys/sign-up/options`. Its form body is `language`. It picks a new account id and a pseudonym, and calls `start_passkey_registration(account_id, &account_id.to_string(), &pseudonym, None)`. It then sets `authenticator_selection.resident_key = Required`, `require_resident_key = true` and `user_verification = Required` on the returned challenge, as `WebAuthnConfiguration` does. The registration state is kept for 5 minutes in a `DashMap` keyed by a random `BEELOT_CEREMONY` cookie (HttpOnly, SameSite=Strict, Max-Age=300).
     - `/api/passkeys/sign-up` takes the `RegisterPublicKeyCredential` JSON. On success it inserts the account and the passkey in one transaction, records `SIGN_UP`, starts a session and returns 204. Any failure records a `SIGN_UP` failure and returns 400 with no reason. The ceremony state is consumed either way.
     - `/api/passkeys/sign-in/options` calls `start_discoverable_authentication()`, with the state stored like sign-up's.
-    - `/api/passkeys/sign-in` runs `identify_discoverable_authentication`, loads the passkey by account and credential id, then `finish_discoverable_authentication`. It refuses unless `counter_goes_up(stored, presented)` (ported from Java), updates the stored passkey and `last_used_at`, records the sign-in, starts a session and returns 204. Any failure records a `SIGN_IN` failure and returns 401 with no reason.
+    - `/api/passkeys/sign-in` runs `identify_discoverable_authentication`, loads the passkey by account and credential id, then `finish_discoverable_authentication`. It refuses unless `counter_goes_up(stored, presented)`, updates the stored passkey and `last_used_at`, records the sign-in, starts a session and returns 204. Any failure records a `SIGN_IN` failure and returns 401 with no reason.
 
-- [ ] **Step 1: Write the failing tests.** Port the Java tests above. Add:
+- [ ] **Step 1: Write the failing tests.** Write the tests for these routes. Add:
   - `registration_requires_resident_key`: the options JSON has `residentKey: "required"` and `userVerification: "required"`.
   - `ceremony_state_is_single_use`
   - `sign_in_with_cloned_counter_is_refused`
@@ -455,17 +455,17 @@
 **Files:**
 - Create: `src/history/{mod.rs, recorder.rs, statistics.rs}` and `src/routes/statistics.rs`
 - Create: `tests/history.rs`
-- Port from Java: `MatchHistoryService`, `MatchRecord`, `SeatRecord`, `RoundRecord`, `PlayerStatistics` and `StatisticsController`
-- Port tests: `MatchHistoryServiceTest`, `MatchHistoryIntegrationTest` and `PlayerStatisticsTest`
+- Build: the match history service, its match, seat and round records, the player statistics and the statistics route
+- Tests: the match history service, its database integration and the player statistics
 
 **Interfaces:**
 - Consumes: Task 4's `FinishedMatch`, and Task 7's `MatchSink`.
 - Produces:
   - `pub struct HistoryRecorder(MySqlPool)`, implementing `MatchSink`. It stores a match only when a seat has an account, renames seats whose account is gone to `"Deleted player"`, and stores a match id only once. A failure is logged, never propagated.
-  - `statistics::of(account: Uuid, matches: &[StoredMatch]) -> PlayerStatistics`: the same JSON field names as Java's record.
+  - `statistics::of(account: Uuid, matches: &[StoredMatch]) -> PlayerStatistics`: the JSON field names the frontend reads.
   - `GET /api/statistics` returns 200, or 401 `{"error":"sign-in-required","message":"Sign in to see your statistics."}`.
 
-- [ ] **Step 1: Write the failing tests.** Port the Java tests listed above.
+- [ ] **Step 1: Write the failing tests** for the history and the statistics.
 - [ ] **Step 2: Run them to make sure they fail.** Run `cargo test -p beelot-server --test history`; expect failures.
 - [ ] **Step 3: Implement the modules**, and replace `NoopSink` in `main`.
 - [ ] **Step 4: Run the tests to make sure they pass.** Run `cargo test -p beelot-server --test history`; expect PASS.
@@ -478,13 +478,13 @@
 **Files:**
 - Create: `src/privacy/{mod.rs, events.rs, export.rs, deletion.rs, retention.rs}` and `src/routes/privacy.rs`
 - Create: `tests/privacy.rs`
-- Port from Java: `SecurityEvents`, `DataExport`, `DataExportService`, `AccountDeletionService`, `RetentionJob` and `PrivacyController`
-- Port tests:
-  - `SecurityEventsTest` and `SecurityEventsIntegrationTest`
-  - `DataExportIntegrationTest`
-  - `AccountDeletionIntegrationTest`
-  - `RetentionJobIntegrationTest`
-  - `PolicyInfoTest` and `UnsetPolicyInfoTest`
+- Build: security events, the data export, account deletion, the retention job and the privacy routes
+- Tests:
+  - security events
+  - the data export
+  - account deletion
+  - the retention job
+  - the policy info, set and unset
 
 **Interfaces:**
 - Produces:
@@ -502,7 +502,7 @@
   - `GET /api/privacy/policy-info` returns the four values, leaving out the blank ones. A warning lists the unset variables once at startup.
   - `retention::run(pool, now)` purges events older than 365 days and deletes accounts with no sign-in for 3 years, one at a time through the deletion path. `jobs` runs it daily at 03:30 UTC, and runs `sessions::sweep_expired` hourly.
 
-- [ ] **Step 1: Write the failing tests.** Port the Java tests above. Add:
+- [ ] **Step 1: Write the failing tests.** Write the tests for these routes. Add:
   - `deletion_needs_recent_sign_in` (Review Focus 3)
   - `deleted_account_seat_goes_to_bot` (Review Focus 4): a signed-in player seated at a live private table deletes their account; their seat becomes a `BotTakeover` seat named `"Deleted player"`, their table token gets 401, and the match finished afterwards is stored with no account on that seat.
 - [ ] **Step 2: Run them to make sure they fail.** Run `cargo test -p beelot-server --test privacy`; expect failures.

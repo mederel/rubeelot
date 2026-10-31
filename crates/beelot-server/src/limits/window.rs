@@ -1,4 +1,4 @@
-//! A fixed-window counter per key, ported from Java's `RequestRateLimitFilter` and `HourlyIpLimiter`.
+//! A fixed-window counter per key.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -119,7 +119,7 @@ impl FixedWindowLimiter {
 
 #[cfg(test)]
 mod tests {
-    //! The limiter cases of Java's `PasskeyRateLimiterTest`.
+    //! The limiter cases of the passkey rate limit.
 
     use time::macros::datetime;
 

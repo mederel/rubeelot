@@ -1,5 +1,4 @@
-//! The table API, porting Java's `BotGameControllerTest`, `PrivateTableControllerTest` and
-//! `MatchmakingControllerTest` to `/api/tables`.
+//! The table API: solo, pass-and-play, private and matchmade tables under `/api/tables`.
 
 mod common;
 

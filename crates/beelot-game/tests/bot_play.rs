@@ -1,4 +1,4 @@
-//! Port of the Java `RuleBasedStrategyPlayTest`, plus a check of the bot turns with the
+//! Tests of the rule-based strategy's card play, plus a check of the bot turns with the
 //! `RecordingStrategy` helper. Hearts are trump; Ana (seat 0) leads the first trick, Ben is seat
 //! 1, Chloe seat 2 and David seat 3.
 
@@ -9,7 +9,7 @@ use beelot_game::board::GameBoard;
 use beelot_game::bot::rule_based::RuleBasedStrategy;
 use beelot_game::bot::turns::{play_turn, take_auction_turn};
 use beelot_game::card::{Card, Suit, Variant};
-use beelot_game::rng::JavaRandom;
+use beelot_game::rng::SplitMix64;
 use common::RecordingStrategy;
 
 fn card(code: &str) -> Card {
@@ -294,12 +294,12 @@ fn without_trump_control_the_declarer_cashes_its_master_card_first() {
     assert_eq!(trick(&board), cards("AS"));
 }
 
-/// Not in the Java tests: the bot turns ask the strategy once per call or card, until the round
+/// The bot turns ask the strategy once per call or card, until the round
 /// ends.
 #[test]
 fn bot_turns_ask_the_strategy_once_per_decision() {
     let strategy = RecordingStrategy::new();
-    let mut bidding = BiddingState::new(Variant::Contree, 3, Box::new(JavaRandom::new(7)));
+    let mut bidding = BiddingState::new(Variant::Contree, 3, Box::new(SplitMix64::new(7)));
     let mut auction_turns = 0;
     while bidding.completed_board().is_none() && bidding.deals() == 1 {
         take_auction_turn(&mut bidding, &strategy).unwrap();
@@ -329,7 +329,7 @@ fn bot_turns_ask_the_strategy_once_per_decision() {
 fn bots_play_all_trumps_and_no_trumps_legally() {
     use beelot_game::bot::strategies;
     use beelot_game::card::{Difficulty, Trump};
-    use beelot_game::rng::java_shuffle;
+    use beelot_game::rng::shuffle;
     use beelot_game::rules;
 
     for trump in [Trump::AllTrumps, Trump::NoTrumps] {
@@ -338,7 +338,7 @@ fn bots_play_all_trumps_and_no_trumps_legally() {
             for human_at_north in [false, true] {
                 for seed in 1..=3 {
                     let mut deck = Card::deck();
-                    java_shuffle(&mut deck, &mut JavaRandom::new(seed));
+                    shuffle(&mut deck, &mut SplitMix64::new(seed));
                     let hands = std::array::from_fn(|seat| deck[seat * 8..seat * 8 + 8].to_vec());
                     let mut board = GameBoard::from_contract(hands, trump, 0, 80, false, 3, false);
                     while board.round_result().is_none() {

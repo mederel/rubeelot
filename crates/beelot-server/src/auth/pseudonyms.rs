@@ -1,6 +1,5 @@
 //! Names a new account with a random pseudonym, such as "Swift Otter 42", in English, French or Dutch. Pseudonyms
-//! are at most 30 characters and not unique: players are identified by their account. Ports Java's
-//! `PseudonymGenerator`, word lists verbatim.
+//! are at most 30 characters and not unique: players are identified by their account.
 
 use beelot_game::RandomSource;
 
@@ -188,7 +187,7 @@ fn best_match(header: &str) -> Language {
 
 #[cfg(test)]
 mod tests {
-    //! Ports Java's `PseudonymGeneratorTest`.
+    //! Tests of the pseudonym generator.
 
     use beelot_game::SplitMix64;
 

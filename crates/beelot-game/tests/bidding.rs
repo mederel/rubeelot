@@ -1,4 +1,4 @@
-//! Ports of the Java BiddingStateTest and ContreeBiddingStateTest, plus redeal and seed checks.
+//! Tests of the Classic and Contrée auctions, plus redeal and seed checks.
 //! Dropped as having no counterpart in the Rust API: English messages and player names, the
 //! `auctionId` and `AuctionCall` log assertions (the seat-call log is checked instead), the
 //! "four players" constructor check (a table is always four seats), the null-suit bid (the suit
@@ -9,11 +9,11 @@ use beelot_game::bidding::{AuctionDecision, BiddingState, CallType, SeatCall};
 use beelot_game::board::GameBoard;
 use beelot_game::card::{Card, Suit, Trump, Variant};
 use beelot_game::error::GameError;
-use beelot_game::rng::JavaRandom;
+use beelot_game::rng::SplitMix64;
 use beelot_game::scoring::RoundResult;
 
 fn bidding(variant: Variant, dealer: usize, seed: i64) -> BiddingState {
-    BiddingState::new(variant, dealer, Box::new(JavaRandom::new(seed)))
+    BiddingState::new(variant, dealer, Box::new(SplitMix64::new(seed)))
 }
 
 fn contree() -> BiddingState {

@@ -1,11 +1,11 @@
 //! The 32 cards between two deals, as a face-down pile listed from its top card, and how they were
 //! put together (US-085): shuffled for the first deal of a match, then gathered from the previous
-//! deal without a shuffle. Port of the Java `Deck`.
+//! deal without a shuffle.
 
 use serde::{Deserialize, Serialize};
 
 use crate::card::Card;
-use crate::rng::{RandomSource, java_shuffle};
+use crate::rng::{RandomSource, shuffle};
 
 /// How a deck was put together.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -104,7 +104,7 @@ impl Deck {
     /// deck.
     pub fn shuffled(rng: &mut dyn RandomSource) -> Self {
         let mut cards = Card::deck();
-        java_shuffle(&mut cards, rng);
+        shuffle(&mut cards, rng);
         Deck::new(cards, Gathering::Shuffled, 0, 0, false)
     }
 
