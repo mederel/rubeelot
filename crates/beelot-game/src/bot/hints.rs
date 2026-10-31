@@ -5,9 +5,10 @@ use serde::Serialize;
 
 use super::memory::CardMemory;
 use super::rule_based::by_value;
+use super::strategies;
 use crate::bidding::{AuctionDecision, AuctionView};
 use crate::board::PlayView;
-use crate::card::Card;
+use crate::card::{Card, Difficulty};
 use crate::rules;
 
 /// Why a card is the hint. Serialized as the code the client translates.
@@ -116,11 +117,44 @@ pub(crate) fn auction_reason(view: &AuctionView, decision: &AuctionDecision) -> 
     }
 }
 
+/// The card the Challenging bot would play from this view, and why.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CardHint {
+    pub card: Card,
+    pub reason: CardReason,
+}
+
+/// The call the Challenging bot would make from this view, and why.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AuctionHint {
+    pub decision: AuctionDecision,
+    pub reason: AuctionReason,
+}
+
+pub fn card_hint(view: &PlayView) -> CardHint {
+    let card = strategies::for_difficulty(Difficulty::Challenging).choose_card(view);
+    CardHint {
+        card,
+        reason: card_reason(view, card),
+    }
+}
+
+pub fn auction_hint(view: &AuctionView) -> AuctionHint {
+    let decision = strategies::for_difficulty(Difficulty::Challenging).decide_auction(view);
+    AuctionHint {
+        decision,
+        reason: auction_reason(view, &decision),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::board::SeatCard;
+    use crate::bidding::BiddingState;
+    use crate::board::{GameBoard, SeatCard};
+    use crate::bot::turns::{play_turn, take_auction_turn};
     use crate::card::{Seat, Suit, Trump, Variant};
+    use crate::rng::JavaRandom;
 
     fn card(code: &str) -> Card {
         code.parse().unwrap()
@@ -303,6 +337,67 @@ mod tests {
         assert_eq!(
             auction_reason(&view, &AuctionDecision::Pass),
             AuctionReason::PassWeak
+        );
+    }
+
+    fn dealt_board(seed: i64) -> GameBoard {
+        let relaxed = strategies::for_difficulty(Difficulty::Relaxed);
+        let mut bidding = BiddingState::new(Variant::Contree, 3, Box::new(JavaRandom::new(seed)));
+        while bidding.completed_board().is_none() {
+            take_auction_turn(&mut bidding, relaxed).unwrap();
+        }
+        bidding.into_board().unwrap()
+    }
+
+    #[test]
+    fn a_card_hint_is_a_legal_card() {
+        let relaxed = strategies::for_difficulty(Difficulty::Relaxed);
+        let mut board = dealt_board(7);
+        // The search starts at the third trick, so hint a few plays from there.
+        for turn in 0..32 {
+            if board.reviewing_completed_trick() {
+                board.continue_after_trick().unwrap();
+            }
+            if board.round_result().is_some() {
+                break;
+            }
+            let view = board.play_view(board.active_seat());
+            if (12..16).contains(&turn) {
+                let hint = card_hint(&view);
+                assert!(
+                    view.legal_cards.contains(&hint.card),
+                    "turn {turn}: {hint:?}"
+                );
+            }
+            play_turn(&mut board, relaxed).unwrap();
+        }
+    }
+
+    #[test]
+    fn an_auction_hint_is_a_legal_call() {
+        for variant in [Variant::Contree, Variant::Classic] {
+            for seed in 0..10 {
+                let mut bidding = BiddingState::new(variant, 3, Box::new(JavaRandom::new(seed)));
+                let seat = bidding.active_seat();
+                let hint = auction_hint(&bidding.auction_view(seat));
+                assert_eq!(
+                    bidding.apply(seat, hint.decision),
+                    Ok(()),
+                    "{variant:?} {seed}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_forced_card_is_the_hint() {
+        let view = classic("7S 8D", &[(3, "AS")]);
+        assert_eq!(
+            card_hint(&view),
+            CardHint {
+                card: card("7S"),
+                reason: CardReason::ThrowCheapest
+            }
         );
     }
 }
