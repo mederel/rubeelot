@@ -7,8 +7,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::time::Duration;
 
+use beelot_game::bidding::AuctionDecision;
 use beelot_game::bidding::BiddingState;
 use beelot_game::board::GameBoard;
+use beelot_game::bot::hints::{auction_hint, card_hint};
 use beelot_game::bot::{BotStrategy, strategies, turns};
 use beelot_game::deck::Deck;
 use beelot_game::match_score::MatchScore;
@@ -19,9 +21,11 @@ use uuid::Uuid;
 use super::OsRandom;
 use super::actions::Action;
 use super::finished::{DELETED_PLAYER, FinishedMatch, FinishedSeat, Mode};
+use super::hints::{BidHint, Hint};
 use super::messages as msg;
 use super::reactions::{Reaction, Reactions};
 use super::seats::{Connection, Lobby, Seat, SeatKind, Status, TableKind};
+use crate::api::snapshot::CardView;
 use crate::error::AppError;
 
 /// Makes the random source of each new deal.
@@ -296,6 +300,47 @@ impl Table {
             self.strategy,
             strategies::for_difficulty(Difficulty::Challenging),
         ) && self.lobby.occupied().any(|(_, seat)| seat.played_by_bot())
+    }
+
+    /// The card or the call the Challenging bot would choose for the human whose turn it is (US-065). A hint is a
+    /// question: it changes nothing, not even the version. Only local tables give them.
+    pub fn hint(&self, actor: Actor) -> Result<Hint, AppError> {
+        if self.kind != TableKind::Local {
+            return Err(AppError::NotFound);
+        }
+        let no_hint = || conflict("no-hint", msg::NO_HINT);
+        if let Some(board) = &self.board {
+            if board.round_result().is_some() || board.reviewing_completed_trick() {
+                return Err(no_hint());
+            }
+            let seat = self
+                .mover(actor, board.active_seat())
+                .map_err(|_| no_hint())?;
+            let view = board.play_view(seat);
+            if view.legal_cards.is_empty() {
+                return Err(no_hint());
+            }
+            let hint = card_hint(&view);
+            return Ok(Hint::Card {
+                card: CardView::from(hint.card),
+                reason: hint.reason,
+            });
+        }
+        let bidding = self.bidding.as_ref().ok_or_else(no_hint)?;
+        let seat = self
+            .mover(actor, bidding.active_seat())
+            .map_err(|_| no_hint())?;
+        let hint = auction_hint(&bidding.auction_view(seat));
+        let action = match hint.decision {
+            AuctionDecision::Pass => BidHint::Pass,
+            AuctionDecision::Trump { suit } => BidHint::Trump { suit },
+            AuctionDecision::Bid { value, trump } => BidHint::Contract { value, suit: trump },
+            AuctionDecision::Coinche => BidHint::Coinche,
+        };
+        Ok(Hint::Bid {
+            action,
+            reason: hint.reason,
+        })
     }
 
     /// Marks the table as used now, so it isn't evicted as idle.

@@ -788,6 +788,9 @@ h2, h3 { letter-spacing: -.025em; }
 .court-clubs, .court-spades { color: var(--black-card); }
 .court-diamonds, .court-hearts { color: #bd3037; }
 .playing-card.legal-card { box-shadow: 0 0 0 2px var(--gold), 0 9px 20px rgba(0,0,0,.3); cursor: pointer; transform: translateY(-5px); }
+.playing-card.hint-card { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--gold), 0 9px 20px rgba(0,0,0,.3); transform: translateY(-12px); }
+.hint-bid { outline: 3px dashed var(--gold); outline-offset: 3px; }
+.hint-reason { color: var(--gold); font-weight: 600; margin: .4rem 0; text-align: center; }
 .playing-card.legal-card:hover { box-shadow: 0 0 0 3px var(--gold), 0 0 24px rgba(255,209,102,.34), 0 15px 25px rgba(0,0,0,.35); transform: translateY(-15px) rotate(-1.5deg); }
 
 .table-feedback { min-height: 3.6rem; text-align: center; }

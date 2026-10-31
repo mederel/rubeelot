@@ -16,7 +16,7 @@ use crate::app::AppState;
 use crate::auth::MaybeSession;
 use crate::error::AppError;
 use crate::tables::registry::{LocalOptions, viewer_of};
-use crate::tables::{Access, Action};
+use crate::tables::{Access, Action, Hint};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -25,6 +25,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/matchmaking/quick-match", post(quick_match))
         .route("/api/tables/{id}", get(table))
         .route("/api/tables/{id}/actions", post(act))
+        .route("/api/tables/{id}/hint", get(hint))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -179,4 +180,24 @@ async fn act(
     .await??;
     state.hand_over([outcome]);
     Ok(Json(view))
+}
+
+/// What the Challenging bot would do in the player's place (US-065). Searching takes a while, off the async threads.
+async fn hint(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> Result<Json<Hint>, AppError> {
+    let token = bearer(&headers)
+        .ok_or_else(AppError::table_unauthorized)?
+        .to_owned();
+    let id = table_id(&id)?;
+    let registry = state.registry.clone();
+    let hint = blocking(move || {
+        let (handle, actor) = registry.authorize(id, &token)?;
+        let table = handle.state.lock().unwrap();
+        table.hint(actor)
+    })
+    .await??;
+    Ok(Json(hint))
 }
