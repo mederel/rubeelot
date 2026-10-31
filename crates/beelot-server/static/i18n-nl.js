@@ -455,8 +455,11 @@ window.beelotLocales = window.beelotLocales || {};
     "Choose the language of the interface.": "Kies de taal van de interface.",
     "Sound effects": "Geluidseffecten",
     "Enable optional game sounds.": "Optionele spelgeluiden inschakelen.",
-    "Reduce motion": "Minder beweging",
-    "Disable movement and transition effects.": "Beweging en overgangseffecten uitschakelen.",
+    "Effects": "Effecten",
+    "Choose how much the table moves.": "Kies hoeveel de tafel beweegt.",
+    "Full": "Volledig",
+    "Reduced": "Beperkt",
+    "No effects": "Geen effecten",
     "Cards always use both a suit symbol and colour. Controls support touch and keyboard use.":
       "Kaarten gebruiken altijd zowel een kleursymbool als een kleur. De bediening werkt met aanraking en toetsenbord.",
 
