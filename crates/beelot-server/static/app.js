@@ -1359,9 +1359,13 @@ function setSeatCardCount(station, count) {
   if (meta) meta.textContent = `${t(meta.dataset.team)} · ${t(`${count} cards`)}`;
 }
 
+// "full", "reduced" or "off", as applied to the page by applySettings().
+function effectsLevel() {
+  return document.body.dataset.effects || "full";
+}
+
 function motionReduced() {
-  return document.body.classList.contains("reduced-motion")
-    || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return effectsLevel() !== "full";
 }
 
 function seatStation(prefix, seatName) {
@@ -1958,10 +1962,14 @@ document.querySelector("#reactions-enabled").addEventListener("change", (event) 
   applySettings();
 });
 
+// Without storage the chosen level lasts until the page is reloaded.
+let sessionEffects = null;
+
 function applySettings() {
-  const reducedMotion = window.localStorage.getItem("beelot.reduced-motion") === "true";
-  document.body.classList.toggle("reduced-motion", reducedMotion);
-  document.querySelector("#reduced-motion").checked = reducedMotion;
+  const level = resolveEffectsLevel(storedSetting("beelot.effects") ?? sessionEffects, storedSetting("beelot.reduced-motion"),
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  document.body.dataset.effects = level;
+  setChoice("effects", level);
   document.querySelector("#sound-enabled").checked = window.localStorage.getItem("beelot.sound-enabled") !== "false";
   document.querySelector("#reactions-enabled").checked = reactionsEnabled();
   if (!reactionsEnabled()) {
@@ -1970,10 +1978,24 @@ function applySettings() {
   }
 }
 
-document.querySelector("#reduced-motion").addEventListener("change", (event) => {
-  window.localStorage.setItem("beelot.reduced-motion", event.target.checked);
+function storedSetting(key) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch (_) {
+    return null;
+  }
+}
+
+choiceInputs("effects").forEach((input) => input.addEventListener("change", (event) => {
+  try {
+    window.localStorage.setItem("beelot.effects", event.target.value);
+    window.localStorage.removeItem("beelot.reduced-motion");
+  } catch (_) {
+    sessionEffects = event.target.value;
+  }
   applySettings();
-});
+}));
+window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", applySettings);
 setChoice("language", language);
 choiceInputs("language").forEach((input) => input.addEventListener("change", (event) => setLanguage(event.target.value)));
 document.querySelector("#sound-enabled").addEventListener("change", (event) => {

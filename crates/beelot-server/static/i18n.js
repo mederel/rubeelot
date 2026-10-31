@@ -468,8 +468,11 @@ const fr = {
   "Choose the language of the interface.": "Choisissez la langue de l'interface.",
   "Sound effects": "Effets sonores",
   "Enable optional game sounds.": "Activer les sons de jeu facultatifs.",
-  "Reduce motion": "Réduire les animations",
-  "Disable movement and transition effects.": "Désactiver les effets de mouvement et de transition.",
+  "Effects": "Effets",
+  "Choose how much the table moves.": "Choisissez l'intensité des animations de la table.",
+  "Full": "Complets",
+  "Reduced": "Réduits",
+  "No effects": "Aucun effet",
   "Cards always use both a suit symbol and colour. Controls support touch and keyboard use.":
     "Les cartes utilisent toujours à la fois un symbole et une couleur. Les commandes fonctionnent au toucher et au clavier.",
 

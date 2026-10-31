@@ -25,7 +25,7 @@ against sharp bots, around one device, or online with friends.
 | **Your story in numbers** | Sign in to keep every match: wins per variant and difficulty, contracts, coinches, capots and belotes. |
 | **No passwords, ever** | Sign in with a passkey, or just play as a guest. No email address asked. |
 | **Privacy built in** | Download or delete your data from Settings, and a clear privacy policy. |
-| **Speaks your language** | French, English and Dutch, with sound effects and reduced-motion settings. |
+| **Speaks your language** | French, English and Dutch, with sound effects and an effects level (full, reduced or off). |
 
 This repository is Beelot's Rust backend and its frontend.
 [ADR-001](docs/adr/001-rust-platform.md) records the decision and
