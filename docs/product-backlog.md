@@ -1502,8 +1502,9 @@ symbols on the cards, so that I can identify every suit without effort.
 
 Acceptance criteria:
 
-- Each suit has a large, bold symbol on the card, in the corner indices as well
-  as the centre. The symbols are much bigger than the rank letters beside them.
+- Each suit has a large, bold symbol in the corner indices of the card. The
+  centre symbols are removed: number cards and aces have a plain centre. The
+  symbols are much bigger than the rank letters beside them.
 - The four suits differ by shape, not only by colour, and the symbols are
   distinct from one another at a small size: for example spades and clubs are
   not mistaken, and hearts and diamonds are not mistaken.

@@ -1,0 +1,121 @@
+# Read the suits at a glance (US-095) — design
+
+## Goal
+
+A player who struggles to tell the suits apart can identify every suit at a
+glance. From the backlog (`docs/product-backlog.md`):
+
+- Each suit has a large, bold symbol on the card, much bigger than the rank
+  letter beside it.
+- The four suits differ by shape, not only by colour, and stay distinct at a
+  small size.
+- Red and black keep a high contrast against the card face (WCAG AA at least).
+- Settings offers a "Large suit symbols" option and a four-colour option, both
+  remembered in the browser and applied to the hand, the trick and the bidding
+  buttons.
+- The suit names stay available to screen readers (US-074).
+- New texts are translated into French and Dutch.
+
+The frontend only (`crates/beelot-server/static/`): no server change and no new
+dependency. It builds on the cards and tokens of US-086 and the themes of
+US-087.
+
+## Decisions
+
+- **Plain solid shapes** (style B of the mock-ups): a round heart, a rhombus
+  diamond, a pointed spade and a three-lobed club, no outline. They are drawn
+  once, in a sprite, `static/suits.svg`, with ids `suit-hearts`,
+  `suit-diamonds`, `suit-spades` and `suit-clubs`, each filled with
+  `currentColor`.
+- **Corners only.** The symbol appears in the two corner indices, under the
+  rank (top left, and upside down at the bottom right). The centre symbol is
+  gone: number cards (7, 8, 9, 10) and aces have a plain cream centre, with no
+  pips and no numeral. This replaces the backlog wording "in the corner indices
+  as well as the centre", which is updated. Court cards keep their portraits.
+  Rejected: a big centre numeral and a left-edge strip layout (they collided
+  with the symbols at 72 px), and larger cards (they affect the whole table
+  layout).
+- **Sizes relative to the card.** `.playing-card` becomes a size container
+  (`container-type: inline-size`) and the index is sized in `cqw`, so every card
+  size (hand, trick, small screens, tutorial) scales the same way. Default:
+  symbol about 40cqw wide, rank about 24cqw. With "Large suit symbols":
+  symbol about 52cqw, rank about 20cqw. The default is already the larger,
+  bolder symbol; the option goes further.
+- **Four colours by token.** Each suit's colour is a token (`--suit-hearts`,
+  `--suit-diamonds`, `--suit-spades`, `--suit-clubs`). By default hearts and
+  diamonds use `--card-red` and spades and clubs use `--card-black`. With
+  `body[data-suit-colors="four"]`, diamonds become blue and clubs green (about
+  `#1e6fd9` and `#1f8a4c`, adjusted until each is at least 4.5:1 against
+  `--card-paper`). Hearts stay red and spades stay black.
+- **One shared function.** `suitSymbol(suit)` in `app.js` returns the
+  `<svg class="suit suit-<suit>"><use href="/suits.svg#suit-<suit>"/></svg>`
+  element for a suit name such as `"HEARTS"`. Cards and the bidding buttons use
+  it, and US-098 and US-099 will reuse it.
+- **Two Settings checkboxes**, next to Reactions and Sound: "Large suit symbols"
+  and "Four suit colours". Stored as `beelot.suit-large` and
+  `beelot.suit-four-colors` (`"true"` when on), applied by `applySettings()` as
+  `document.body.dataset.suitSize = "large"` and
+  `document.body.dataset.suitColors = "four"`, with the same storage fallback
+  (a session variable when storage throws) as the effects level and theme.
+- **Bidding buttons.** The trump buttons in the solo, private and pass-and-play
+  bidding show the symbol, then the name, in place of the font glyph ("Clubs ♣"
+  becomes the symbol and "Clubs"). The suit name stays as text.
+- **Accessibility.** The symbol is `aria-hidden`: the card's existing
+  `aria-label` and the button text already name the suit (US-074). The shape
+  carries the suit for sighted players, so colour is never the only cue.
+
+## What changes
+
+### Cards (`cardElement` in `app.js`, `.playing-card` rules in `styles.css`)
+
+- The corner index is the rank above `suitSymbol(card.suit)`; the font glyph
+  from `card.symbol` is no longer drawn.
+- The pip layouts, the ace's centre symbol and the `.pip-field`, `.card-pip`
+  and `.ace-face` rules are removed. Court cards keep the portrait (US-086) and
+  the paper halo behind the index.
+- The suit colour of a card comes from its suit token through the `suit-<suit>`
+  class, replacing the red/black rule on `.playing-card.hearts` and the like.
+
+### Bidding buttons (`index.html`, `i18n.js`, `i18n-nl.js`)
+
+- The static buttons (`data-suit` buttons in the solo, private and
+  pass-and-play bidding) get the sprite symbol in front of the name. The i18n
+  keys "Clubs ♣", "Diamonds ♦", "Hearts ♥" and "Spades ♠" are replaced by
+  "Clubs", "Diamonds", "Hearts" and "Spades" (checked against existing keys
+  first).
+
+### Settings (`index.html`, `app.js`, `i18n.js`, `i18n-nl.js`)
+
+- Two `setting-choice` checkboxes with a one-line description each.
+- New FR and NL texts for both options and their descriptions.
+
+## Testing
+
+A Node test `suits-sprite.test.cjs` (local, like the other frontend tests)
+checks that `suits.svg` has exactly the four symbols with the expected ids, each
+with `viewBox="0 0 24 24"`, filled with `currentColor`, with no text, images or
+external references, and that the four shapes differ. The rest is verified in a
+real browser:
+
+1. All 32 faces rendered through `cardElement()` at hand, trick and tutorial
+   sizes, in normal, large, four-colour and greyscale: every suit identifiable,
+   no collision between rank, symbol and portrait, court portraits still
+   recognisable at the large size.
+2. Contrast of each suit colour against the card paper at least 4.5:1,
+   including the four-colour blue and green.
+3. The two settings apply at once, survive a reload, work with storage blocked,
+   and are independent of each other and of the themes (US-087) and effects
+   level (US-094).
+4. The trump buttons in the solo, private and pass-and-play bidding show the
+   symbol and the name; screen-reader text is unchanged (accessibility tree).
+5. A real bot game at 1280 × 800 and 390 × 844 with no clipping or horizontal
+   scroll.
+6. `node --check` on the changed scripts, the Node tests, and the existing
+   `cargo fmt --check`, `cargo clippy` and `cargo test --workspace` unchanged.
+
+## Out of scope
+
+- Suit symbols next to suit names in text, the trump and contract lines and
+  hints (US-098), and the contract at the bidder's seat (US-099).
+- The decorative glyphs on the home page and the glyphs inside call-bubble text.
+- Per-suit portraits or other changes to the court cards.
