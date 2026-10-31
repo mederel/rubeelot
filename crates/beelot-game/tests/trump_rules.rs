@@ -1,4 +1,4 @@
-//! Card rules under all trumps and no trumps (US-063), porting Java's `TrumpRulesTest`.
+//! Card rules under all trumps and no trumps (US-063).
 
 use beelot_game::card::{Card, Rank, Suit, Trump};
 use beelot_game::rules;

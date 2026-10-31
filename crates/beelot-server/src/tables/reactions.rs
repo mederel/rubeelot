@@ -36,7 +36,7 @@ pub struct Reaction {
 }
 
 /// The reactions recently sent at one table. A reaction is kept for 30 seconds, and a player may send at most 3
-/// reactions in 10 seconds. Ports Java's `TableReactions`.
+/// reactions in 10 seconds.
 #[derive(Debug, Default)]
 pub struct Reactions {
     sequence: Arc<AtomicU64>,

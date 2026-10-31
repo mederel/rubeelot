@@ -1,5 +1,5 @@
 //! Runs the bot arena from the command line, in both variants by default, and writes the report to
-//! a file. Port of the Java `BotArenaMain`.
+//! a file.
 
 use std::fs;
 use std::path::{Path, PathBuf};

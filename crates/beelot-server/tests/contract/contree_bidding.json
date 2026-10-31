@@ -11,7 +11,7 @@
         "playerName": "Camille"
       },
       {
-        "call": "100 Hearts",
+        "call": "110 Hearts",
         "playerName": "Luc"
       },
       {
@@ -33,7 +33,7 @@
       },
       {
         "active": false,
-        "call": "100 Hearts",
+        "call": "110 Hearts",
         "playerName": "Luc"
       },
       {
@@ -48,12 +48,12 @@
     "dealerIndex": 3,
     "hand": [
       {
-        "rank": "8",
+        "rank": "9",
         "suit": "CLUBS",
         "symbol": "♣"
       },
       {
-        "rank": "10",
+        "rank": "J",
         "suit": "CLUBS",
         "symbol": "♣"
       },
@@ -63,32 +63,32 @@
         "symbol": "♣"
       },
       {
-        "rank": "10",
+        "rank": "7",
         "suit": "DIAMONDS",
         "symbol": "♦"
       },
       {
-        "rank": "8",
+        "rank": "9",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "9",
         "suit": "HEARTS",
         "symbol": "♥"
       },
       {
-        "rank": "J",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
-        "rank": "8",
+        "rank": "Q",
         "suit": "SPADES",
         "symbol": "♠"
       },
       {
-        "rank": "9",
+        "rank": "A",
         "suit": "SPADES",
         "symbol": "♠"
       }
     ],
-    "highestBid": 100,
+    "highestBid": 110,
     "highestBidSuit": "HEARTS",
     "highestBidder": "Luc",
     "message": "You is deciding.",

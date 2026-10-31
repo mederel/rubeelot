@@ -1,9 +1,9 @@
 //! What a bot remembers of the cards played so far, from its seat's view: the cards it has not
 //! seen, which cards are masters, how many trumps remain, which suits each seat has shown to be
 //! void in, and which cards the other seats revealed with their announcements and still hold
-//! (US-061). Port of the Java `CardMemory`.
+//! (US-061).
 //!
-//! Java keeps the cards in hash sets; here they are bit sets indexed by suit then rank. Every
+//! The cards are kept in bit sets indexed by suit then rank. Every
 //! query only tests membership or counts, so the order of a set never matters, and the lists
 //! (`unseen_cards`, `known_cards`) come out by suit, then rank.
 
@@ -96,7 +96,7 @@ impl CardMemory {
             self.known[seat_card.seat].remove(card);
             if card.suit != lead {
                 self.voids[seat_card.seat][lead.ordinal()] = true;
-                // Java compares with `played.size() - 2`, which is -1 for the second card.
+                // The partner played two cards back: the second card of a trick has none yet.
                 let partner_winning = played.len() >= 2
                     && rules::winning_index(&played, self.trump) == played.len() - 2;
                 if let Some(trump_suit) = self.trump.suit()
@@ -115,8 +115,8 @@ impl CardMemory {
         self.unseen.contains(card)
     }
 
-    /// The cards neither in the bot's hand nor played yet, by suit, then by rank, as Java lists
-    /// them: the sampling bot shuffles this list.
+    /// The cards neither in the bot's hand nor played yet, by suit, then by rank, in a fixed
+    /// order: the sampling bot shuffles this list.
     pub(crate) fn unseen_cards(&self) -> Vec<Card> {
         self.unseen.cards().collect()
     }
@@ -153,7 +153,7 @@ impl CardMemory {
     }
 
     /// The cards the seat revealed with an announcement and has not played yet, by suit then
-    /// rank; none for the bot. Java returns a hash set, but the sampling bot only adds these
+    /// rank; none for the bot. The sampling bot only adds these
     /// cards to hands and removes them from the unseen cards, so their order never matters.
     pub(crate) fn known_cards(&self, seat: Seat) -> Vec<Card> {
         self.known[seat].cards().collect()
@@ -196,7 +196,7 @@ impl CardMemory {
 
 #[cfg(test)]
 mod tests {
-    //! Port of the Java `CardMemoryTest`. Hearts are trump; the bot sits at seat 0 and seats 1
+    //! Hearts are trump; the bot sits at seat 0 and seats 1
     //! and 3 are its opponents.
 
     use super::*;

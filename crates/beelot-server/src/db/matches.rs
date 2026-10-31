@@ -1,5 +1,5 @@
 //! The match history tables: `match_record`, `match_seat` and `match_round`. Teams are stored as NORTH_SOUTH or
-//! EAST_WEST, the rest as Java's enum names.
+//! EAST_WEST, the rest as the enums' upper-case names.
 
 use std::collections::HashMap;
 

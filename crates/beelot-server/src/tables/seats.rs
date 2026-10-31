@@ -1,5 +1,4 @@
-//! Who sits where before and during a match, ported from Java's `PrivateTable` and the seat rules of
-//! `BotGameService`. Seats are positions 0–3 in play order; North–South hold the even seats.
+//! Who sits where before and during a match. Seats are positions 0–3 in play order; North–South hold the even seats.
 
 use std::time::Duration;
 

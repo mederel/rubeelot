@@ -1,4 +1,4 @@
-//! The parts of the Java `SamplingStrategyTest` that only need the public API, and a check that a
+//! Tests of the sampling strategy through the public API, and a check that a
 //! search without a time budget depends only on the seed and the view.
 
 mod common;
@@ -12,12 +12,12 @@ use beelot_game::bot::rule_based::RuleBasedStrategy;
 use beelot_game::bot::sampling::SamplingStrategy;
 use beelot_game::bot::turns::{play_turn, take_auction_turn};
 use beelot_game::card::{Card, Variant};
-use beelot_game::rng::JavaRandom;
+use beelot_game::rng::SplitMix64;
 use common::{Step, load_deals};
 
 /// A seeded Contrée deal with the strategy bidding at every seat, or `None` if it was redealt.
 fn auction(seed: i64, strategy: &dyn BotStrategy) -> Option<GameBoard> {
-    let mut bidding = BiddingState::new(Variant::Contree, 0, Box::new(JavaRandom::new(seed)));
+    let mut bidding = BiddingState::new(Variant::Contree, 0, Box::new(SplitMix64::new(seed)));
     while bidding.completed_board().is_none() && bidding.deals() == 1 {
         take_auction_turn(&mut bidding, strategy).unwrap();
     }
@@ -67,7 +67,7 @@ fn board_after_tricks(seed: i64, tricks: usize) -> Option<GameBoard> {
 
 #[test]
 fn the_same_seed_plays_the_same_round() {
-    // Java uses the default 200 ms budget; without one, the search is never cut short.
+    // The default has a 200 ms budget; without one, the search is never cut short.
     let first = play_round(&SamplingStrategy::with_settings(7, 50, None, 3));
     let second = play_round(&SamplingStrategy::with_settings(7, 50, None, 3));
 

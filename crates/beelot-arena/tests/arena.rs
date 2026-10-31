@@ -1,5 +1,5 @@
-//! A short arena run, checking that the arena still works. Port of the Java `BotArenaTest`;
-//! longer runs use the `beelot-arena` command.
+//! A short arena run, checking that the arena still works; longer runs
+//! use the `beelot-arena` command.
 
 use beelot_arena::{ArenaReport, BotArena, Dealing, Rate};
 use beelot_game::Variant;

@@ -11,23 +11,7 @@
         "playerName": "Camille"
       },
       {
-        "call": "Pass",
-        "playerName": "Luc"
-      },
-      {
-        "call": "90 Spades",
-        "playerName": "Manon"
-      },
-      {
-        "call": "Pass",
-        "playerName": "You"
-      },
-      {
-        "call": "Pass",
-        "playerName": "Camille"
-      },
-      {
-        "call": "120 Hearts",
+        "call": "100 Spades",
         "playerName": "Luc"
       },
       {
@@ -57,7 +41,7 @@
       },
       {
         "active": false,
-        "call": "120 Hearts",
+        "call": "100 Spades",
         "playerName": "Luc"
       },
       {
@@ -82,6 +66,11 @@
         "symbol": "♣"
       },
       {
+        "rank": "A",
+        "suit": "CLUBS",
+        "symbol": "♣"
+      },
+      {
         "rank": "7",
         "suit": "DIAMONDS",
         "symbol": "♦"
@@ -92,82 +81,82 @@
         "symbol": "♦"
       },
       {
+        "rank": "9",
+        "suit": "HEARTS",
+        "symbol": "♥"
+      },
+      {
         "rank": "Q",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
-      },
-      {
-        "rank": "10",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
-      },
-      {
-        "rank": "7",
         "suit": "SPADES",
         "symbol": "♠"
       },
       {
-        "rank": "8",
+        "rank": "A",
         "suit": "SPADES",
         "symbol": "♠"
       }
     ],
-    "highestBid": 120,
-    "highestBidSuit": "HEARTS",
+    "highestBid": 100,
+    "highestBidSuit": "SPADES",
     "highestBidder": "Luc",
-    "message": "The 120 Hearts contract is accepted.",
+    "message": "The 100 Spades contract is accepted.",
     "playerTurn": false,
     "round": 1,
     "upturnedCard": null,
     "variant": "CONTREE"
   },
   "board": {
-    "activePlayer": "Luc",
-    "activePlayerIndex": 2,
+    "activePlayer": "Manon",
+    "activePlayerIndex": 3,
     "announcements": true,
-    "beloteBonusPoints": 20,
+    "beloteBonusPoints": 0,
     "coinched": false,
     "completedTricks": 8,
-    "contractValue": 120,
+    "contractValue": 100,
     "currentPlayer": "You",
     "currentPlayerIndex": 0,
     "currentTrick": [
+      {
+        "rank": "9",
+        "suit": "SPADES",
+        "symbol": "♠"
+      },
+      {
+        "rank": "A",
+        "suit": "CLUBS",
+        "symbol": "♣"
+      },
       {
         "rank": "K",
         "suit": "HEARTS",
         "symbol": "♥"
       },
       {
-        "rank": "J",
-        "suit": "SPADES",
-        "symbol": "♠"
-      },
-      {
         "rank": "Q",
-        "suit": "DIAMONDS",
-        "symbol": "♦"
-      },
-      {
-        "rank": "10",
-        "suit": "SPADES",
-        "symbol": "♠"
+        "suit": "HEARTS",
+        "symbol": "♥"
       }
     ],
     "dealerIndex": 3,
-    "declarationMessage": "Luc declares Rebelote: 20 bonus points.",
+    "declarationMessage": "",
     "declarers": [],
     "declaringPlayerIndex": 2,
     "declaringTeam": "North–South",
-    "eastWestScore": 36,
+    "eastWestScore": 99,
     "hand": [],
     "legalCards": [],
-    "northSouthScore": 166,
+    "northSouthScore": 83,
     "ownAnnouncements": [],
     "revealedAnnouncements": [
       {
         "announcements": [
           {
             "cards": [
+              {
+                "rank": "10",
+                "suit": "HEARTS",
+                "symbol": "♥"
+              },
               {
                 "rank": "J",
                 "suit": "HEARTS",
@@ -177,17 +166,12 @@
                 "rank": "Q",
                 "suit": "HEARTS",
                 "symbol": "♥"
-              },
-              {
-                "rank": "K",
-                "suit": "HEARTS",
-                "symbol": "♥"
               }
             ],
             "kind": "TIERCE",
             "suit": "HEARTS",
             "topCard": {
-              "rank": "K",
+              "rank": "Q",
               "suit": "HEARTS",
               "symbol": "♥"
             },
@@ -198,6 +182,41 @@
         "scored": true,
         "seat": 2,
         "team": "North–South"
+      },
+      {
+        "announcements": [
+          {
+            "cards": [
+              {
+                "rank": "8",
+                "suit": "SPADES",
+                "symbol": "♠"
+              },
+              {
+                "rank": "9",
+                "suit": "SPADES",
+                "symbol": "♠"
+              },
+              {
+                "rank": "10",
+                "suit": "SPADES",
+                "symbol": "♠"
+              }
+            ],
+            "kind": "TIERCE",
+            "suit": "SPADES",
+            "topCard": {
+              "rank": "10",
+              "suit": "SPADES",
+              "symbol": "♠"
+            },
+            "value": 20
+          }
+        ],
+        "player": "Manon",
+        "scored": false,
+        "seat": 3,
+        "team": "East–West"
       }
     ],
     "reviewingCompletedTrick": true,
@@ -208,6 +227,11 @@
             {
               "cards": [
                 {
+                  "rank": "10",
+                  "suit": "HEARTS",
+                  "symbol": "♥"
+                },
+                {
                   "rank": "J",
                   "suit": "HEARTS",
                   "symbol": "♥"
@@ -216,17 +240,12 @@
                   "rank": "Q",
                   "suit": "HEARTS",
                   "symbol": "♥"
-                },
-                {
-                  "rank": "K",
-                  "suit": "HEARTS",
-                  "symbol": "♥"
                 }
               ],
               "kind": "TIERCE",
               "suit": "HEARTS",
               "topCard": {
-                "rank": "K",
+                "rank": "Q",
                 "suit": "HEARTS",
                 "symbol": "♥"
               },
@@ -237,20 +256,55 @@
           "scored": true,
           "seat": 2,
           "team": "North–South"
+        },
+        {
+          "announcements": [
+            {
+              "cards": [
+                {
+                  "rank": "8",
+                  "suit": "SPADES",
+                  "symbol": "♠"
+                },
+                {
+                  "rank": "9",
+                  "suit": "SPADES",
+                  "symbol": "♠"
+                },
+                {
+                  "rank": "10",
+                  "suit": "SPADES",
+                  "symbol": "♠"
+                }
+              ],
+              "kind": "TIERCE",
+              "suit": "SPADES",
+              "topCard": {
+                "rank": "10",
+                "suit": "SPADES",
+                "symbol": "♠"
+              },
+              "value": 20
+            }
+          ],
+          "player": "Manon",
+          "scored": false,
+          "seat": 3,
+          "team": "East–West"
         }
       ],
       "capotTeam": null,
-      "contractMade": true,
+      "contractMade": false,
       "eastWestAnnouncements": 0,
-      "eastWestAwarded": 36,
+      "eastWestAwarded": 182,
       "eastWestBeloteBonus": 0,
-      "eastWestCardPoints": 36,
-      "eastWestDixDeDer": 0,
+      "eastWestCardPoints": 89,
+      "eastWestDixDeDer": 10,
       "northSouthAnnouncements": 20,
-      "northSouthAwarded": 166,
-      "northSouthBeloteBonus": 20,
-      "northSouthCardPoints": 116,
-      "northSouthDixDeDer": 10
+      "northSouthAwarded": 0,
+      "northSouthBeloteBonus": 0,
+      "northSouthCardPoints": 63,
+      "northSouthDixDeDer": 0
     },
     "seats": [
       {
@@ -266,28 +320,28 @@
         "team": "East–West"
       },
       {
-        "active": true,
+        "active": false,
         "cardCount": 0,
         "name": "Luc",
         "team": "North–South"
       },
       {
-        "active": false,
+        "active": true,
         "cardCount": 0,
         "name": "Manon",
         "team": "East–West"
       }
     ],
-    "trickPoints": 19,
-    "trickWinner": "Luc",
-    "trump": "Hearts",
+    "trickPoints": 32,
+    "trickWinner": "Manon",
+    "trump": "Spades",
     "variant": "CONTREE"
   },
   "kind": "LOCAL",
   "match": {
     "complete": false,
-    "eastWest": 36,
-    "northSouth": 166,
+    "eastWest": 182,
+    "northSouth": 0,
     "target": 1000,
     "winner": null
   },
@@ -346,6 +400,6 @@
     "variantLabel": "Contrée"
   },
   "tableId": "01234567-89ab-cdef-0123-456789abcdef",
-  "version": 17,
+  "version": 16,
   "you": 0
 }

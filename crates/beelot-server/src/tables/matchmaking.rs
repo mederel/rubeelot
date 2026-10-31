@@ -1,5 +1,5 @@
 //! Quick matches: players are seated at the public tables of their variant; a table starts when full, or with bots
-//! once its wait is over. Ports Java's `MatchmakingService`.
+//! once its wait is over.
 
 use beelot_game::Variant;
 use time::OffsetDateTime;

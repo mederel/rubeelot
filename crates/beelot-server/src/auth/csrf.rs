@@ -1,4 +1,4 @@
-//! The CSRF rule, ported from Java's `SecurityConfiguration`: the client reads the token from the `XSRF-TOKEN`
+//! The CSRF rule: the client reads the token from the `XSRF-TOKEN`
 //! cookie and sends it back in the `X-XSRF-TOKEN` header. A request that changes state needs it once a session
 //! exists, and always on the passkey ceremonies, which start one. Guests have no session to abuse.
 

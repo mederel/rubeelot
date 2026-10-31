@@ -6,7 +6,7 @@
 
 **Architecture:** A thin `RestClient` client of Zitadel's user API v2 (`ZitadelUsers`, security package) feeds an hourly `@Scheduled` job (`UnconfirmedAccountCleanup`, account package) that skips users with an `account` row. `zitadel/provision.sh` sets the code expiry and creates the least-privileged `beelot-jobs` service account whose token Spring reads from `BEELOT_ZITADEL_API_TOKEN`.
 
-**Tech Stack:** Java 21, Spring Boot 4.1 (Spring Framework 7 `RestClient`, Jackson 3 `tools.jackson`), Spring Data JPA, MariaDB in Testcontainers, `MockRestServiceServer`, bash + curl + jq, Zitadel v4.19.4 in Docker Compose, GraalVM native image.
+**Tech Stack:** Spring Boot 4.1 (Spring Framework 7 `RestClient`, Jackson 3 `tools.jackson`), Spring Data JPA, MariaDB in Testcontainers, `MockRestServiceServer`, bash + curl + jq, Zitadel v4.19.4 in Docker Compose, GraalVM native image.
 
 **Spec:** `docs/superpowers/specs/2026-10-08-confirm-email-design.md`
 
@@ -19,7 +19,7 @@
 - No `@Conditional` on runtime configuration: the native image fixes conditions at build time. Beans always exist and check `ZitadelProperties.apiConfigured()` when they run.
 - Records that Jackson binds must work in the native image: `@RegisterReflectionForBinding` on `ZitadelUsers`.
 - Zitadel email code expiry: `"86400s"`. Service account: machine user `beelot-jobs`, role `ORG_USER_MANAGER` on its organization.
-- Comments and Javadoc follow the existing style: short, plain English, story number in parentheses, e.g. `(US-076)`.
+- Comments and doc comment follow the existing style: short, plain English, story number in parentheses, e.g. `(US-076)`.
 - Commit messages: conventional commits ending with `(US-076)` and the line `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Browser checks run headless.
 
@@ -37,29 +37,29 @@
 
 | File | Responsibility |
 | --- | --- |
-| `src/main/java/fr/beelot/application/security/ZitadelProperties.java` (modify) | Add `apiToken` and `apiConfigured()` |
-| `src/main/java/fr/beelot/application/security/SecurityConfiguration.java` (modify) | Bind `beelot.zitadel.api-token`; expose `ZitadelUsers` and `Clock` beans |
-| `src/main/java/fr/beelot/application/security/ZitadelUsers.java` (create) | List unconfirmed users, delete a user |
-| `src/main/java/fr/beelot/application/security/ZitadelApiException.java` (create) | Failure of a Zitadel API call, without secrets |
-| `src/main/java/fr/beelot/application/account/AccountRepository.java` (modify) | `findProviderSubjects` batch query |
-| `src/main/java/fr/beelot/application/account/UnconfirmedAccountCleanup.java` (create) | The scheduled job |
+| `application/security/ZitadelProperties` (modify) | Add `apiToken` and `apiConfigured()` |
+| `application/security/SecurityConfiguration` (modify) | Bind `beelot.zitadel.api-token`; expose `ZitadelUsers` and `Clock` beans |
+| `application/security/ZitadelUsers` (create) | List unconfirmed users, delete a user |
+| `application/security/ZitadelApiException` (create) | Failure of a Zitadel API call, without secrets |
+| `application/account/AccountRepository` (modify) | `findProviderSubjects` batch query |
+| `application/account/UnconfirmedAccountCleanup` (create) | The scheduled job |
 | `src/main/resources/application.properties` (modify) | New properties |
 | `zitadel/provision.sh` (modify) | Code expiry, `beelot-jobs`, token in `.env` |
 | `README.md`, `docs/product-backlog.md` (modify) | Document the variable and the job; mark US-076 delivered |
-| Tests: `security/ZitadelUsersTest.java`, `account/UnconfirmedAccountCleanupTest.java`, `account/AccountRepositoryIntegrationTest.java` (create); `ClientRegistrationsTest.java`, `RegisterAuthorizationRequestResolverTest.java` (modify for the new record component) | |
+| Tests: `security/ZitadelUsersTest`, `account/UnconfirmedAccountCleanupTest`, `account/AccountRepositoryIntegrationTest` (create); `ClientRegistrationsTest`, `RegisterAuthorizationRequestResolverTest` (modify for the new record component) | |
 
 ---
 
 ### Task 1: Zitadel user API client
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/application/security/ZitadelProperties.java`
-- Modify: `src/main/java/fr/beelot/application/security/SecurityConfiguration.java:49-54`
+- Modify: `application/security/ZitadelProperties`
+- Modify: `application/security/SecurityConfiguration:49-54`
 - Modify: `src/main/resources/application.properties` (Zitadel block)
-- Create: `src/main/java/fr/beelot/application/security/ZitadelUsers.java`
-- Create: `src/main/java/fr/beelot/application/security/ZitadelApiException.java`
-- Test: `src/test/java/fr/beelot/application/security/ZitadelUsersTest.java`
-- Modify tests constructing `ZitadelProperties`: `ClientRegistrationsTest.java`, `RegisterAuthorizationRequestResolverTest.java` (add `""` as the fourth argument)
+- Create: `application/security/ZitadelUsers`
+- Create: `application/security/ZitadelApiException`
+- Test: `tests/application/security/ZitadelUsersTest`
+- Modify tests constructing `ZitadelProperties`: `ClientRegistrationsTest`, `RegisterAuthorizationRequestResolverTest` (add `""` as the fourth argument)
 
 **Interfaces:**
 - Produces:
@@ -74,7 +74,7 @@
 
 - [ ] **Step 1: Write the failing tests** in `ZitadelUsersTest`, binding `MockRestServiceServer.bindTo(builder).build()` to a `RestClient.builder()` and `new ZitadelUsers(new ZitadelProperties("https://zitadel.test", "", "", "api-token"), builder)`. Cutoff in every test: `Instant.parse("2026-10-01T00:00:00Z")`. Build user JSON with a helper `user(id, creationDate, Boolean verified)` (verified `null` → no `email` field).
 
-```java
+```
 @Test void listsUnconfirmedHumansOldestFirst()
 // expect POST https://zitadel.test/v2/users, header Authorization "Bearer api-token",
 // jsonPath("$.query.offset")=0, "$.query.limit"=100, "$.query.asc"=true,
@@ -115,7 +115,7 @@ Run: `./gradlew test --tests 'fr.beelot.application.security.ZitadelUsersTest'`
 Expected: compilation failure (`ZitadelUsers` does not exist).
 
 - [ ] **Step 3: Implement**
-  - `ZitadelProperties`: add `apiToken`, `apiConfigured()`; update the Javadoc to mention the API token of the scheduled jobs (US-076). Update the two tests and `SecurityConfiguration.zitadelProperties` (`@Value("${beelot.zitadel.api-token:}") String apiToken`).
+  - `ZitadelProperties`: add `apiToken`, `apiConfigured()`; update the doc comment to mention the API token of the scheduled jobs (US-076). Update the two tests and `SecurityConfiguration.zitadelProperties` (`@Value("${beelot.zitadel.api-token:}") String apiToken`).
   - `ZitadelUsers`: base URL = issuer without trailing slashes; default header `Authorization: Bearer <token>`. Request body as a `Map` or record. Private nested records with `@JsonIgnoreProperties(ignoreUnknown = true)` mapping only `result[].userId`, `result[].details.creationDate` (`Instant`), `result[].human.email.isVerified` (`Boolean`), and `details.totalResult` (`long`). Annotate the class `@RegisterReflectionForBinding({...those records...})`. Paging loop: offset += 100 while `offset < totalResult` and no user at or after the cutoff has been seen. Error handling with `.onStatus(...)` / `RestClientException` → `ZitadelApiException(method, path, status)` where path is the request path without the host; 404 on delete is swallowed.
   - `application.properties`, after `beelot.zitadel.client-secret`:
 
@@ -134,7 +134,7 @@ Expected: all pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/main/java/fr/beelot/application/security src/main/resources/application.properties src/test/java/fr/beelot/application/security
+git add application/security src/main/resources/application.properties tests/application/security
 git commit -m "feat(account): list and delete Zitadel users through its API (US-076)"
 ```
 
@@ -143,11 +143,11 @@ git commit -m "feat(account): list and delete Zitadel users through its API (US-
 ### Task 2: Cleanup job
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/application/account/AccountRepository.java`
-- Create: `src/main/java/fr/beelot/application/account/UnconfirmedAccountCleanup.java`
+- Modify: `application/account/AccountRepository`
+- Create: `application/account/UnconfirmedAccountCleanup`
 - Modify: `src/main/resources/application.properties` (account block)
-- Test: `src/test/java/fr/beelot/application/account/UnconfirmedAccountCleanupTest.java`
-- Test: `src/test/java/fr/beelot/application/account/AccountRepositoryIntegrationTest.java`
+- Test: `tests/application/account/UnconfirmedAccountCleanupTest`
+- Test: `tests/application/account/AccountRepositoryIntegrationTest`
 
 **Interfaces:**
 - Consumes: `ZitadelUsers.unconfirmedCreatedBefore(Instant)`, `ZitadelUsers.delete(String)`, `ZitadelApiException`, `ZitadelProperties.apiConfigured()`, the `Clock` bean (Task 1).
@@ -159,7 +159,7 @@ git commit -m "feat(account): list and delete Zitadel users through its API (US-
 
 `UnconfirmedAccountCleanupTest` (plain unit test, Mockito mocks of `ZitadelUsers` and `AccountRepository`, `Clock.fixed(Instant.parse("2026-10-08T12:00:00Z"), UTC)`, retention `P7D`, properties with token `"api-token"`):
 
-```java
+```
 @Test void deletesUnconfirmedUsersWhoNeverSignedIn()
 // users.unconfirmedCreatedBefore(Instant.parse("2026-10-01T12:00:00Z")) → ["u1", "u2", "u3"]
 // accounts.findProviderSubjects("zitadel", ["u1","u2","u3"]) → {"u2"}
@@ -182,7 +182,7 @@ git commit -m "feat(account): list and delete Zitadel users through its API (US-
 
 `AccountRepositoryIntegrationTest` (`@SpringBootTest` + `@Testcontainers` + `@ServiceConnection` MariaDB, as `NotConfiguredAccountTest`), saving accounts through `AccountService.signIn`:
 
-```java
+```
 @Test void findsWhichUsersHaveSignedIn()
 // signIn("zitadel", "z-1", ENGLISH); signIn("other", "z-2", ENGLISH)
 // assert accounts.findProviderSubjects("zitadel", List.of("z-1", "z-2", "z-3")) == Set.of("z-1")
@@ -193,7 +193,7 @@ git commit -m "feat(account): list and delete Zitadel users through its API (US-
 Run: `./gradlew test --tests 'fr.beelot.application.account.UnconfirmedAccountCleanupTest' --tests 'fr.beelot.application.account.AccountRepositoryIntegrationTest'`
 Expected: compilation failure.
 
-- [ ] **Step 3: Implement** the repository query and `UnconfirmedAccountCleanup` as the Interfaces block states. Logging (SLF4J, `LoggerFactory.getLogger`): INFO `"Deleted {} unconfirmed Zitadel users"` when the count is above 0; WARN `"Could not delete unconfirmed Zitadel user {}: {}"` with the user id and the exception message; WARN `"Could not list unconfirmed Zitadel users: {}"` with the exception message. Catch only `ZitadelApiException`. Class Javadoc: deletes, through Zitadel, the users who never confirmed their address within the retention and never signed in to Beelot (US-076).
+- [ ] **Step 3: Implement** the repository query and `UnconfirmedAccountCleanup` as the Interfaces block states. Logging (SLF4J, `LoggerFactory.getLogger`): INFO `"Deleted {} unconfirmed Zitadel users"` when the count is above 0; WARN `"Could not delete unconfirmed Zitadel user {}: {}"` with the user id and the exception message; WARN `"Could not list unconfirmed Zitadel users: {}"` with the exception message. Catch only `ZitadelApiException`. Class doc comment: deletes, through Zitadel, the users who never confirmed their address within the retention and never signed in to Beelot (US-076).
 
 Add to `application.properties`, after the Zitadel block:
 
@@ -211,7 +211,7 @@ Expected: BUILD SUCCESSFUL; 253 earlier tests plus the new ones pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/main/java/fr/beelot/application/account src/main/resources/application.properties src/test/java/fr/beelot/application/account
+git add application/account src/main/resources/application.properties tests/application/account
 git commit -m "feat(account): delete accounts left unconfirmed for 7 days (US-076)"
 ```
 

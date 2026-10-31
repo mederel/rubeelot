@@ -1,5 +1,4 @@
-//! Ports Java's `MatchmakingServiceTest`, `PublicTableServiceTest` and `MemoryBoundsTest`, and the registry cases of
-//! `PrivateTableServiceTest`.
+//! Tests of matchmaking, public tables, the memory bounds and the registry's private tables.
 
 use std::sync::Arc;
 use std::time::Duration;

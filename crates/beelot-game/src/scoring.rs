@@ -331,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    fn round_result_reads_the_java_json() {
+    fn round_result_reads_the_recorded_json() {
         let json = r#"{"northSouthCardPoints":53,"eastWestCardPoints":99,"northSouthDixDeDer":10,"eastWestDixDeDer":0,"northSouthBeloteBonus":20,"eastWestBeloteBonus":0,"contractMade":true,"northSouthAwarded":83,"eastWestAwarded":99,"capotTeam":"","northSouthAnnouncements":20,"eastWestAnnouncements":0,"announcements":[{"seat":2,"player":"South","team":"North–South","announcements":[{"kind":"TIERCE","cards":["10H","JH","QH"],"value":20,"suit":"HEARTS"}],"scored":true}]}"#;
         let result: RoundResult = serde_json::from_str(json).unwrap();
         assert_eq!(result.capot_team, None);

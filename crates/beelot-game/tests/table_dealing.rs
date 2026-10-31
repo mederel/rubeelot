@@ -1,5 +1,5 @@
 //! Dealing as at a real table (US-085): the cut, the packets, the trick piles and the gathered
-//! deck. Port of the Java `DeckTest` and `TableDealingTest`; seat 0 is North.
+//! deck. Seat 0 is North.
 
 use std::collections::HashSet;
 use std::panic;
@@ -9,7 +9,7 @@ use beelot_game::board::GameBoard;
 use beelot_game::bot::rule_based::RuleBasedStrategy;
 use beelot_game::bot::turns::{play_turn, take_auction_turn};
 use beelot_game::deck::{self, Deck, Gathering};
-use beelot_game::{Card, JavaRandom, Trump, Variant, rules};
+use beelot_game::{Card, SplitMix64, Trump, Variant, rules};
 
 fn ordered() -> Vec<Card> {
     Card::deck()
@@ -38,7 +38,7 @@ fn packet(seat: usize, cards: usize) -> DealPacket {
 }
 
 fn table(variant: Variant, dealer: usize, seed: i64, deck: Option<Deck>) -> BiddingState {
-    BiddingState::dealt_from(variant, dealer, Box::new(JavaRandom::new(seed)), deck)
+    BiddingState::dealt_from(variant, dealer, Box::new(SplitMix64::new(seed)), deck)
 }
 
 /// The cut the deal was dealt from.
@@ -62,7 +62,7 @@ fn play_out(mut board: GameBoard) -> GameBoard {
 fn played_deal(variant: Variant, seed: i64) -> GameBoard {
     let rules = RuleBasedStrategy::new();
     for attempt in seed.. {
-        let mut bidding = BiddingState::new(variant, 3, Box::new(JavaRandom::new(attempt)));
+        let mut bidding = BiddingState::new(variant, 3, Box::new(SplitMix64::new(attempt)));
         while bidding.completed_board().is_none() && bidding.deals() == 1 {
             take_auction_turn(&mut bidding, &rules).unwrap();
         }
@@ -162,7 +162,7 @@ fn each_part_of_a_cut_keeps_at_least_three_cards() {
 #[test]
 fn a_random_cut_stays_within_the_limits_and_reaches_every_point() {
     let deck = ordered_deck();
-    let mut random = JavaRandom::new(3);
+    let mut random = SplitMix64::new(3);
     let mut points = HashSet::new();
 
     for _ in 0..2000 {
@@ -180,22 +180,22 @@ fn the_same_seed_cuts_at_the_same_point() {
     let deck = ordered_deck();
 
     assert_eq!(
-        deck.cut(&mut JavaRandom::new(11)),
-        deck.cut(&mut JavaRandom::new(11))
+        deck.cut(&mut SplitMix64::new(11)),
+        deck.cut(&mut SplitMix64::new(11))
     );
 }
 
 #[test]
 fn a_shuffled_deck_holds_every_card_once_and_depends_on_the_seed() {
-    let first = Deck::shuffled(&mut JavaRandom::new(5));
+    let first = Deck::shuffled(&mut SplitMix64::new(5));
 
     assert_eq!(
         first.cards().iter().copied().collect::<HashSet<_>>(),
         ordered().into_iter().collect::<HashSet<_>>()
     );
     assert_eq!(first.gathering(), Gathering::Shuffled);
-    assert_eq!(first, Deck::shuffled(&mut JavaRandom::new(5)));
-    assert_ne!(first, Deck::shuffled(&mut JavaRandom::new(6)));
+    assert_eq!(first, Deck::shuffled(&mut SplitMix64::new(5)));
+    assert_ne!(first, Deck::shuffled(&mut SplitMix64::new(6)));
 }
 
 #[test]
@@ -302,11 +302,11 @@ fn after_the_auction_the_taker_gets_the_turned_card_and_two_more_and_the_others_
 
 #[test]
 fn the_first_deal_of_a_match_is_shuffled_then_cut() {
-    let mut random = JavaRandom::new(9);
+    let mut random = SplitMix64::new(9);
     let shuffled = Deck::shuffled(&mut random);
     let cut = shuffled.cut(&mut random);
 
-    let bidding = BiddingState::new(Variant::Contree, 3, Box::new(JavaRandom::new(9)));
+    let bidding = BiddingState::new(Variant::Contree, 3, Box::new(SplitMix64::new(9)));
     let deal = bidding.deal_summary();
 
     assert_eq!(deal.gathering, Gathering::Shuffled);
@@ -438,7 +438,7 @@ fn the_same_seed_deals_the_same_cards_from_the_same_deck() {
 #[test]
 fn several_deals_in_a_row_keep_every_card_once() {
     let rules = RuleBasedStrategy::new();
-    let mut random = JavaRandom::new(3);
+    let mut random = SplitMix64::new(3);
     let mut deck = Deck::shuffled(&mut random);
     for round in 0..12 {
         let variant = if round % 2 == 0 {

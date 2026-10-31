@@ -1,4 +1,4 @@
-//! Ports of the Java GameBoard tests: rules, belote, capot, last trick and announcements.
+//! Tests of the game board: rules, belote, capot, last trick and announcements.
 //! Dropped as having no counterpart in the Rust API: English messages, player names, the
 //! "not seated" view error, and view fields that are not in `PlayView` (declarers, own
 //! announcements), which are covered through `declared()` and `announcements::find`.
@@ -585,7 +585,7 @@ fn deal_with(fixed: &[(usize, &str)], seed: i64) -> [Vec<Card>; 4] {
             .into_iter()
             .filter(|card| !hands.iter().flatten().any(|held| held == card))
             .collect();
-        beelot_game::java_shuffle(&mut rest, &mut beelot_game::JavaRandom::new(seed));
+        beelot_game::shuffle(&mut rest, &mut beelot_game::SplitMix64::new(seed));
         let asked: Vec<usize> = hands.iter().map(|hand| belotes(hand)).collect();
         for hand in &mut hands {
             while hand.len() < 8 {

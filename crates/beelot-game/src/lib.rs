@@ -12,7 +12,7 @@ pub mod scoring;
 
 pub use card::{Card, Difficulty, Rank, Seat, Suit, Team, Trump, Variant};
 pub use error::GameError;
-pub use rng::{JavaRandom, RandomSource, SplitMix64, java_shuffle};
+pub use rng::{RandomSource, SplitMix64, shuffle};
 
 #[cfg(test)]
 mod thread_safety {

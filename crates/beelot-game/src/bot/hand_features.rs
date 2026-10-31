@@ -1,6 +1,6 @@
 //! The features of a hand that the all trumps and no trumps estimates weigh (US-064). The arena's
 //! fitting tool fits the weights on bot play, and the rule-based bot applies them, so both count
-//! the hand the same way. Port of the Java `HandFeatures`.
+//! the hand the same way.
 
 use crate::card::{Card, Rank, Suit, Trump};
 
@@ -151,7 +151,7 @@ fn long_cards(hand: &[Card]) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    //! Port of the Java `HandFeaturesTest`.
+    //! Tests of the hand features.
 
     use super::*;
 

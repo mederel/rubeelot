@@ -48,41 +48,41 @@
     "dealerIndex": 3,
     "hand": [
       {
-        "rank": "8",
+        "rank": "J",
         "suit": "CLUBS",
         "symbol": "♣"
-      },
-      {
-        "rank": "10",
-        "suit": "CLUBS",
-        "symbol": "♣"
-      },
-      {
-        "rank": "8",
-        "suit": "HEARTS",
-        "symbol": "♥"
-      },
-      {
-        "rank": "8",
-        "suit": "SPADES",
-        "symbol": "♠"
       },
       {
         "rank": "9",
-        "suit": "SPADES",
-        "symbol": "♠"
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "Q",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "A",
+        "suit": "DIAMONDS",
+        "symbol": "♦"
+      },
+      {
+        "rank": "J",
+        "suit": "HEARTS",
+        "symbol": "♥"
       }
     ],
     "highestBid": 0,
     "highestBidSuit": "",
     "highestBidder": "",
-    "message": "Everyone passed. Choose any trump suit except CLUBS.",
+    "message": "Everyone passed. Choose any trump suit except HEARTS.",
     "playerTurn": true,
     "round": 2,
     "upturnedCard": {
-      "rank": "A",
-      "suit": "CLUBS",
-      "symbol": "♣"
+      "rank": "K",
+      "suit": "HEARTS",
+      "symbol": "♥"
     },
     "variant": "CLASSIC"
   },

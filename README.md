@@ -27,18 +27,15 @@ against sharp bots, around one device, or online with friends.
 | **Privacy built in** | Download or delete your data from Settings, and a clear privacy policy. |
 | **Speaks your language** | French, English and Dutch, with sound effects and reduced-motion settings. |
 
-This repository is Beelot's Rust backend and its frontend. It replaced the Java /
-Spring Boot backend of [`mederel/beelot`](https://github.com/mederel/beelot);
+This repository is Beelot's Rust backend and its frontend.
 [ADR-001](docs/adr/001-rust-platform.md) records the decision and
 [the design](docs/superpowers/specs/2026-10-23-rust-backend-design.md) the
 details.
 
-The other documents came over from `beelot`: the
-[product backlog](docs/product-backlog.md), ADR-002 to ADR-005 in `docs/adr/`,
-the [data breach procedure](docs/privacy/data-breach-procedure.md), and the
-feature specs and plans in `docs/superpowers/`. Apart from the Rust backend's
-design and its phase plans, those specs and plans describe the Java
-implementation, with its class and Gradle task names.
+The other documents are the [product backlog](docs/product-backlog.md), ADR-002
+to ADR-005 in `docs/adr/`, the
+[data breach procedure](docs/privacy/data-breach-procedure.md), and the feature
+specs and plans in `docs/superpowers/`.
 
 ## Quick start
 

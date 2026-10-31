@@ -154,7 +154,7 @@ mod tests {
     use crate::board::{GameBoard, SeatCard};
     use crate::bot::turns::{play_turn, take_auction_turn};
     use crate::card::{Seat, Suit, Trump, Variant};
-    use crate::rng::JavaRandom;
+    use crate::rng::SplitMix64;
 
     fn card(code: &str) -> Card {
         code.parse().unwrap()
@@ -342,7 +342,7 @@ mod tests {
 
     fn dealt_board(seed: i64) -> GameBoard {
         let relaxed = strategies::for_difficulty(Difficulty::Relaxed);
-        let mut bidding = BiddingState::new(Variant::Contree, 3, Box::new(JavaRandom::new(seed)));
+        let mut bidding = BiddingState::new(Variant::Contree, 3, Box::new(SplitMix64::new(seed)));
         while bidding.completed_board().is_none() {
             take_auction_turn(&mut bidding, relaxed).unwrap();
         }
@@ -377,7 +377,7 @@ mod tests {
     fn an_auction_hint_is_a_legal_call() {
         for variant in [Variant::Contree, Variant::Classic] {
             for seed in 0..10 {
-                let mut bidding = BiddingState::new(variant, 3, Box::new(JavaRandom::new(seed)));
+                let mut bidding = BiddingState::new(variant, 3, Box::new(SplitMix64::new(seed)));
                 let seat = bidding.active_seat();
                 let hint = auction_hint(&bidding.auction_view(seat));
                 assert_eq!(

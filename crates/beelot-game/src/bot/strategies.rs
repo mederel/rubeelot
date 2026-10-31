@@ -1,6 +1,5 @@
 //! The strategy each difficulty level plays: Relaxed bots follow the hand-written rules, and
-//! Challenging bots search sampled deals before playing a card (US-056). Port of the Java
-//! `BotStrategies`.
+//! Challenging bots search sampled deals before playing a card (US-056).
 
 use std::collections::hash_map::RandomState;
 use std::hash::{BuildHasher, Hasher};
@@ -35,7 +34,7 @@ pub fn for_tables() -> &'static dyn BotStrategy {
 
 #[cfg(test)]
 mod tests {
-    //! Port of the Java `BotStrategiesTest`.
+    //! Tests of the difficulty-to-strategy mapping.
 
     use std::ptr;
 

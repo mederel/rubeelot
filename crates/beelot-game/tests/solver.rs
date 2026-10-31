@@ -1,4 +1,4 @@
-//! Port of the Java `DoubleDummySolverTest`. Seats are numbered in play order from 0; North–South
+//! Tests of the double-dummy solver. Seats are numbered in play order from 0; North–South
 //! hold the even seats.
 
 use std::collections::HashMap;
@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use beelot_game::board::{GameBoard, SeatCard};
 use beelot_game::bot::solver::{DoubleDummySolver, Position, Solution};
 use beelot_game::card::{Card, Seat, Suit, Trump};
-use beelot_game::rng::{JavaRandom, RandomSource, java_shuffle};
+use beelot_game::rng::{RandomSource, SplitMix64, shuffle};
 use beelot_game::rules;
 
 fn card(code: &str) -> Card {
@@ -147,7 +147,7 @@ fn reports_the_score_of_a_finished_round() {
     assert_eq!(solution.best_card, None);
 }
 
-/// The plain minimax of the Java test, remembering the value of each trick start.
+/// The plain minimax, remembering the value of each trick start.
 struct Exhaustive {
     memo: HashMap<(Trump, Seat, [Vec<Card>; 4]), i32>,
 }
@@ -267,9 +267,9 @@ fn deck_points(hands: &[Vec<Card>; 4], trick: &[SeatCard], trump: Trump) -> i32 
         .sum()
 }
 
-fn shuffled_deck(random: &mut JavaRandom) -> Vec<Card> {
+fn shuffled_deck(random: &mut SplitMix64) -> Vec<Card> {
     let mut deck = Card::deck();
-    java_shuffle(&mut deck, random);
+    shuffle(&mut deck, random);
     deck
 }
 
@@ -277,7 +277,7 @@ fn shuffled_deck(random: &mut JavaRandom) -> Vec<Card> {
 fn matches_an_exhaustive_search_on_random_endgames() {
     let mut solver = DoubleDummySolver::new();
     let mut exhaustive = Exhaustive::new();
-    let mut random = JavaRandom::new(7);
+    let mut random = SplitMix64::new(7);
     for test in 0..500 {
         let cards_each = 1 + test % 5;
         let trump = Trump::ALL[random.next_int(Trump::ALL.len() as i32) as usize];
@@ -361,7 +361,7 @@ fn deal_eight(deck: &[Card]) -> [Vec<Card>; 4] {
 
 #[test]
 fn solves_a_full_deal_consistently() {
-    let deck = shuffled_deck(&mut JavaRandom::new(3));
+    let deck = shuffled_deck(&mut SplitMix64::new(3));
     let hands = deal_eight(&deck);
 
     let solution =
@@ -376,7 +376,7 @@ fn solves_a_full_deal_consistently() {
 
 #[test]
 fn a_full_deal_totals_162_points_and_its_belotes_in_every_contract() {
-    let deck = shuffled_deck(&mut JavaRandom::new(5));
+    let deck = shuffled_deck(&mut SplitMix64::new(5));
     let hands = deal_eight(&deck);
     let mut solver = DoubleDummySolver::new();
     for trump in Trump::ALL {
@@ -394,7 +394,7 @@ fn a_full_deal_totals_162_points_and_its_belotes_in_every_contract() {
 #[test]
 fn playing_the_solvers_cards_in_a_real_round_gives_the_predicted_result() {
     let mut solver = DoubleDummySolver::new();
-    let mut random = JavaRandom::new(11);
+    let mut random = SplitMix64::new(11);
     for deal in 0..12 {
         let deck = shuffled_deck(&mut random);
         let hands = deal_eight(&deck);

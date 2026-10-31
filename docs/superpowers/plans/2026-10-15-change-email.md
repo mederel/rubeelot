@@ -6,7 +6,7 @@
 
 **Architecture:** A new `email_change_token` table holds hashed, single-use, 15-minute tokens. `EmailChangeService` (package `account`) requests and confirms changes with `JdbcClient` and a `TransactionTemplate`, sending mail and ending sessions after the database work. `EmailChangeController` exposes `POST /api/account/email` and `POST /api/account/email/confirm`; confirmation signs the browser in by reusing `SignInSuccessHandler`. The vanilla-JS client gains an "Account" panel in Settings and a `/settings/email` confirmation view.
 
-**Tech Stack:** Java 25, Spring Boot 4 / Spring Security 7 (one-time-token login), JdbcClient, Flyway on MariaDB 11.4, JUnit 5 + Testcontainers + MockMvc, vanilla JS with `i18n.js` (French) and `i18n-nl.js` (Dutch).
+**Tech Stack:** Spring Boot 4 / Spring Security 7 (one-time-token login), JdbcClient, Flyway on MariaDB 11.4, JUnit 5 + Testcontainers + MockMvc, vanilla JS with `i18n.js` (French) and `i18n-nl.js` (Dutch).
 
 **Spec:** `docs/superpowers/specs/2026-10-15-change-email-design.md`
 
@@ -18,7 +18,7 @@
 - Addresses are normalised with `EmailAddresses.normalise` before any comparison or storage.
 - Rate limit: `SignInRateLimiter.tryAcquire(newEmail, ip)` — same budget as sign-in links.
 - Every user-visible string exists in English (source), French (`i18n.js`) and Dutch (`i18n-nl.js`); emails in all three via `SignInEmail.language(request)`.
-- Run `./gradlew test` before each commit that touches Java; commit messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Run `./gradlew test` before each commit that touches code; commit messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 
 ## Review Focus
 
@@ -33,8 +33,8 @@
 ### Task 1: Change-of-address emails
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/account/EmailChangeEmail.java`
-- Test: `src/test/java/fr/beelot/application/account/EmailChangeEmailTest.java`
+- Create: `application/account/EmailChangeEmail`
+- Test: `tests/application/account/EmailChangeEmailTest`
 
 **Interfaces:**
 - Produces: `public record EmailChangeEmail(String subject, String body)` with
@@ -45,7 +45,7 @@
 
 - [ ] **Step 1: Write the failing tests**
 
-```java
+```
 @Test void theLinkSitsOnItsOwnLineInEachLanguage() {
     for (String lang : List.of("en", "fr", "nl")) {
         EmailChangeEmail email = EmailChangeEmail.link(Locale.forLanguageTag(lang), "https://beelot.test/settings/email?token=abc");
@@ -86,15 +86,15 @@
 
 **Files:**
 - Create: `src/main/resources/db/migration/V7__email_change.sql` (exact SQL in the spec, "Data")
-- Create: `src/main/java/fr/beelot/application/account/Tokens.java`
-- Create: `src/main/java/fr/beelot/application/account/EmailChangeService.java`
-- Modify: `src/main/java/fr/beelot/application/account/SignInTokenService.java` (use `Tokens`)
-- Modify: `src/main/java/fr/beelot/application/privacy/SecurityEvents.java` (`Type` gains `EMAIL_CHANGE_REQUESTED`, `EMAIL_CHANGED`)
-- Modify: `src/main/java/fr/beelot/application/account/AccountService.java` (add `email`)
-- Test: `src/test/java/fr/beelot/application/account/EmailChangeServiceIntegrationTest.java`
+- Create: `application/account/Tokens`
+- Create: `application/account/EmailChangeService`
+- Modify: `application/account/SignInTokenService` (use `Tokens`)
+- Modify: `application/privacy/SecurityEvents` (`Type` gains `EMAIL_CHANGE_REQUESTED`, `EMAIL_CHANGED`)
+- Modify: `application/account/AccountService` (add `email`)
+- Test: `tests/application/account/EmailChangeServiceIntegrationTest`
 
 **Interfaces:**
-- Consumes: `EmailChangeEmail` (Task 1); `SignInRateLimiter.tryAcquire`; `AccountSessions.invalidateAll(UUID)`; `SecurityEvents.record`; `PrivacyProperties.contact()`; `JavaMailSender`; `@Value("${beelot.public-url}")`, `@Value("${beelot.mail.from}")`, `@Value("${beelot.sign-in.link-lifetime:PT15M}")`.
+- Consumes: `EmailChangeEmail` (Task 1); `SignInRateLimiter.tryAcquire`; `AccountSessions.invalidateAll(UUID)`; `SecurityEvents.record`; `PrivacyProperties.contact()`; `MailSender`; `@Value("${beelot.public-url}")`, `@Value("${beelot.mail.from}")`, `@Value("${beelot.sign-in.link-lifetime:PT15M}")`.
 - Produces:
   - `final class Tokens { static String newToken(); static String hash(String token); }` (package-private; moved from `SignInTokenService`, whose `hash` callers switch to `Tokens.hash`)
   - `public Optional<String> AccountService.email(UUID accountId)` — the account's address, empty for Google/GitHub
@@ -104,7 +104,7 @@
     - `public Optional<Confirmed> confirm(String token, Locale locale, String ip)` with `public record Confirmed(UUID accountId, String newEmail)`
     - `@Scheduled(fixedDelayString = "PT1H", initialDelayString = "PT1M") int purgeExpired()`
 
-- [ ] **Step 1: Write the failing integration tests** (Testcontainers MariaDB, `@SpringBootTest(properties = "beelot.sign-in.limit-per-ip=1000")`, `@MockitoBean JavaMailSender mail`, mail captured with `ArgumentCaptor<SimpleMailMessage>`; accounts created with `AccountService.signInWithEmail(address, Locale.ENGLISH)`; link token extracted with `Pattern.compile("/settings/email\\?token=([A-Za-z0-9_-]{43})")`):
+- [ ] **Step 1: Write the failing integration tests** (Testcontainers MariaDB, `@SpringBootTest(properties = "beelot.sign-in.limit-per-ip=1000")`, `@MockitoBean MailSender mail`, mail captured with `ArgumentCaptor<SimpleMailMessage>`; accounts created with `AccountService.signInWithEmail(address, Locale.ENGLISH)`; link token extracted with `Pattern.compile("/settings/email\\?token=([A-Za-z0-9_-]{43})")`):
   - `aFreeAddressReceivesALinkAndNothingChangesYet` — `request` returns `Sent`; one mail to the new address containing the link; one `email_change_token` row whose `token_hash` ≠ the clear token; `account_email` still the old address; one `EMAIL_CHANGE_REQUESTED` event for the account.
   - `confirmingMovesTheAccountAndNotifiesTheOldAddress` — `confirm` returns `Confirmed(account, new)`; `account_email` has the new address; a mail to the old address with subject "Your Beelot address was changed"; `EMAIL_CHANGED` event; `email_change_token` empty.
   - `confirmingEndsEverySessionOfTheAccount` — register a `MockHttpSession` with `AccountSessions.signedIn(account, session)`; after `confirm`, `session.isInvalid()`.
@@ -137,11 +137,11 @@
 ### Task 3: Endpoints and signing in the confirming browser
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/account/EmailChangeController.java`
-- Modify: `src/main/java/fr/beelot/application/account/AccountController.java` (`AccountView` gains `String email` after `name`, `null` for guests and OAuth)
-- Modify: `src/main/java/fr/beelot/application/security/SecurityConfiguration.java` (`LINK_SIGN_IN` also matches `POST /api/account/email/confirm`, so CSRF is always required on it)
-- Modify: `src/main/java/fr/beelot/application/HomeController.java` (forward `/settings/email` to `index.html`)
-- Test: `src/test/java/fr/beelot/application/account/EmailChangeIntegrationTest.java`
+- Create: `application/account/EmailChangeController`
+- Modify: `application/account/AccountController` (`AccountView` gains `String email` after `name`, `null` for guests and OAuth)
+- Modify: `application/security/SecurityConfiguration` (`LINK_SIGN_IN` also matches `POST /api/account/email/confirm`, so CSRF is always required on it)
+- Modify: `application/HomeController` (forward `/settings/email` to `index.html`)
+- Test: `tests/application/account/EmailChangeIntegrationTest`
 
 **Interfaces:**
 - Consumes: `EmailChangeService` (Task 2), `AccountService.current/email`, `SignInSuccessHandler`, `AccountSessions.signedInRecently`, `EmailUserDetailsService`, `SignInEmail.language(request)`.
@@ -176,7 +176,7 @@
 - Modify: `src/main/resources/static/index.html` (an `#account-email` settings panel before `#your-data`; a `data-view="email-change"` view; privacy policy lines 426 and 429)
 - Modify: `src/main/resources/static/app.js` (`pathToView` gets `"/settings/email": "email-change"`; panel and view logic)
 - Modify: `src/main/resources/static/i18n.js`, `src/main/resources/static/i18n-nl.js`, `src/main/resources/static/styles.css` (only if the panel needs it; reuse `settings-panel`, `your-data-actions`, `form-message`)
-- Test: `src/test/java/fr/beelot/application/AccountUiTest.java`, `src/test/java/fr/beelot/application/PrivacyPageUiTest.java`
+- Test: `tests/application/AccountUiTest`, `tests/application/PrivacyPageUiTest`
 
 **Interfaces:**
 - Consumes: the endpoints and `email` field of Task 3; existing `withCsrfToken`, `openSignInPanel(element)`, `afterSignInKey`, `continueAfterSignIn`, `loadAccount`, `t`.

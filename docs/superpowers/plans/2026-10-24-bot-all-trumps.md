@@ -6,7 +6,7 @@
 
 **Architecture:** `RuleBasedStrategy` gains suit-contract-only tactics, TA/SA contract and defensive estimates whose features live in a shared `HandFeatures` class, and a TA/SA bidding margin. A new `EstimateFit` tool (arena package) fits the weights by least squares. The arena gains an all-trumps switch, a TA/SA report line and two reference bots.
 
-**Tech Stack:** Java 25, Gradle, JUnit 5. No new dependency.
+**Tech Stack:** Gradle, JUnit 5. No new dependency.
 
 **Spec:** `docs/superpowers/specs/2026-10-24-bot-all-trumps-design.md`
 
@@ -17,7 +17,7 @@
 - The suit bidding margin (`BIDDING_MARGIN = 15`), `COINCHE_MARGIN = -4`, `ANNOUNCEMENT_WEIGHT = 0.75` and the suit estimates are unchanged.
 - With `allTrumps` off, bots bid exactly as before US-064.
 - Sans-atout play is unchanged; the solver and `SamplingStrategy` are unchanged.
-- Javadoc on estimates lists the weights in words, in the style of today's `contractEstimate`.
+- Doc comment on estimates lists the weights in words, in the style of today's `contractEstimate`.
 - No UI, API, database or i18n change.
 - Run `./gradlew test` before each commit; all tests green (532 at the start).
 
@@ -34,10 +34,10 @@
 ### Task 1: Tout-atout play tactics
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/bot/RuleBasedStrategy.java`
-- Create: `src/main/java/fr/beelot/game/arena/PreviousAllTrumpsPlayBot.java`
-- Modify: `src/main/java/fr/beelot/game/arena/ArenaBot.java` (add to `AVAILABLE`)
-- Test: `src/test/java/fr/beelot/game/bot/RuleBasedStrategyPlayTest.java`
+- Modify: `game/bot/RuleBasedStrategy`
+- Create: `game/arena/PreviousAllTrumpsPlayBot`
+- Modify: `game/arena/ArenaBot` (add to `AVAILABLE`)
+- Test: `tests/game/bot/RuleBasedStrategyPlayTest`
 
 **Interfaces:**
 - Produces: `public static RuleBasedStrategy withoutAllTrumpsTactics()` — plays as US-063 (filters on `trump.isTrump`). Arena bot name `previous-all-trumps-play` (plays and bids like `current`, card play from `withoutAllTrumpsTactics()`).
@@ -50,9 +50,9 @@
 
 - [ ] **Step 2: Run** `./gradlew test --tests '*RuleBasedStrategyPlayTest'` — Expected: the three new TA tests FAIL.
 
-- [ ] **Step 3: Implement.** Add a `boolean allTrumpsTactics` field (true by default; the existing private constructor gains it; `withoutTrumpControl()` keeps it true). A private helper `trumpTactics(GameCard card, Trump trump)` returns `trump.isTrump(card.suit())` when `!allTrumpsTactics`, else `trump.suitContract() && trump.isTrump(card.suit())`. Use it in place of `trump.isTrump` in: the first-trick defence filter, the master lead filter and the `leads` filter, the partner-sure-trick filter, `lowest`, `trumpHonour`. Leave `opponentsMayHoldTrumps` and the declarer's master-trump lead as they are. `lowest` and `trumpHonour` become instance methods (or take the flag). Update the class Javadoc of `chooseCard` with one sentence: the trump tactics apply to suit contracts; under tout-atout every card is played like a plain card.
+- [ ] **Step 3: Implement.** Add a `boolean allTrumpsTactics` field (true by default; the existing private constructor gains it; `withoutTrumpControl()` keeps it true). A private helper `trumpTactics(GameCard card, Trump trump)` returns `trump.isTrump(card.suit())` when `!allTrumpsTactics`, else `trump.suitContract() && trump.isTrump(card.suit())`. Use it in place of `trump.isTrump` in: the first-trick defence filter, the master lead filter and the `leads` filter, the partner-sure-trick filter, `lowest`, `trumpHonour`. Leave `opponentsMayHoldTrumps` and the declarer's master-trump lead as they are. `lowest` and `trumpHonour` become instance methods (or take the flag). Update the class doc comment of `chooseCard` with one sentence: the trump tactics apply to suit contracts; under tout-atout every card is played like a plain card.
 
-- [ ] **Step 4: Add `PreviousAllTrumpsPlayBot`** modelled on `PreviousTrumpsBot`, Javadoc: "Reference bot: bids like the current bot, but plays tout-atout as bots did in US-063, holding back the jack and nine of every suit and never cashing a master card in defence."
+- [ ] **Step 4: Add `PreviousAllTrumpsPlayBot`** modelled on `PreviousTrumpsBot`, doc comment: "Reference bot: bids like the current bot, but plays tout-atout as bots did in US-063, holding back the jack and nine of every suit and never cashing a master card in defence."
 
 - [ ] **Step 5: Run** `./gradlew test` — Expected: all green.
 
@@ -63,10 +63,10 @@
 ### Task 2: Arena all-trumps switch and report
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/arena/BotArena.java`, `BotArenaMain.java`, `ArenaReport.java`, `ArenaBot.java`
-- Create: `src/main/java/fr/beelot/game/arena/NoAllTrumpsBiddingBot.java`
+- Modify: `game/arena/BotArena`, `BotArenaMain`, `ArenaReport`, `ArenaBot`
+- Create: `game/arena/NoAllTrumpsBiddingBot`
 - Modify: `build.gradle` (`botArenaArgs`: `'--all-trumps', option('allTrumps', 'on')`; the options comment)
-- Test: `src/test/java/fr/beelot/game/arena/BotArenaTest.java`
+- Test: `tests/game/arena/BotArenaTest`
 
 **Interfaces:**
 - Produces: `ArenaReport run(GameVariant variant, int dealPairs, long seed, boolean announcements, boolean allTrumps)`; the existing overloads default `allTrumps` to `true`. `ArenaReport` gains `boolean allTrumps`, `Rate firstAllTrumpsContracts`, `Rate secondAllTrumpsContracts` (made out of TA/SA contracts declared by each bot). Arena bot `no-all-trumps-bidding`.
@@ -78,7 +78,7 @@
 
 - [ ] **Step 2: Run** `./gradlew test --tests '*BotArenaTest'` — Expected: compile FAIL.
 
-- [ ] **Step 3: Implement.** `play` calls `.allTrumps(allTrumps)` on the `BiddingState`. `Deal` gains `boolean allTrumpsContract` (`!view.trump().suitContract()` from the board view's trump). `Tally.contract` counts TA/SA contracts and made ones per declaring bot. Header line becomes `%s vs %s, %d duplicate deal pairs, seed %d, announcements %s, tout-atout and sans-atout %s`; add after "Contract success": `Tout-atout and sans-atout contracts: %s %s; %s %s`. `BotArenaMain` reads `--all-trumps on|off` (default `on`, error "All trumps must be on or off."), and the class Javadoc lists it. `NoAllTrumpsBiddingBot` copies `NoAnnouncementBiddingBot`, passing `view.announcements()` and `false` for `allTrumps`; Javadoc: "Reference bot: plays like the current bot, but bids as though the table played without tout-atout and sans-atout (US-064)." Add it to `AVAILABLE`.
+- [ ] **Step 3: Implement.** `play` calls `.allTrumps(allTrumps)` on the `BiddingState`. `Deal` gains `boolean allTrumpsContract` (`!view.trump().suitContract()` from the board view's trump). `Tally.contract` counts TA/SA contracts and made ones per declaring bot. Header line becomes `%s vs %s, %d duplicate deal pairs, seed %d, announcements %s, tout-atout and sans-atout %s`; add after "Contract success": `Tout-atout and sans-atout contracts: %s %s; %s %s`. `BotArenaMain` reads `--all-trumps on|off` (default `on`, error "All trumps must be on or off."), and the class doc comment lists it. `NoAllTrumpsBiddingBot` copies `NoAnnouncementBiddingBot`, passing `view.announcements()` and `false` for `allTrumps`; doc comment: "Reference bot: plays like the current bot, but bids as though the table played without tout-atout and sans-atout (US-064)." Add it to `AVAILABLE`.
 
 - [ ] **Step 4: Run** `./gradlew test` — Expected: all green.
 
@@ -89,11 +89,11 @@
 ### Task 3: Hand features, least squares and the offence fit
 
 **Files:**
-- Create: `src/main/java/fr/beelot/game/bot/HandFeatures.java`
-- Create: `src/main/java/fr/beelot/game/arena/LeastSquares.java`
-- Create: `src/main/java/fr/beelot/game/arena/EstimateFit.java`
-- Modify: `build.gradle` (task `fitEstimates`, `JavaExec`, group `verification`, `mainClass = 'fr.beelot.game.arena.EstimateFit'`, args `--stage`, `--deals` (default `20000`), `--seed` (default `1`) from `-Pstage` (default `offence`), `-Pdeals`, `-Pseed`)
-- Test: `src/test/java/fr/beelot/game/bot/HandFeaturesTest.java`, `src/test/java/fr/beelot/game/arena/LeastSquaresTest.java`
+- Create: `game/bot/HandFeatures`
+- Create: `game/arena/LeastSquares`
+- Create: `game/arena/EstimateFit`
+- Modify: `build.gradle` (task `fitEstimates`, an `Exec` task, group `verification`, `mainClass = 'fr.beelot.game.arena.EstimateFit'`, args `--stage`, `--deals` (default `20000`), `--seed` (default `1`) from `-Pstage` (default `offence`), `-Pdeals`, `-Pseed`)
+- Test: `tests/game/bot/HandFeaturesTest`, `tests/game/arena/LeastSquaresTest`
 
 **Interfaces:**
 - Produces:
@@ -114,7 +114,7 @@
 
 - [ ] **Step 4: Run** the two tests — Expected: PASS.
 
-- [ ] **Step 5: Implement `EstimateFit` offence stage.** For each deal `i < deals`: shuffle a 32-card deck with `new SplittableRandom(seed).split()`-derived seeds (one `nextLong()` per deal, then `Collections.shuffle(deck, new Random(dealSeed))`), deal 8 cards per seat, and for each of `ALL_TRUMPS`, `NO_TRUMPS` build `GameBoard.fromContract(players, hands, trump, 0, 80, false, 3, true)`, play it to the end with `BotTurns.playTurn(board, new RuleBasedStrategy())` and `continueAfterTrick()`. Target: North–South card points + dix de der + Belote bonus from the `RoundResult`. Row: `HandFeatures.offence(trump)` counts of seat 0's hand. Print, per contract: each feature's name, weight and standard error, the intercept, R², and the sample count. Class Javadoc gives the command and says the output is copied into the spec's Results.
+- [ ] **Step 5: Implement `EstimateFit` offence stage.** For each deal `i < deals`: shuffle a 32-card deck with `new SplittableRandom(seed).split()`-derived seeds (one `nextLong()` per deal, then `Collections.shuffle(deck, new Random(dealSeed))`), deal 8 cards per seat, and for each of `ALL_TRUMPS`, `NO_TRUMPS` build `GameBoard.fromContract(players, hands, trump, 0, 80, false, 3, true)`, play it to the end with `BotTurns.playTurn(board, new RuleBasedStrategy())` and `continueAfterTrick()`. Target: North–South card points + dix de der + Belote bonus from the `RoundResult`. Row: `HandFeatures.offence(trump)` counts of seat 0's hand. Print, per contract: each feature's name, weight and standard error, the intercept, R², and the sample count. Class doc comment gives the command and says the output is copied into the spec's Results.
 
 - [ ] **Step 6: Run** `./gradlew fitEstimates -Pstage=offence -Pdeals=20000 -Pseed=1` and then `-Pseed=2`. Drop any feature whose weight lies within two standard errors of zero from `HandFeatures.offence` (adjusting `HandFeaturesTest`), rerun, and paste both runs' final weights into the spec's **Results** under "Offence fit".
 
@@ -127,10 +127,10 @@
 ### Task 4: Bid tout-atout and sans-atout
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/bot/AuctionDecision.java` (`Bid(int value, Trump trump)`)
-- Modify: `src/main/java/fr/beelot/game/bot/BotTurns.java`, `src/main/java/fr/beelot/game/arena/BaselineBot.java` (wrap suits with `Trump.of`)
-- Modify: `src/main/java/fr/beelot/game/bot/RuleBasedStrategy.java`
-- Test: `src/test/java/fr/beelot/game/bot/RuleBasedStrategyBiddingTest.java` (existing `Bid(…, Suit)` assertions become `Trump.of(…)`; `bid.suit()` becomes `bid.trump()`)
+- Modify: `game/bot/AuctionDecision` (`Bid(int value, Trump trump)`)
+- Modify: `game/bot/BotTurns`, `game/arena/BaselineBot` (wrap suits with `Trump.of`)
+- Modify: `game/bot/RuleBasedStrategy`
+- Test: `tests/game/bot/RuleBasedStrategyBiddingTest` (existing `Bid(…, Suit)` assertions become `Trump.of(…)`; `bid.suit()` becomes `bid.trump()`)
 
 **Interfaces:**
 - Consumes: `HandFeatures.offence(Trump)` (Task 3).
@@ -146,7 +146,7 @@
 
 - [ ] **Step 2: Run** `./gradlew test --tests '*RuleBasedStrategyBiddingTest'` — Expected: FAIL.
 
-- [ ] **Step 3: Implement.** `contractEstimate(hand, Trump)`: for a suit contract, the suit formula; for TA/SA, `intercept + Σ weight·count` over `HandFeatures.offence(trump)`, rounded, with the weights as `private static final` arrays aligned with the feature lists and the Javadoc listing them in words. `contreeDecision` loops over the four suits then, when `view.allTrumps()`, `ALL_TRUMPS` and `NO_TRUMPS`; it compares `estimate + announcementBonus − margin` (margin `biddingMargin` for a suit, `ALL_TRUMPS_MARGIN` otherwise) with strict `>`, so a tie keeps the suit, then applies today's level rule to the best one. The partner branch builds `Bid(…, Trump.of(supported))`. Update the method's Javadoc for the six contracts.
+- [ ] **Step 3: Implement.** `contractEstimate(hand, Trump)`: for a suit contract, the suit formula; for TA/SA, `intercept + Σ weight·count` over `HandFeatures.offence(trump)`, rounded, with the weights as `private static final` arrays aligned with the feature lists and the doc comment listing them in words. `contreeDecision` loops over the four suits then, when `view.allTrumps()`, `ALL_TRUMPS` and `NO_TRUMPS`; it compares `estimate + announcementBonus − margin` (margin `biddingMargin` for a suit, `ALL_TRUMPS_MARGIN` otherwise) with strict `>`, so a tie keeps the suit, then applies today's level rule to the best one. The partner branch builds `Bid(…, Trump.of(supported))`. Update the method's doc comment for the six contracts.
 
 - [ ] **Step 4: Run** `./gradlew test` — Expected: all green (service and controller tests that rely on bot bids may now see TA/SA contracts; fix only tests that assumed a suit, not the code).
 
@@ -159,8 +159,8 @@
 ### Task 5: Coinche tout-atout and sans-atout
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/arena/EstimateFit.java` (defence stage)
-- Modify: `src/main/java/fr/beelot/game/bot/RuleBasedStrategy.java`, `HandFeatures.java` (if features are dropped)
+- Modify: `game/arena/EstimateFit` (defence stage)
+- Modify: `game/bot/RuleBasedStrategy`, `HandFeatures` (if features are dropped)
 - Test: `RuleBasedStrategyBiddingTest`
 
 **Interfaces:**
@@ -176,7 +176,7 @@
   - `coinchesAnAllTrumpsContractWithThreeJacks`: opponent holds 120 TA (`highestBidTrump` `ALL_TRUMPS`, `coincheAllowed` true); hand J♠ 9♠ J♥ 9♥ J♦ A♣ 10♣ A♦ → `Coinche` (adjust the contract value so the fitted estimate clears `162 − contract − 4`; write the arithmetic in a comment).
   - `doesNotCoincheAnAllTrumpsContractWithoutHonours`: hand of sevens and eights against 160 TA → `Pass`.
 
-- [ ] **Step 4: Implement** `defensiveEstimate(hand, Trump, contract)` and switch `expectsToDefeat` to it; Javadoc lists the fitted weights.
+- [ ] **Step 4: Implement** `defensiveEstimate(hand, Trump, contract)` and switch `expectsToDefeat` to it; doc comment lists the fitted weights.
 
 - [ ] **Step 5: Run** `./gradlew test` — Expected: all green.
 
@@ -187,9 +187,9 @@
 ### Task 6: Partner raise, tuning, acceptance and docs
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/bot/RuleBasedStrategy.java`
+- Modify: `game/bot/RuleBasedStrategy`
 - Modify: `docs/superpowers/specs/2026-10-24-bot-all-trumps-design.md` (Results), `README.md` (arena section), `docs/product-backlog.md` (US-064 delivered)
-- Maybe delete: `src/main/java/fr/beelot/game/arena/PreviousAllTrumpsPlayBot.java` and `withoutAllTrumpsTactics()` with their tests
+- Maybe delete: `game/arena/PreviousAllTrumpsPlayBot` and `withoutAllTrumpsTactics()` with their tests
 - Test: `RuleBasedStrategyBiddingTest`
 
 **Interfaces:**

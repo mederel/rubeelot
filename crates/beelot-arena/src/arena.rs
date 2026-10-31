@@ -7,7 +7,6 @@
 //! independent and bot strength is measured on uniformly random hands. With [`Dealing::Table`],
 //! each pair is dealt from the cards of the previous pair's first deal, gathered without a shuffle
 //! and cut as at a real table (US-085); a redeal or the first pair starts from a shuffled deck.
-//! Port of the Java `BotArena`.
 
 use std::time::Instant;
 
@@ -16,10 +15,10 @@ use beelot_game::bot::arena::ArenaBot;
 use beelot_game::deck::Deck;
 use beelot_game::match_score::MatchScore;
 use beelot_game::scoring::RoundResult;
-use beelot_game::{JavaRandom, Seat, SplitMix64, Team, Variant};
+use beelot_game::{Seat, SplitMix64, Team, Variant};
 
-use crate::java_format::java_sum;
 use crate::report::{ArenaReport, Rate, Timing};
+use crate::report_format::compensated_sum;
 
 const SEATS: usize = 4;
 
@@ -117,7 +116,7 @@ impl BotArena {
         let mut bidding = BiddingState::dealt_from(
             options.variant,
             options.dealer,
-            Box::new(JavaRandom::new(options.seed)),
+            Box::new(SplitMix64::new(options.seed)),
             deck,
         )
         .with_announcements(options.announcements)
@@ -335,8 +334,8 @@ impl Tally {
             seed,
         } = setup;
         let pairs = self.pair_differences.len();
-        let mean = java_sum(self.pair_differences.iter().copied()) / pairs as f64;
-        let variance = java_sum(
+        let mean = compensated_sum(self.pair_differences.iter().copied()) / pairs as f64;
+        let variance = compensated_sum(
             self.pair_differences
                 .iter()
                 .map(|difference| (difference - mean) * (difference - mean)),

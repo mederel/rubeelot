@@ -1,6 +1,6 @@
 //! The retention periods of the privacy policy, enforced every night at 03:30 UTC: security events are kept 12
 //! months, and accounts 3 years after their last sign-in. Each account is deleted on its own, through the deletion
-//! path, so one failure leaves the others unaffected. Ports Java's `RetentionJob`.
+//! path, so one failure leaves the others unaffected.
 
 use time::{Duration, OffsetDateTime, Time};
 

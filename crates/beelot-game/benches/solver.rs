@@ -1,22 +1,22 @@
-//! Times the double-dummy solver on seeded full rounds, as the Java `SolverBenchmark` deals them:
-//! `java.util.Random(1)` shuffles the deck, each seat gets eight cards, the generator draws the
-//! trump, and the seat after the dealer (deal number modulo 4) leads.
+//! Times the double-dummy solver on seeded full rounds: a seeded generator shuffles the deck, each seat
+//! gets eight cards, the generator draws the trump, and the seat after the dealer (deal number modulo 4)
+//! leads.
 
 use std::hint::black_box;
 
 use beelot_game::bot::solver::{DoubleDummySolver, Position};
-use beelot_game::{Card, JavaRandom, RandomSource, Trump, java_shuffle};
+use beelot_game::{Card, RandomSource, SplitMix64, Trump, shuffle};
 use criterion::{Criterion, criterion_group, criterion_main};
 
 const DEALS: usize = 20;
 const SEED: i64 = 1;
 
 fn deals() -> Vec<Position> {
-    let mut random = JavaRandom::new(SEED);
+    let mut random = SplitMix64::new(SEED);
     (0..DEALS)
         .map(|deal| {
             let mut deck = Card::deck();
-            java_shuffle(&mut deck, &mut random);
+            shuffle(&mut deck, &mut random);
             let hands = std::array::from_fn(|seat| deck[seat * 8..seat * 8 + 8].to_vec());
             let trump = Trump::ALL[random.next_int(4) as usize];
             let dealer = deal % 4;

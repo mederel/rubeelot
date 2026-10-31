@@ -53,7 +53,7 @@ feature's weight with its standard error and the fit's R².
 ## Bidding (`RuleBasedStrategy`)
 
 - `contractEstimate(hand, Trump)` covers the six contracts: suits as today,
-  TA and SA with the fitted weights. The Javadoc lists the weights in the
+  TA and SA with the fitted weights. The doc comment lists the weights in the
   style of today's.
 - `contreeDecision`: with `view.allTrumps()` on, the bot compares the four
   suits, TA and SA, each with the announcement bonus of its own `Trump` (the

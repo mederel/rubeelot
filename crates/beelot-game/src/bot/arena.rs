@@ -1,7 +1,6 @@
 //! The bots the arena seats against each other: the current bot, the Challenging bot and the
 //! reference bots that keep an older behaviour. A bot only sees its player's view, and any
-//! randomness comes from the given generator so that a seeded run is repeatable. Port of the Java
-//! `ArenaBot` and its implementations.
+//! randomness comes from the given generator so that a seeded run is repeatable.
 
 use std::fmt;
 
@@ -433,8 +432,7 @@ impl ArenaBot for RandomCardBot {
 
 #[cfg(test)]
 mod tests {
-    //! Port of the Java `ArenaBot.named` contract; the bots' decisions are checked against Java in
-    //! `tests/deals.rs`.
+    //! The `named` lookup contract.
 
     use super::*;
 

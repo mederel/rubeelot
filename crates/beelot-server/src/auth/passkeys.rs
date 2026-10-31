@@ -205,7 +205,7 @@ impl Passkeys {
 
 #[cfg(test)]
 mod tests {
-    //! Ports Java's `CounterCheckingRelyingPartyOperationsTest`.
+    //! Tests of the signature counter check.
 
     use super::*;
 
