@@ -29,9 +29,11 @@ new dependency. It builds on the effects level of US-094 (PR #13).
   merchants. Each suit has its own props; the jack, queen and king differ by
   crown, hair and pose. Every portrait stays readable at the hand size
   (about 54 × 78 px) and at the larger trick size.
-- **One SVG sprite, `static/cards.svg`.** It holds 12 `<symbol>`s
-  (`court-<rank>-<suit>`, for example `court-K-hearts`) and the card back
-  (`card-back`). Cards reference them with `<use href="/cards.svg#...">`.
+- **One SVG sprite, `static/cards.svg`.** It holds the 12 court `<symbol>`s
+  (`court-<rank>-<suit>`, for example `court-K-hearts`). Cards reference them
+  with `<use href="/cards.svg#...">`. The card back is drawn in CSS from the
+  tokens instead (a `background-image` cannot target a `<symbol>`, and tokens do
+  not pass into image backgrounds).
   Colours inside the sprite are `var(--...)` references with fallbacks, which
   pass through `<use>`, so US-087 can re-skin the art without editing it.
 - **The current oval table stays.** Its shape and layout do not change.
@@ -48,7 +50,7 @@ names are the contract with US-087, which overrides them per theme.
 
 | Token | Role | Default |
 | --- | --- | --- |
-| `--ink` (existing, reused) | outlines and hard shadows | near-black |
+| `--card-ink` (new; the existing `--ink` is the light text colour) | outlines and hard shadows | near-black |
 | `--outline-width` | outline of cards, seats, controls on the table | `3px` |
 | `--radius-card`, `--radius-chip` | corner radii of cards and seat stickers | `7px`, `999px` |
 | `--shadow-hard` | offset shadow of cards and stickers | `4px 4px 0 var(--ink)` |
@@ -83,8 +85,8 @@ colour for the table or a card is moved onto a token.
 - Court cards: the portrait is an `<svg><use href="/cards.svg#court-K-hearts">`
   in the card face. `cardElement()` in `app.js` builds it in place of the
   Unicode `courtIcons`, which are removed.
-- Card back: the sprite's `card-back` symbol, used by every hidden hand, the
-  upturned stack and the deal packets.
+- Card back: a CSS starburst with a "B" roundel, drawn from `--card-back-a` and
+  `--card-back-b`, used by every hidden hand and the deal packets.
 - Legal, hint and winning-card highlights keep their meaning and are redrawn
   to sit on the new outline (gold ring outside the ink outline).
 
