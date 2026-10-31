@@ -847,7 +847,7 @@ progress. Criteria in the design document.
 ## Roadmap after US-059
 
 Every story up to US-059 is delivered. The stories below are grouped into
-four phases, in the recommended order. Each phase can ship on its own.
+six phases, in the recommended order. Each phase can ship on its own.
 
 | Phase | Goal | Stories |
 | --- | --- | --- |
@@ -856,6 +856,7 @@ four phases, in the recommended order. Each phase can ship on its own.
 | 3 — Compete and connect | Give signed-in players reasons to come back | US-068 to US-072 |
 | 4 — Reach more players | Install the game and play it without a mouse | US-073 to US-074 |
 | 5 — Accounts and privacy | Keep my history under my own name, and control my data | US-075 to US-084 (US-084 supersedes US-075, US-077 and US-079, ADR-005; US-076, US-078 and US-080 dropped or merged, ADR-004) |
+| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-094 (build US-094 first, with US-086) |
 
 Why this order:
 
@@ -1366,6 +1367,131 @@ Acceptance criteria:
   checked in the native image (US-031).
 - Design in `docs/superpowers/specs/2026-10-19-passkeys-only-design.md`
   (ADR-005).
+
+### Phase 6 — A playful, cartoon table
+
+The look is playful and cartoonish: thick outlines, saturated colours, rounded
+shapes, bouncy motion. Every story honours the effects level of US-094.
+
+**US-086 — Give the table a cartoon look**
+
+As a player, I want a bold, cartoon-style table and cards, so that the game
+looks fun the moment it opens.
+
+Acceptance criteria:
+
+- The table has a textured felt, a chunky wooden rim, soft shadows and
+  rounded, outlined shapes.
+- Cards have illustrated court cards (jack, queen, king) with outlines and
+  clean pips, and a designed card back.
+- Suits stay distinguishable without colour alone.
+- The colours, outlines, radii and shadows are CSS custom properties, so that
+  US-087 can swap them.
+- The table stays fully visible on a laptop screen (US-039) and on a phone.
+
+**US-087 — Choose a table theme**
+
+As a player, I want to pick a table and card-back style in Settings, so that I
+can make the game mine.
+
+Acceptance criteria:
+
+- Settings offers at least three themes (for example Classic green, Midnight
+  and Sunset), each with its own card back.
+- The choice is remembered in the browser and applies to the bot, private and
+  pass-and-play tables.
+- New texts are translated into French and Dutch.
+
+**US-088 — Meet my opponents**
+
+As a player, I want every seat to have an illustrated avatar and a
+personality, so that the bots feel like characters.
+
+Acceptance criteria:
+
+- Each seat shows a cartoon avatar. The three bots look different, and each
+  player's avatar is stable for the whole match.
+- Avatars react to the game: thinking, pleased, annoyed, celebrating.
+- Bots say short in-character lines at the table (for example after a big
+  trick or a coinche); they never reveal their hand.
+- New texts are translated into French and Dutch, and use "bot", not "AI".
+
+**US-089 — Make card play feel physical**
+
+As a player, I want cards that fan out, lift, tilt and land with weight, so
+that playing them is satisfying.
+
+Acceptance criteria:
+
+- My hand fans out in an arc. A card lifts and tilts when hovered or touched.
+- Tapping an illegal card makes it shake and shows why; legal cards are
+  visibly distinct.
+- A played card flies to the table, squashes on landing and rests at a slight
+  random angle. The winning card of a trick pops.
+- The animations build on the trick collection of US-041.
+
+**US-090 — Celebrate great moments**
+
+As a player, I want big plays to be celebrated, so that wins feel rewarding.
+
+Acceptance criteria:
+
+- A cartoon banner and a burst of confetti or stars mark a won round, a capot,
+  belote and rebelote, and the match victory.
+- A broken contract and a successful coinche have their own distinct effects.
+- Each effect has a matching synthesised sound (US-027).
+- Effects never hide the cards or delay the next action by more than two
+  seconds.
+
+**US-091 — Watch the score move**
+
+As a player, I want scores that count up and a badge for the contract, so that
+I follow the match at a glance.
+
+Acceptance criteria:
+
+- Round and match scores count from the old value to the new one.
+- A progress bar shows each team's distance to the match target (US-062).
+- The trump suit and the contract show as a badge that bounces when set.
+
+**US-092 — Enjoy a livelier home screen**
+
+As a player, I want an animated home screen, so that the first impression is
+fun.
+
+Acceptance criteria:
+
+- An animated shuffle or deal replaces the static suit icons of the hero.
+- Mode cards bounce on hover and press.
+- A short transition leads from the home screen to the table.
+
+**US-093 — End the match with a show**
+
+As a player, I want an end-of-match screen with a recap, so that finishing a
+game feels like an event.
+
+Acceptance criteria:
+
+- The winning team is shown on a cartoon podium, with the final scores.
+- A recap shows the number of rounds, the biggest round and the announcements
+  of the match.
+- "Play again" and "Home" buttons are offered.
+
+**US-094 — Control the effects**
+
+As a player, I want to turn the effects down, so that the game stays
+comfortable and fast.
+
+Acceptance criteria:
+
+- Settings offers an effects level: Full, Reduced or Off, separate from the
+  sound setting.
+- The default follows `prefers-reduced-motion`.
+- At Reduced, movement is replaced by short fades; at Off, state changes are
+  instant.
+- Every effect of US-086 to US-093 honours the level.
+- The animations stay smooth on a mid-range phone.
+- New texts are translated into French and Dutch.
 
 ### Decisions required for the roadmap
 
