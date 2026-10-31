@@ -1,4 +1,4 @@
-//! Results of an arena run, seen from the first bot. Port of the Java `ArenaReport`.
+//! Results of an arena run, seen from the first bot.
 
 use beelot_game::Variant;
 
@@ -37,7 +37,7 @@ pub struct ArenaReport {
 }
 
 impl ArenaReport {
-    /// The report as the Java arena prints it, ending with a newline.
+    /// The report as printed, ending with a newline.
     pub fn format(&self) -> String {
         let first = &self.first;
         let second = &self.second;
@@ -117,7 +117,7 @@ impl Rate {
         [centre - margin, centre + margin]
     }
 
-    /// Java's `%.1f%% (%d/%d)`, or `n/a (0/0)` without attempts.
+    /// `NN.N% (successes/attempts)`, or `n/a (0/0)` without attempts.
     pub fn format(&self) -> String {
         if self.attempts == 0 {
             return "n/a (0/0)".to_string();

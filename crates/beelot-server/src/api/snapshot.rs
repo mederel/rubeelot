@@ -1,7 +1,6 @@
 //! What a player sees of a table: one snapshot with the table, the auction, the card play and the match, each part
-//! shown from the player's seat. The parts keep the JSON shapes of Java's responses (`PrivateTableResponse`, both
-//! `BiddingResponse`s, `GameBoardResponse` and `BoardResponse`, `MatchResponse`, `ReactionResponse`), so the
-//! frontend renders them as before. `tests/contract/*.json` holds examples.
+//! shown from the player's seat. The parts keep the JSON shapes the frontend renders: the table, the bidding, the
+//! board, the match and the reactions. `tests/contract/*.json` holds examples.
 
 use beelot_game::announcements::{self, Announcement};
 use beelot_game::bidding::BiddingState;
@@ -75,7 +74,7 @@ pub struct SeatView {
     pub connection_state: &'static str,
     pub position: usize,
     pub you: bool,
-    /// `HUMAN` or `BOT`, as Java's bot-game seats had it.
+    /// `HUMAN` or `BOT`.
     #[serde(rename = "type")]
     pub r#type: &'static str,
 }

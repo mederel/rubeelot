@@ -1,4 +1,4 @@
-//! Ports of the Java BiddingStateTest and ContreeBiddingStateTest, plus redeal and seed checks.
+//! Tests of the Classic and Contrée auctions, plus redeal and seed checks.
 //! Dropped as having no counterpart in the Rust API: English messages and player names, the
 //! `auctionId` and `AuctionCall` log assertions (the seat-call log is checked instead), the
 //! "four players" constructor check (a table is always four seats), the null-suit bid (the suit

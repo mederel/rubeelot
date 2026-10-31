@@ -6,7 +6,7 @@
 
 **Architecture:** A `Trump` enum (four suits + `ALL_TRUMPS` + `NO_TRUMPS`) replaces the nullable `GameCard.Suit trump` in the rule engine, the board, the auction views and the bots; every "is this a trump" question goes through `Trump.isTrump`. The option follows the US-060 announcements pattern layer by layer (`BiddingState` → `BotGame`/`PrivateTable` → services → API → `match_record` V11 → client).
 
-**Tech Stack:** Java 21, Spring Boot, JPA + Flyway (MariaDB), JUnit 5 / MockMvc / Testcontainers, vanilla JS client, headless Playwright for the browser check.
+**Tech Stack:** Spring Boot, JPA + Flyway (MariaDB), JUnit 5 / MockMvc / Testcontainers, vanilla JS client, headless Playwright for the browser check.
 
 **Spec:** `docs/superpowers/specs/2026-10-23-all-trumps-design.md`
 
@@ -37,16 +37,16 @@
 
 ## File map
 
-- Create: `src/main/java/fr/beelot/game/Trump.java`, `src/main/resources/db/migration/V11__all_trumps.sql`, `src/test/java/fr/beelot/game/TrumpRulesTest.java`, `src/test/java/fr/beelot/game/GameBoardAllTrumpsTest.java`, `src/test/java/fr/beelot/game/bot/BotsPlayNewContractsTest.java`, `src/test/java/fr/beelot/application/AllTrumpsUiTest.java`.
-- Modify: `game/BeloteRules.java`, `GameCard.java`, `GameBoard.java`, `Announcements.java`, `Announcement.java` (if it compares the trump), `BiddingState.java`, `BotGame.java`, `PrivateTable.java`; `game/bot/*` and `game/arena/*` (callers); `application/bot/BotGameService.java`, `BotGameController.java`; `application/privategame/PrivateTableService.java`, `PrivateTableController.java`; `application/history/FinishedMatch.java`, `MatchRecord.java`, `RoundRecord.java`; `application/privacy/DataExport.java`, `DataExportService.java`; `static/index.html`, `app.js`, `i18n.js`, `i18n-nl.js`; `docs/product-backlog.md`.
+- Create: `game/Trump`, `src/main/resources/db/migration/V11__all_trumps.sql`, `tests/game/TrumpRulesTest`, `tests/game/GameBoardAllTrumpsTest`, `tests/game/bot/BotsPlayNewContractsTest`, `tests/application/AllTrumpsUiTest`.
+- Modify: `game/BeloteRules`, `GameCard`, `GameBoard`, `Announcements`, `Announcement` (if it compares the trump), `BiddingState`, `BotGame`, `PrivateTable`; `game/bot/*` and `game/arena/*` (callers); `application/bot/BotGameService`, `BotGameController`; `application/privategame/PrivateTableService`, `PrivateTableController`; `application/history/FinishedMatch`, `MatchRecord`, `RoundRecord`; `application/privacy/DataExport`, `DataExportService`; `static/index.html`, `app.js`, `i18n.js`, `i18n-nl.js`; `docs/product-backlog.md`.
 
 ---
 
 ### Task 1: `Trump` and the card rules
 
 **Files:**
-- Create: `src/main/java/fr/beelot/game/Trump.java`, `src/test/java/fr/beelot/game/TrumpRulesTest.java`
-- Modify: `src/main/java/fr/beelot/game/BeloteRules.java`, `GameCard.java`, and every caller of `BeloteRules` and `GameCard.displayOrder` (`GameBoard`, `game/bot/*`, `game/arena/*`, tests), mechanically
+- Create: `game/Trump`, `tests/game/TrumpRulesTest`
+- Modify: `game/BeloteRules`, `GameCard`, and every caller of `BeloteRules` and `GameCard.displayOrder` (`GameBoard`, `game/bot/*`, `game/arena/*`, tests), mechanically
 - Test: `TrumpRulesTest`, `GameCardDisplayOrderTest`, existing `GameBoard*Test`
 
 **Interfaces:**
@@ -75,8 +75,8 @@
 ### Task 2: The board plays the new contracts; bots follow
 
 **Files:**
-- Create: `src/test/java/fr/beelot/game/GameBoardAllTrumpsTest.java`, `src/test/java/fr/beelot/game/bot/BotsPlayNewContractsTest.java`
-- Modify: `src/main/java/fr/beelot/game/GameBoard.java` (constructor `:48-70`, `fromBidding`/`fromContract` `:72-123`, Belote `:280-308`, views `:317-370`), `Announcements.java`, `Announcement.java`; bot and arena callers of `GameBoard.PlayView.trump()` / `RoundSummary.trump()`; `application/history/RoundRecord.java:54` (`round.trump().name()` keeps working)
+- Create: `tests/game/GameBoardAllTrumpsTest`, `tests/game/bot/BotsPlayNewContractsTest`
+- Modify: `game/GameBoard` (constructor `:48-70`, `fromBidding`/`fromContract` `:72-123`, Belote `:280-308`, views `:317-370`), `Announcements`, `Announcement`; bot and arena callers of `GameBoard.PlayView.trump()` / `RoundSummary.trump()`; `application/history/RoundRecord:54` (`round.trump().name()` keeps working)
 - Test: `GameBoardAllTrumpsTest`, `AnnouncementsTest`, `BotsPlayNewContractsTest`, existing `GameBoardBeloteTest`, `GameBoardAnnouncementsTest`
 
 **Interfaces:**
@@ -103,8 +103,8 @@
 ### Task 3: The auction and the table option
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/BiddingState.java`, `BotGame.java`, `PrivateTable.java` (`:24`, near `setAnnouncements` `:202-211`, and where it builds each `BiddingState`), `game/bot/AuctionDecision.java` and its callers in `BotTurns`/strategies (a bot `Bid` keeps a `GameCard.Suit`; `BotTurns` passes `Trump.of(suit)`)
-- Test: `src/test/java/fr/beelot/game/ContreeBiddingStateTest.java`, `PrivateTableTest.java`, `BiddingStateTest.java`
+- Modify: `game/BiddingState`, `BotGame`, `PrivateTable` (`:24`, near `setAnnouncements` `:202-211`, and where it builds each `BiddingState`), `game/bot/AuctionDecision` and its callers in `BotTurns`/strategies (a bot `Bid` keeps a `GameCard.Suit`; `BotTurns` passes `Trump.of(suit)`)
+- Test: `tests/game/ContreeBiddingStateTest`, `PrivateTableTest`, `BiddingStateTest`
 
 **Interfaces:**
 - Consumes: Task 2 (`GameBoard.fromContract(..., Trump, ...)`).
@@ -128,7 +128,7 @@
 
 **Files:**
 - Create: `src/main/resources/db/migration/V11__all_trumps.sql`
-- Modify: `src/main/java/fr/beelot/application/bot/BotGameService.java` (`create`, `createPassAndPlay`, `rematch`, `bid` `:217`, `toFinishedMatch`, each new deal's `BiddingState`), `BotGameController.java` (`:30-60`, `:78`, `:133-165`), `src/main/java/fr/beelot/application/privategame/PrivateTableService.java` (`:306`, new `setAllTrumps`, `toFinishedMatch`), `PrivateTableController.java` (`:84-92`, `:128`, `:219`, `:247-259`), matchmaking (public tables keep the default `true`), `application/history/FinishedMatch.java`, `MatchRecord.java`, `application/privacy/DataExport.java`, `DataExportService.java:100-130`
+- Modify: `application/bot/BotGameService` (`create`, `createPassAndPlay`, `rematch`, `bid` `:217`, `toFinishedMatch`, each new deal's `BiddingState`), `BotGameController` (`:30-60`, `:78`, `:133-165`), `application/privategame/PrivateTableService` (`:306`, new `setAllTrumps`, `toFinishedMatch`), `PrivateTableController` (`:84-92`, `:128`, `:219`, `:247-259`), matchmaking (public tables keep the default `true`), `application/history/FinishedMatch`, `MatchRecord`, `application/privacy/DataExport`, `DataExportService:100-130`
 - Test: `BotGameServiceTest`, `PassAndPlayServiceTest`, `BotGameControllerTest`, `PrivateTableServiceTest`, `PrivateTableControllerTest`, `PublicTableServiceTest`, `MatchHistoryIntegrationTest`, `DataExportIntegrationTest`, every `new FinishedMatch(...)` in tests
 
 **Interfaces:**
@@ -154,7 +154,7 @@
 ### Task 5: Client, rules reference and translations
 
 **Files:**
-- Create: `src/test/java/fr/beelot/application/AllTrumpsUiTest.java` (pattern: `AnnouncementsUiTest`, `MatchTargetUiTest`)
+- Create: `tests/application/AllTrumpsUiTest` (pattern: `AnnouncementsUiTest`, `MatchTargetUiTest`)
 - Modify: `src/main/resources/static/index.html` (solo setup near `:100-101`, pass-and-play setup, lobby near `:271-273`, auction suit groups `:204` and `:328`, rules section, tutorial glossary), `static/app.js` (create requests, lobby rendering and change handler like `table-announcements`, auction rendering `:448-477`, contract/trump lines `:497-508`, `:721-722`, `suitName`, `orderHandForDisplay` `:929`), `static/i18n.js`, `static/i18n-nl.js`
 
 **Interfaces:**

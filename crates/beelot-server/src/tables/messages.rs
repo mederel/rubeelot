@@ -1,5 +1,4 @@
-//! Every English string the tables send, copied verbatim from the Java source: the frontend translates them with
-//! the English text as the key.
+//! Every English string the tables send: the frontend translates them with the English text as the key.
 
 use beelot_game::Trump;
 use beelot_game::Variant;
@@ -78,7 +77,7 @@ pub fn call_label(call: &SeatCall) -> String {
     }
 }
 
-/// What the auction says now, as Java's `BiddingState` set it after each call. Choosing a trump leaves the message
+/// What the auction says now, after each call. Choosing a trump leaves the message
 /// as it was.
 pub fn auction_message(
     bidding: &BiddingState,
@@ -135,7 +134,7 @@ pub fn auction_message(
     }
 }
 
-/// Java's `Suit.name()`: `HEARTS`.
+/// The suit's upper-case name: `HEARTS`.
 pub fn suit_name(suit: beelot_game::Suit) -> &'static str {
     match suit {
         beelot_game::Suit::Clubs => "CLUBS",
@@ -145,7 +144,7 @@ pub fn suit_name(suit: beelot_game::Suit) -> &'static str {
     }
 }
 
-/// Java's `Trump.name()`: `HEARTS`, `ALL_TRUMPS` or `NO_TRUMPS`.
+/// The trump's upper-case name: `HEARTS`, `ALL_TRUMPS` or `NO_TRUMPS`.
 pub fn trump_name(trump: Trump) -> &'static str {
     match trump {
         Trump::AllTrumps => "ALL_TRUMPS",

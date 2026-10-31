@@ -6,7 +6,7 @@
 
 **Architecture:** A new package `fr.beelot.application.privacy` holds the security event log, the account session registry, deletion, export, retention and the privacy endpoints. It reads and writes other tables through `JdbcClient`, so it needs no package-private repository of `account` or `history`; `account` calls `privacy` (events, sessions), never the reverse through repositories. The client gets a `/privacy` view and a "Your data" panel in Settings.
 
-**Tech Stack:** Java 25, Spring Boot 4.1.1 / Spring Security 7.1, Spring Data JPA + `JdbcClient`, Flyway, MariaDB 11.4 (Testcontainers), vanilla JS client with `i18n.js` (French) and `i18n-nl.js` (Dutch).
+**Tech Stack:** Spring Boot 4.1.1 / Spring Security 7.1, Spring Data JPA + `JdbcClient`, Flyway, MariaDB 11.4 (Testcontainers), vanilla JS client with `i18n.js` (French) and `i18n-nl.js` (Dutch).
 
 **Spec:** `docs/superpowers/specs/2026-10-13-gdpr-privacy-design.md`
 
@@ -44,10 +44,10 @@
 
 **Files:**
 - Create: `src/main/resources/db/migration/V5__privacy.sql`
-- Create: `src/main/java/fr/beelot/application/privacy/SecurityEvents.java`
-- Modify: `src/main/java/fr/beelot/application/account/SignInRequestFilter.java`, `SignInSuccessHandler.java`
-- Modify: `src/main/java/fr/beelot/application/security/SecurityConfiguration.java`
-- Test: `src/test/java/fr/beelot/application/privacy/SecurityEventsIntegrationTest.java`
+- Create: `application/privacy/SecurityEvents`
+- Modify: `application/account/SignInRequestFilter`, `SignInSuccessHandler`
+- Modify: `application/security/SecurityConfiguration`
+- Test: `tests/application/privacy/SecurityEventsIntegrationTest`
 
 **Interfaces:**
 - Produces:
@@ -59,7 +59,7 @@
 
 - [ ] **Step 1: Write `V5__privacy.sql`** exactly as the spec's "Data" section (the `security_event` table, both indexes, and `ALTER TABLE account ADD COLUMN deletion_warned_at DATETIME(6);`).
 
-- [ ] **Step 2: Write the failing tests** in `SecurityEventsIntegrationTest` (`@SpringBootTest(properties = "beelot.sign-in.limit-per-ip=1000")`, `@AutoConfigureMockMvc`, Testcontainers MariaDB `mariadb:11.4`, `@MockitoBean JavaMailSender`, copying the link-capture helpers from `EmailSignInIntegrationTest`). Read rows with `JdbcClient` from `security_event`.
+- [ ] **Step 2: Write the failing tests** in `SecurityEventsIntegrationTest` (`@SpringBootTest(properties = "beelot.sign-in.limit-per-ip=1000")`, `@AutoConfigureMockMvc`, Testcontainers MariaDB `mariadb:11.4`, `@MockitoBean MailSender`, copying the link-capture helpers from `EmailSignInIntegrationTest`). Read rows with `JdbcClient` from `security_event`.
   - `linkRequestIsRecordedWithoutAccount` — POST `/api/sign-in/link` for `a@example.com` → one row `LINK_REQUESTED/SUCCESS`, `account_id` null, `ip_address = '127.0.0.1'`.
   - `rateLimitRefusalIsRecorded` — with `beelot.sign-in.limit-per-address` default 3, the 4th request for one address → a `RATE_LIMITED/REFUSED` row.
   - `emailSignInIsRecordedWithTheAccount` — open the link → `SIGN_IN/SUCCESS` with the new account's id; the session attribute `beelot.accountId` equals that id.
@@ -87,9 +87,9 @@
 ### Task 2: Account sessions and the recent sign-in
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/privacy/AccountSessions.java`
-- Modify: `src/main/java/fr/beelot/application/account/Account.java`, `SignInSuccessHandler.java`, `AccountController.java`
-- Test: `src/test/java/fr/beelot/application/privacy/AccountSessionsTest.java`, `src/test/java/fr/beelot/application/account/AccountServiceTest.java`
+- Create: `application/privacy/AccountSessions`
+- Modify: `application/account/Account`, `SignInSuccessHandler`, `AccountController`
+- Test: `tests/application/privacy/AccountSessionsTest`, `tests/application/account/AccountServiceTest`
 
 **Interfaces:**
 - Consumes: `SecurityEvents.ACCOUNT_ID`, `SecurityEvents.ENDED` (Task 1).
@@ -121,9 +121,9 @@
 ### Task 3: Policy configuration and endpoint
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/privacy/PrivacyProperties.java`, `PrivacyController.java`
+- Create: `application/privacy/PrivacyProperties`, `PrivacyController`
 - Modify: `src/main/resources/application.properties`, `README.md`
-- Test: `src/test/java/fr/beelot/application/privacy/PolicyInfoTest.java`
+- Test: `tests/application/privacy/PolicyInfoTest`
 
 **Interfaces:**
 - Produces:
@@ -158,9 +158,9 @@
 ### Task 4: Privacy policy page
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/application/HomeController.java` (add `/privacy` to the route list)
+- Modify: `application/HomeController` (add `/privacy` to the route list)
 - Modify: `src/main/resources/static/index.html`, `app.js`, `styles.css`, `i18n.js`, `i18n-nl.js`
-- Test: `src/test/java/fr/beelot/application/HomeControllerTest.java`, `FrenchTranslationUiTest.java`, `DutchTranslationUiTest.java`
+- Test: `tests/application/HomeControllerTest`, `FrenchTranslationUiTest`, `DutchTranslationUiTest`
 
 **Interfaces:**
 - Consumes: `GET /api/privacy/policy-info` (Task 3).
@@ -193,11 +193,11 @@
 ### Task 5: Delete my account (server)
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/privacy/AccountDeletionService.java`
-- Modify: `src/main/java/fr/beelot/application/privacy/PrivacyController.java`
-- Modify: `src/main/java/fr/beelot/application/privategame/PrivateTableService.java`, `src/main/java/fr/beelot/game/PrivateTable.java`
-- Modify: `src/main/java/fr/beelot/application/history/MatchHistoryService.java`
-- Test: `src/test/java/fr/beelot/application/privacy/AccountDeletionIntegrationTest.java`, `src/test/java/fr/beelot/application/privategame/PrivateTableServiceTest.java`, `src/test/java/fr/beelot/application/history/MatchHistoryServiceTest.java`
+- Create: `application/privacy/AccountDeletionService`
+- Modify: `application/privacy/PrivacyController`
+- Modify: `application/privategame/PrivateTableService`, `game/PrivateTable`
+- Modify: `application/history/MatchHistoryService`
+- Test: `tests/application/privacy/AccountDeletionIntegrationTest`, `tests/application/privategame/PrivateTableServiceTest`, `tests/application/history/MatchHistoryServiceTest`
 
 **Interfaces:**
 - Consumes: `SecurityEvents` (Task 1), `AccountSessions` (Task 2), `AccountService.current(Authentication)`.
@@ -211,7 +211,7 @@
 - [ ] **Step 1: Write the failing tests.**
   - `PrivateTableServiceTest`: `releasedAccountIsReplacedByABotInAMatch` — a started table with the account's player → seat is `BOT_TAKEOVER` named `Deleted player`, and the finished match passed to the recorder has a null account for that seat; `releasedAccountLeavesAWaitingTable` — a waiting table → seat freed.
   - `MatchHistoryServiceTest`: `matchFinishedAfterDeletionIsRecordedAnonymously` — a `FinishedMatch` seat whose account id is unknown → stored with null account and name `Deleted player`.
-  - `AccountDeletionIntegrationTest` (Testcontainers, MockMvc, mocked `JavaMailSender`, signs in by email link as in `EmailSignInIntegrationTest`):
+  - `AccountDeletionIntegrationTest` (Testcontainers, MockMvc, mocked `MailSender`, signs in by email link as in `EmailSignInIntegrationTest`):
     - `deletionRemovesTheAccountAndItsData` — after DELETE: no `account`, `account_email`, `sign_in_token` (for the address) or `security_event` rows for the account; one `DELETION/SUCCESS` row with null account.
     - `matchesStayWithTheSeatRenamed` — a recorded match with the account and another account → the match remains; the deleted seat has null account and name `Deleted player`; the other seat is unchanged.
     - `deletionEndsEverySession` — two sessions signed in to the same account → after DELETE from one, GET `/api/account` with the other says `signedIn:false`.
@@ -236,13 +236,13 @@
 ### Task 6: Retention job
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/privacy/RetentionJob.java`, `InactivityWarningEmail.java`
+- Create: `application/privacy/RetentionJob`, `InactivityWarningEmail`
 - Modify: `src/main/resources/application.properties`
-- Test: `src/test/java/fr/beelot/application/privacy/RetentionJobIntegrationTest.java`
+- Test: `tests/application/privacy/RetentionJobIntegrationTest`
 
 **Interfaces:**
 - Consumes: `AccountDeletionService.delete(UUID, String)` (Task 5).
-- Produces: `RetentionJob.run()` — `@Scheduled(cron = "${beelot.privacy.retention-cron:0 30 3 * * *}", zone = "UTC")`; constructor `(JdbcClient, TransactionTemplate, AccountDeletionService, JavaMailSender, Clock, @Value("${beelot.mail.from}") String from, @Value("${beelot.public-url}") String publicUrl)`.
+- Produces: `RetentionJob.run()` — `@Scheduled(cron = "${beelot.privacy.retention-cron:0 30 3 * * *}", zone = "UTC")`; constructor `(JdbcClient, TransactionTemplate, AccountDeletionService, MailSender, Clock, @Value("${beelot.mail.from}") String from, @Value("${beelot.public-url}") String publicUrl)`.
 - `InactivityWarningEmail.of(String publicUrl)` → `SignInEmail`-like record `(subject, body)`: subject `Beelot: your account will be deleted in 30 days / votre compte sera supprimé dans 30 jours / je account wordt over 30 dagen verwijderd`; the body says, in French, English and Dutch, that the account will be deleted in 30 days unless the player signs in at `publicUrl`.
 
 - [ ] **Step 1: Write the failing tests** (Testcontainers; build `RetentionJob` in the test with `Clock.fixed(NOW, UTC)` where `NOW = 2030-01-01T00:00:00Z`; insert accounts with `JdbcClient`):
@@ -250,7 +250,7 @@
   - `inactiveEmailAccountIsWarnedOnce` — email account last signed in at `NOW − (3 years − 30 days)` → one email sent to its address, `deletion_warned_at = NOW`; a second `run()` sends nothing.
   - `warnedAccountIsDeletedThirtyDaysLater` — last sign-in `NOW − 3 years`, warned at `NOW − 30 days` → deleted; warned at `NOW − 29 days` → kept.
   - `providerAccountIsDeletedWithoutWarning` — Google account last signed in `NOW − 3 years` → deleted, no email.
-  - `failedWarningIsRetried` — `JavaMailSender.send` throws → `deletion_warned_at` stays null and the account stays; no exception escapes `run()`.
+  - `failedWarningIsRetried` — `MailSender.send` throws → `deletion_warned_at` stays null and the account stays; no exception escapes `run()`.
   - `activeAccountIsUntouched` — last sign-in `NOW − 1 year` → no email, not deleted.
 
   "3 years" is `NOW.atZone(UTC).minusYears(3)`; "3 years − 30 days" is that plus 30 days.
@@ -268,9 +268,9 @@
 ### Task 7: Download my data (server)
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/privacy/DataExportService.java`, `DataExport.java`
-- Modify: `src/main/java/fr/beelot/application/privacy/PrivacyController.java`
-- Test: `src/test/java/fr/beelot/application/privacy/DataExportIntegrationTest.java`
+- Create: `application/privacy/DataExportService`, `DataExport`
+- Modify: `application/privacy/PrivacyController`
+- Test: `tests/application/privacy/DataExportIntegrationTest`
 
 **Interfaces:**
 - Consumes: `SecurityEvents` (Task 1), `AccountService.current`.
@@ -301,7 +301,7 @@
 
 **Files:**
 - Modify: `src/main/resources/static/index.html`, `app.js`, `styles.css`, `i18n.js`, `i18n-nl.js`
-- Test: `src/test/java/fr/beelot/application/AccountUiTest.java`, `FrenchTranslationUiTest.java`, `DutchTranslationUiTest.java`
+- Test: `tests/application/AccountUiTest`, `FrenchTranslationUiTest`, `DutchTranslationUiTest`
 
 **Interfaces:**
 - Consumes: `GET /api/account` (`signedIn`), `GET /api/account/export` (Task 7), `DELETE /api/account` (Task 5), the existing sign-in flows.

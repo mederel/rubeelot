@@ -6,7 +6,7 @@
 
 **Architecture:** A pure `Announcements` class finds a hand's announcements and picks the best declaration. A pure `RoundScoring` class turns a round's totals into a `RoundResult` (Belote and announcements count towards the contract). `GameBoard` records declarations on each player's first card, reveals them after trick 1, and delegates the end-of-round score to `RoundScoring`. Services, controllers, history and the client carry an `announcements` flag and a `declare` flag.
 
-**Tech Stack:** Java 21, Spring Boot 4.1.1, JPA + Flyway on MariaDB, JUnit 5 / MockMvc / Testcontainers, vanilla JS client, Playwright (headless) for the browser check.
+**Tech Stack:** Spring Boot 4.1.1, JPA + Flyway on MariaDB, JUnit 5 / MockMvc / Testcontainers, vanilla JS client, Playwright (headless) for the browser check.
 
 **Spec:** `docs/superpowers/specs/2026-10-21-announcements-design.md`
 
@@ -36,22 +36,22 @@
 
 ## File map
 
-- Create `src/main/java/fr/beelot/game/Announcement.java`, `Announcements.java`, `RoundScoring.java`.
-- Modify `game/GameBoard.java`, `game/BiddingState.java`, `game/bot/BotTurns.java`, `game/BotGame.java`, `game/PrivateTable.java`.
-- Modify `application/bot/BotGameService.java`, `BotGameController.java`, `application/privategame/PrivateTableService.java`, `PrivateTableController.java`.
-- Modify `application/history/FinishedMatch.java`, `MatchRecord.java`, `RoundRecord.java`; `application/privacy/DataExport.java`, `DataExportService.java`.
+- Create `game/Announcement`, `Announcements`, `RoundScoring`.
+- Modify `game/GameBoard`, `game/BiddingState`, `game/bot/BotTurns`, `game/BotGame`, `game/PrivateTable`.
+- Modify `application/bot/BotGameService`, `BotGameController`, `application/privategame/PrivateTableService`, `PrivateTableController`.
+- Modify `application/history/FinishedMatch`, `MatchRecord`, `RoundRecord`; `application/privacy/DataExport`, `DataExportService`.
 - Create `src/main/resources/db/migration/V9__announcements.sql`.
 - Modify `src/main/resources/static/index.html`, `app.js`, `i18n.js`, `i18n-nl.js`, `styles.css`.
 
-Paths under `game/` are relative to `src/main/java/fr/beelot/`; `application/` to `src/main/java/fr/beelot/`. Tests mirror them under `src/test/java/fr/beelot/`.
+Paths under `game/` are relative to ``; `application/` to ``. Tests mirror them under `tests/`.
 
 ---
 
 ### Task 1: Find and rank announcements
 
 **Files:**
-- Create: `game/Announcement.java`, `game/Announcements.java`
-- Test: `src/test/java/fr/beelot/game/AnnouncementsTest.java`
+- Create: `game/Announcement`, `game/Announcements`
+- Test: `tests/game/AnnouncementsTest`
 
 **Interfaces:**
 - Produces:
@@ -85,7 +85,7 @@ Carrés first (ranks J, 9, A, 10, K, Q with four cards), then, per suit, the max
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/main/java/fr/beelot/game/Announcement.java src/main/java/fr/beelot/game/Announcements.java src/test/java/fr/beelot/game/AnnouncementsTest.java
+git add game/Announcement game/Announcements tests/game/AnnouncementsTest
 git commit -m "feat(game): find and rank announcements (US-060)"
 ```
 
@@ -94,9 +94,9 @@ git commit -m "feat(game): find and rank announcements (US-060)"
 ### Task 2: Score a round with Belote and announcements towards the contract
 
 **Files:**
-- Create: `game/RoundScoring.java`
-- Modify: `game/GameBoard.java` (`calculateRoundResult`, `RoundResult`, new `Declaration` record)
-- Test: `src/test/java/fr/beelot/game/RoundScoringTest.java`; update existing `GameBoard*Test`, `MatchScoreTest`, history tests that construct `RoundResult`
+- Create: `game/RoundScoring`
+- Modify: `game/GameBoard` (`calculateRoundResult`, `RoundResult`, new `Declaration` record)
+- Test: `tests/game/RoundScoringTest`; update existing `GameBoard*Test`, `MatchScoreTest`, history tests that construct `RoundResult`
 
 **Interfaces:**
 - Consumes: `Announcement` (Task 1).
@@ -141,8 +141,8 @@ git commit -m "feat(game): count Belote and announcements towards the contract (
 ### Task 3: Declare on the first card and reveal after the first trick
 
 **Files:**
-- Modify: `game/GameBoard.java`, `game/BiddingState.java`, `game/bot/BotTurns.java`
-- Test: `src/test/java/fr/beelot/game/GameBoardAnnouncementsTest.java`, `BiddingStateTest` (one test)
+- Modify: `game/GameBoard`, `game/BiddingState`, `game/bot/BotTurns`
+- Test: `tests/game/GameBoardAnnouncementsTest`, `BiddingStateTest` (one test)
 
 **Interfaces:**
 - Consumes: Tasks 1 and 2.
@@ -191,7 +191,7 @@ git commit -m "feat(game): declare announcements on the first card (US-060)"
 ### Task 4: Table option and `declare` in the services and APIs
 
 **Files:**
-- Modify: `game/BotGame.java`, `game/PrivateTable.java`, `application/bot/BotGameService.java`, `BotGameController.java`, `application/privategame/PrivateTableService.java`, `PrivateTableController.java`
+- Modify: `game/BotGame`, `game/PrivateTable`, `application/bot/BotGameService`, `BotGameController`, `application/privategame/PrivateTableService`, `PrivateTableController`
 - Test: `BotGameControllerTest`, `BotGameServiceTest`, `PassAndPlayServiceTest`, `PrivateTableControllerTest`, `PrivateTableServiceTest`, `MatchmakingControllerTest`
 
 **Interfaces:**
@@ -236,7 +236,7 @@ git commit -m "feat(table): announcements option and declare flag (US-060)"
 
 **Files:**
 - Create: `src/main/resources/db/migration/V9__announcements.sql`
-- Modify: `application/history/FinishedMatch.java`, `MatchRecord.java`, `RoundRecord.java`, `application/bot/BotGameService.java`, `application/privategame/PrivateTableService.java`, `application/privacy/DataExport.java`, `DataExportService.java`
+- Modify: `application/history/FinishedMatch`, `MatchRecord`, `RoundRecord`, `application/bot/BotGameService`, `application/privategame/PrivateTableService`, `application/privacy/DataExport`, `DataExportService`
 - Test: `MatchHistoryIntegrationTest`, `DataExportIntegrationTest`; update `new FinishedMatch(...)` in `PlayerStatisticsTest`, `MatchHistoryServiceTest`
 
 **Interfaces:**
@@ -275,7 +275,7 @@ git commit -m "feat(history): record and export announcements (US-060)"
 
 **Files:**
 - Modify: `src/main/resources/static/index.html`, `app.js`, `i18n.js`, `i18n-nl.js`, `styles.css`
-- Test: `src/test/java/fr/beelot/application/AnnouncementsUiTest.java`
+- Test: `tests/application/AnnouncementsUiTest`
 
 **Interfaces:**
 - Consumes: the API fields of Task 4.

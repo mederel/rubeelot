@@ -7,7 +7,6 @@
 //! independent and bot strength is measured on uniformly random hands. With [`Dealing::Table`],
 //! each pair is dealt from the cards of the previous pair's first deal, gathered without a shuffle
 //! and cut as at a real table (US-085); a redeal or the first pair starts from a shuffled deck.
-//! Port of the Java `BotArena`.
 
 use std::time::Instant;
 

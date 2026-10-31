@@ -1,4 +1,4 @@
-//! Port of the Java `RuleBasedStrategyPlayTest`, plus a check of the bot turns with the
+//! Tests of the rule-based strategy's card play, plus a check of the bot turns with the
 //! `RecordingStrategy` helper. Hearts are trump; Ana (seat 0) leads the first trick, Ben is seat
 //! 1, Chloe seat 2 and David seat 3.
 
@@ -294,7 +294,7 @@ fn without_trump_control_the_declarer_cashes_its_master_card_first() {
     assert_eq!(trick(&board), cards("AS"));
 }
 
-/// Not in the Java tests: the bot turns ask the strategy once per call or card, until the round
+/// The bot turns ask the strategy once per call or card, until the round
 /// ends.
 #[test]
 fn bot_turns_ask_the_strategy_once_per_decision() {

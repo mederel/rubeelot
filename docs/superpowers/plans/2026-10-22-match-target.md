@@ -6,7 +6,7 @@
 
 **Architecture:** `MatchScore` takes a validated `int` target (default 1,000). `BotGame` and `PrivateTable` carry the target, the services build their `MatchScore` with it and keep it for the next round and rematch, the controllers accept and return it, `match_record` stores it (V10), and the client offers a button group and shows "to {target}" in the score line. It mirrors the US-060 announcements option layer by layer.
 
-**Tech Stack:** Java 21, Spring Boot, JPA + Flyway (MariaDB), JUnit 5 / MockMvc / Testcontainers, vanilla JS client, headless Playwright for the browser check.
+**Tech Stack:** Spring Boot, JPA + Flyway (MariaDB), JUnit 5 / MockMvc / Testcontainers, vanilla JS client, headless Playwright for the browser check.
 
 **Spec:** `docs/superpowers/specs/2026-10-22-match-target-design.md`
 
@@ -32,18 +32,18 @@
 
 ## File map
 
-- Create: `src/main/java/fr/beelot/game/InvalidMatchTargetException.java`, `src/main/resources/db/migration/V10__match_target.sql`, `src/test/java/fr/beelot/application/MatchTargetUiTest.java`.
-- Modify: `game/MatchScore.java`, `game/BotGame.java`, `game/PrivateTable.java`; `application/bot/BotGameService.java`, `BotGameController.java`; `application/privategame/PrivateTableService.java`, `PrivateTableController.java`; `application/history/FinishedMatch.java`, `MatchRecord.java`, `PlayerStatistics.java`; `application/privacy/DataExport.java`, `DataExportService.java`; `static/index.html`, `static/app.js`, `static/i18n.js`, `static/i18n-nl.js`; `docs/product-backlog.md`.
-- Tests: `game/MatchScoreTest.java`, `game/PrivateTableTest.java`, `application/bot/BotGameServiceTest.java`, `BotGameControllerTest.java`, `application/privategame/PrivateTableServiceTest.java`, `PrivateTableControllerTest.java`, `application/history/*`, `application/privacy/DataExportIntegrationTest.java`, and the constructor calls of `BotGame`/`FinishedMatch` in tests.
+- Create: `game/InvalidMatchTargetException`, `src/main/resources/db/migration/V10__match_target.sql`, `tests/application/MatchTargetUiTest`.
+- Modify: `game/MatchScore`, `game/BotGame`, `game/PrivateTable`; `application/bot/BotGameService`, `BotGameController`; `application/privategame/PrivateTableService`, `PrivateTableController`; `application/history/FinishedMatch`, `MatchRecord`, `PlayerStatistics`; `application/privacy/DataExport`, `DataExportService`; `static/index.html`, `static/app.js`, `static/i18n.js`, `static/i18n-nl.js`; `docs/product-backlog.md`.
+- Tests: `game/MatchScoreTest`, `game/PrivateTableTest`, `application/bot/BotGameServiceTest`, `BotGameControllerTest`, `application/privategame/PrivateTableServiceTest`, `PrivateTableControllerTest`, `application/history/*`, `application/privacy/DataExportIntegrationTest`, and the constructor calls of `BotGame`/`FinishedMatch` in tests.
 
 ---
 
 ### Task 1: Engine — the match target
 
 **Files:**
-- Create: `src/main/java/fr/beelot/game/InvalidMatchTargetException.java`
-- Modify: `src/main/java/fr/beelot/game/MatchScore.java`, `BotGame.java`, `PrivateTable.java:24, 200-210`
-- Test: `src/test/java/fr/beelot/game/MatchScoreTest.java`, `src/test/java/fr/beelot/game/PrivateTableTest.java`
+- Create: `game/InvalidMatchTargetException`
+- Modify: `game/MatchScore`, `BotGame`, `PrivateTable:24, 200-210`
+- Test: `tests/game/MatchScoreTest`, `tests/game/PrivateTableTest`
 
 **Interfaces:**
 - Produces: `InvalidMatchTargetException extends IllegalArgumentException` with the spec's 400 message.
@@ -57,15 +57,15 @@
   - `MatchScoreTest.anInvalidTargetIsRefused`: `new MatchScore(750)` throws `InvalidMatchTargetException` with the spec message; `new MatchScore().target()` is 1,000.
   - `PrivateTable`: `ownerSetsTheTargetBeforeTheStart` (target 1,500 after the call); `onlyTheOwnerSetsTheTarget`, `targetIsFixedOnceStarted`, `publicTablesStayAtOneThousandPoints` — each `assertThrows(PrivateTableConflictException.class, …)` with the spec message; `setTarget(owner, 750)` throws `InvalidMatchTargetException`.
 - [ ] **Step 2: Run** `./gradlew test --tests 'fr.beelot.game.*'` — expected: compilation failure.
-- [ ] **Step 3: Implement**; update every `new BotGame(...)` call (main and tests) with `1000` until Task 2 passes the real value; restate `MatchScore`'s Javadoc with the target.
+- [ ] **Step 3: Implement**; update every `new BotGame(...)` call (main and tests) with `1000` until Task 2 passes the real value; restate `MatchScore`'s doc comment with the target.
 - [ ] **Step 4: Run** `./gradlew test` — expected: all pass.
 - [ ] **Step 5: Commit** `feat(game): a match plays to its target (US-062)`.
 
 ### Task 2: Services keep the target
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/application/bot/BotGameService.java:88-150, 376-405`, `src/main/java/fr/beelot/application/privategame/PrivateTableService.java:281, 403-410, 415, 657`
-- Test: `src/test/java/fr/beelot/application/bot/BotGameServiceTest.java`, `PassAndPlayServiceTest.java`, `src/test/java/fr/beelot/application/privategame/PrivateTableServiceTest.java`, `PublicTableServiceTest.java`
+- Modify: `application/bot/BotGameService:88-150, 376-405`, `application/privategame/PrivateTableService:281, 403-410, 415, 657`
+- Test: `tests/application/bot/BotGameServiceTest`, `PassAndPlayServiceTest`, `tests/application/privategame/PrivateTableServiceTest`, `PublicTableServiceTest`
 
 **Interfaces:**
 - Consumes: Task 1.
@@ -86,8 +86,8 @@
 ### Task 3: API carries the target
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/application/bot/BotGameController.java:30-60, 113-150`, `src/main/java/fr/beelot/application/privategame/PrivateTableController.java:84-90, 150-175, 213, 228-246`
-- Test: `src/test/java/fr/beelot/application/bot/BotGameControllerTest.java`, `src/test/java/fr/beelot/application/privategame/PrivateTableControllerTest.java`
+- Modify: `application/bot/BotGameController:30-60, 113-150`, `application/privategame/PrivateTableController:84-90, 150-175, 213, 228-246`
+- Test: `tests/application/bot/BotGameControllerTest`, `tests/application/privategame/PrivateTableControllerTest`
 
 **Interfaces:**
 - Consumes: Task 2.
@@ -109,8 +109,8 @@
 
 **Files:**
 - Create: `src/main/resources/db/migration/V10__match_target.sql`
-- Modify: `src/main/java/fr/beelot/application/history/FinishedMatch.java`, `MatchRecord.java:50-84`, `PlayerStatistics.java:24, 96`; `src/main/java/fr/beelot/application/privacy/DataExport.java:25`, `DataExportService.java:100-130`; the two `toFinishedMatch` methods (`BotGameService.java:400`, `PrivateTableService.java:458`); `StatisticsController` if it maps `RecentMatch` by hand
-- Test: `src/test/java/fr/beelot/application/history/MatchHistoryIntegrationTest.java`, `PlayerStatisticsTest.java`, `src/test/java/fr/beelot/application/privacy/DataExportIntegrationTest.java`, and every `new FinishedMatch(...)` in tests
+- Modify: `application/history/FinishedMatch`, `MatchRecord:50-84`, `PlayerStatistics:24, 96`; `application/privacy/DataExport:25`, `DataExportService:100-130`; the two `toFinishedMatch` methods (`BotGameService:400`, `PrivateTableService:458`); `StatisticsController` if it maps `RecentMatch` by hand
+- Test: `tests/application/history/MatchHistoryIntegrationTest`, `PlayerStatisticsTest`, `tests/application/privacy/DataExportIntegrationTest`, and every `new FinishedMatch(...)` in tests
 
 **Interfaces:**
 - Consumes: Tasks 1–2 (`game.target()`, `table.target()`).
@@ -129,7 +129,7 @@
 
 **Files:**
 - Modify: `src/main/resources/static/index.html` (setup forms near the announcements choices at `:100-101`, the local pass-and-play form, the private-table lobby near `#announcements-summary` `:266`, the rules section `:358`, the statistics table header), `static/app.js` (`:259-261` lobby, `:480-481` and `:721` score lines, `:1426` and `:1445` create requests, `:1625-1633` lobby change handler, the statistics recent-matches rows `:1888-1889`), `static/i18n.js`, `static/i18n-nl.js`
-- Create: `src/test/java/fr/beelot/application/MatchTargetUiTest.java` (pattern: `AnnouncementsUiTest`)
+- Create: `tests/application/MatchTargetUiTest` (pattern: `AnnouncementsUiTest`)
 
 **Interfaces:**
 - Consumes: Task 3 (`target` on requests and responses; `POST /api/private-tables/{id}/target` with `{playerToken, target}`), Task 4 (`recentMatches[].target`).

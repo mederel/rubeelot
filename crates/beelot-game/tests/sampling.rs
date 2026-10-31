@@ -1,4 +1,4 @@
-//! The parts of the Java `SamplingStrategyTest` that only need the public API, and a check that a
+//! Tests of the sampling strategy through the public API, and a check that a
 //! search without a time budget depends only on the seed and the view.
 
 mod common;
@@ -67,7 +67,7 @@ fn board_after_tricks(seed: i64, tricks: usize) -> Option<GameBoard> {
 
 #[test]
 fn the_same_seed_plays_the_same_round() {
-    // Java uses the default 200 ms budget; without one, the search is never cut short.
+    // The default has a 200 ms budget; without one, the search is never cut short.
     let first = play_round(&SamplingStrategy::with_settings(7, 50, None, 3));
     let second = play_round(&SamplingStrategy::with_settings(7, 50, None, 3));
 

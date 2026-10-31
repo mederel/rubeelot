@@ -1,4 +1,4 @@
-//! Stores each finished match a signed-in player took part in. Ports Java's `MatchHistoryService`.
+//! Stores each finished match a signed-in player took part in.
 
 use futures_util::future::BoxFuture;
 use sqlx::MySqlPool;

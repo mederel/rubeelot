@@ -1,4 +1,4 @@
-//! Ports Java's `TableReactionsTest`.
+//! Tests of the table reactions.
 
 use std::sync::Arc;
 use std::sync::atomic::AtomicU64;

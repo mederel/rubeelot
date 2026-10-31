@@ -13,7 +13,7 @@ pub struct PrivacyConfig {
     pub backup_retention_days: String,
 }
 
-/// Bounds on what the server keeps and accepts, from Java's `application.properties`.
+/// Bounds on what the server keeps and accepts.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Limits {
     pub max_request_bytes: usize,

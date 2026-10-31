@@ -1,6 +1,6 @@
 //! The errors a request can end with, and the JSON body each one answers: `{"error": code, "message": text}`.
 //!
-//! Messages are Java's English text: the frontend translates them with the English as the key.
+//! Messages are in English: the frontend translates them with the English as the key.
 
 use axum::Json;
 use axum::http::{HeaderValue, StatusCode, header};
@@ -47,7 +47,7 @@ impl From<sqlx::Error> for AppError {
 }
 
 impl AppError {
-    /// A conflict carrying Java's message.
+    /// A conflict carrying its English message.
     pub fn conflict(code: &'static str, message: impl Into<String>) -> Self {
         AppError::Conflict {
             code,

@@ -110,7 +110,7 @@ impl AppState {
     }
 }
 
-/// The paths of the single-page frontend, answered with `index.html` as Java's `HomeController` does.
+/// The paths of the single-page frontend, answered with `index.html`.
 const SPA_PATHS: [&str; 13] = [
     "/play/bot",
     "/play/local",

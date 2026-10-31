@@ -1,6 +1,6 @@
 //! The 32 cards between two deals, as a face-down pile listed from its top card, and how they were
 //! put together (US-085): shuffled for the first deal of a match, then gathered from the previous
-//! deal without a shuffle. Port of the Java `Deck`.
+//! deal without a shuffle.
 
 use serde::{Deserialize, Serialize};
 

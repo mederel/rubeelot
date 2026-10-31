@@ -6,8 +6,7 @@
 //!
 //! A strategy may be shared between tables: each decision draws its samples from a generator
 //! seeded by the strategy's seed and the bot's view, so the same view gives the same card as long
-//! as the time budget does not cut the search short, and it borrows a solver from a pool. Port of
-//! the Java `SamplingStrategy`, with the same random draws.
+//! as the time budget does not cut the search short, and it borrows a solver from a pool.
 
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
@@ -182,7 +181,7 @@ fn try_deal(
         let other = random.next_int(index as i32 + 1) as usize;
         cards.swap(index, other);
     }
-    // A stable sort, as Java's.
+    // A stable sort.
     cards.sort_by_key(|&card| allowed_seats(card, view, memory));
     for card in cards {
         let total: i32 = (0..4)
@@ -363,8 +362,7 @@ fn mix(hash: i64, card: Card) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    //! Port of the parts of the Java `SamplingStrategyTest` that need the module's internals; the
-    //! others are in `tests/sampling.rs`.
+    //! The tests that need the module's internals; the others are in `tests/sampling.rs`.
 
     use std::collections::HashSet;
 

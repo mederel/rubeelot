@@ -1,7 +1,5 @@
 //! The bot players meet in the application: hand-written bidding rules (US-050, US-051, US-055,
-//! US-064) and card-play rules (US-053, US-054). Port of the Java `RuleBasedStrategy`, with the same order
-//! of operations and the same tie-breaks: the first of equal maximums or minimums wins, as with
-//! Java's `Stream.max` and `Stream.min`.
+//! US-064) and card-play rules (US-053, US-054). The first of equal maximums or minimums wins a tie.
 
 use std::cmp::Ordering;
 
@@ -546,7 +544,7 @@ pub(crate) fn by_value(trump: Trump) -> impl Fn(&Card, &Card) -> Ordering + Copy
     }
 }
 
-/// Java's `Stream.max`: the first of equal maximums.
+/// The first of the equal maximums.
 fn first_max(
     cards: impl IntoIterator<Item = Card>,
     compare: impl Fn(&Card, &Card) -> Ordering,
@@ -560,7 +558,7 @@ fn first_max(
     })
 }
 
-/// Java's `Stream.min`: the first of equal minimums.
+/// The first of the equal minimums.
 pub(crate) fn first_min(
     cards: impl IntoIterator<Item = Card>,
     compare: impl Fn(&Card, &Card) -> Ordering,
@@ -590,8 +588,7 @@ pub(crate) fn preferring(cards: &[Card], preferred: impl Fn(&Card) -> bool) -> V
 
 #[cfg(test)]
 mod tests {
-    //! Port of the Java `RuleBasedStrategyBiddingTest`. The bot sits in seat 1; its partner is
-    //! seat 3.
+    //! The bot sits in seat 1; its partner is seat 3.
 
     use super::*;
     use crate::bidding::{AuctionDecision, AuctionView, BiddingState};
@@ -677,7 +674,7 @@ mod tests {
         RuleBasedStrategy::new().decide_auction(view)
     }
 
-    /// The first seat to speak is seat 0, as in the Java tests.
+    /// The first seat to speak is seat 0.
     fn contree_bidding(seed: i64) -> BiddingState {
         BiddingState::new(Variant::Contree, 3, Box::new(SplitMix64::new(seed)))
     }
@@ -1187,7 +1184,7 @@ mod tests {
         }
     }
 
-    /// Java's `Math.round` rounds half up, also for negative values.
+    /// Rounding goes half up, also for negative values.
     #[test]
     fn round_half_up_rounds_half_up() {
         assert_eq!(round_half_up(2.5), 3);
@@ -1196,7 +1193,7 @@ mod tests {
         assert_eq!(round_half_up(0.499_999_999_999_999_94), 0);
     }
 
-    /// Java's `Stream.max` keeps the first of equal maximums, as `Stream.min` does.
+    /// The first of equal maximums wins, as the first of equal minimums does.
     #[test]
     fn first_max_keeps_the_first_of_equal_cards() {
         let hand = cards("8C 8D 7S");

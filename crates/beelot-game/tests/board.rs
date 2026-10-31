@@ -1,4 +1,4 @@
-//! Ports of the Java GameBoard tests: rules, belote, capot, last trick and announcements.
+//! Tests of the game board: rules, belote, capot, last trick and announcements.
 //! Dropped as having no counterpart in the Rust API: English messages, player names, the
 //! "not seated" view error, and view fields that are not in `PlayView` (declarers, own
 //! announcements), which are covered through `declared()` and `announcements::find`.

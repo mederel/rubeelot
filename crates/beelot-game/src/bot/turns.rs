@@ -1,5 +1,5 @@
-//! Lets a strategy take the active seat's turn. Port of the Java `BotTurns`; the Java locks are
-//! the `&mut` borrows here.
+//! Lets a strategy take the active seat's turn. The `&mut` borrow keeps other callers out
+//! meanwhile.
 
 use super::BotStrategy;
 use crate::bidding::BiddingState;
@@ -20,7 +20,7 @@ pub fn take_auction_turn(
 }
 
 /// The active seat plays the strategy's card. Bots always declare their announcements (US-060).
-/// Unlike Java, which fails inside the strategy, the strategy is not asked when the seat has no
+/// The strategy is not asked when the seat has no
 /// legal card: the round has ended, or a completed trick is under review.
 pub fn play_turn(board: &mut GameBoard, strategy: &dyn BotStrategy) -> Result<(), GameError> {
     if board.round_result().is_some() {

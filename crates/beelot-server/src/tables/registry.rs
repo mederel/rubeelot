@@ -1,5 +1,4 @@
-//! Every table in memory, with the player tokens that act at it and the channel that announces its changes. Ports
-//! the registry parts of Java's `PrivateTableService` and `BotGameService`.
+//! Every table in memory, with the player tokens that act at it and the channel that announces its changes.
 
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU64;

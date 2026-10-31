@@ -91,7 +91,7 @@ US-077 in the backlog.
 
 ### Security configuration (changed)
 
-```java
+```
 http.oneTimeTokenLogin(ott -> ott
         .tokenGeneratingUrl("/api/sign-in/link")
         .tokenGenerationSuccessHandler(signInLinkSender)
@@ -132,7 +132,7 @@ Implements Spring's `OneTimeTokenService`.
 
 Implements `OneTimeTokenGenerationSuccessHandler`. It builds
 `{beelot.public-url}/sign-in?token=…`, picks the language, sends the email
-through `JavaMailSender` from `beelot.mail.from`, and answers 204. A
+through `MailSender` from `beelot.mail.from`, and answers 204. A
 `MailException` answers 503.
 
 Before the token is generated, the address is validated (400 when invalid)
@@ -233,7 +233,7 @@ The new dependency is `spring-boot-starter-mail`.
   answers 503 without the address in the log.
 - `SignInRateLimiterTest`: the per-address and per-IP limits, and the window
   reset.
-- `EmailSignInIntegrationTest` (MockMvc and a mocked `JavaMailSender`):
+- `EmailSignInIntegrationTest` (MockMvc and a mocked `MailSender`):
   - a request without a CSRF token is refused;
   - an unknown and a known address get the same answer and the same email;
   - posting the token from the email signs the player in, creates the account

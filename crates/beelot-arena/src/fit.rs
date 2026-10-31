@@ -6,8 +6,7 @@
 //! no trumps contract, each defender's hand is one sample, and 162 less the taker's total (cards,
 //! dix de der, Belote and announcements) is fitted to its features and the contract value: the
 //! contract fails when that exceeds 162 less the contract, which is what the coinche test asks.
-//! The weights are copied into the rule-based bot. Port of the Java `EstimateFit` and
-//! `LeastSquares`.
+//! The weights are copied into the rule-based bot.
 
 use std::fmt::Write;
 
@@ -138,7 +137,7 @@ fn invert(matrix: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, &'static str> {
     Ok(a.into_iter().map(|row| row[size..].to_vec()).collect())
 }
 
-/// The offence fits, as the Java tool prints them.
+/// The offence fits, as the report prints them.
 pub fn offence(deals: usize, seed: i64) -> Result<String, &'static str> {
     let strategy = RuleBasedStrategy::new();
     let mut report = String::new();
@@ -175,7 +174,7 @@ pub fn offence(deals: usize, seed: i64) -> Result<String, &'static str> {
     Ok(report)
 }
 
-/// The defence fits, as the Java tool prints them.
+/// The defence fits, as the report prints them.
 pub fn defence(deals: usize, seed: i64) -> Result<String, &'static str> {
     let strategy = RuleBasedStrategy::new();
     // All trumps, then no trumps.
@@ -287,7 +286,7 @@ fn counts(features: &[Feature], hand: &[Card]) -> Vec<f64> {
         .collect()
 }
 
-/// Java's `%-28s %8.2f` lines, then the R².
+/// One line per feature, then the R².
 fn print(report: &mut String, title: &str, features: &[Feature], fit: &Fit, extra_names: &[&str]) {
     let names = features
         .iter()
@@ -315,7 +314,7 @@ fn print(report: &mut String, title: &str, features: &[Feature], fit: &Fit, extr
 
 #[cfg(test)]
 mod tests {
-    //! Port of the Java `LeastSquaresTest`.
+    //! Tests of the least-squares fit.
 
     use super::*;
     use beelot_game::rng::RandomSource;
@@ -329,7 +328,7 @@ mod tests {
             let first = f64::from(random.next_int(5));
             let second = f64::from(random.next_int(5));
             rows.push(vec![first, second]);
-            // A small deterministic noise in place of Java's `nextDouble(-1, 1)`.
+            // A small deterministic noise between -1 and 1.
             let noise = f64::from(index % 21 - 10) / 10.0;
             targets.push(50.0 + 7.0 * first - 3.0 * second + noise);
         }

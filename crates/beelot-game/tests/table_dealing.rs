@@ -1,5 +1,5 @@
 //! Dealing as at a real table (US-085): the cut, the packets, the trick piles and the gathered
-//! deck. Port of the Java `DeckTest` and `TableDealingTest`; seat 0 is North.
+//! deck. Seat 0 is North.
 
 use std::collections::HashSet;
 use std::panic;

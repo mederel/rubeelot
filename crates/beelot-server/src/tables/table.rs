@@ -1,7 +1,7 @@
 //! One table: its seats, the auction or the card play, the match score, and the bots that play their turns. Solo,
 //! pass-and-play and online tables are all this one model; they differ by their seats and their kind.
 //!
-//! Ports the game flow of Java's `BotGameService` and `PrivateTableService`.
+//! The game flow of a table.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};

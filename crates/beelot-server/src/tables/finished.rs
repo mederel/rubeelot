@@ -1,4 +1,4 @@
-//! A match a team won, as a table hands it over for the history. Ports Java's `history/FinishedMatch`.
+//! A match a team won, as a table hands it over for the history.
 
 use beelot_game::scoring::RoundSummary;
 use beelot_game::{Difficulty, Team, Variant};

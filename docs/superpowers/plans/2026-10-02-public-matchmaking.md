@@ -6,7 +6,7 @@
 
 **Architecture:** A public table is a `PrivateTable` with a `publicTable` flag, no invitation code and a `botFillAt` deadline. `PrivateTableService` stays the owner of tables, sessions and eviction and gains public-table operations; a new `MatchmakingService`/`MatchmakingController` picks the table. Play after seating reuses the existing `/api/private-tables/{id}/…` endpoints and the existing table view in the front end.
 
-**Tech Stack:** Java 21, Spring Boot 4 (web MVC, scheduling), JUnit 5, MockMvc, vanilla JS/HTML.
+**Tech Stack:** Spring Boot 4 (web MVC, scheduling), JUnit 5, MockMvc, vanilla JS/HTML.
 
 **Spec:** `docs/superpowers/specs/2026-10-02-public-matchmaking-design.md`
 
@@ -35,8 +35,8 @@
 ### Task 1: Public tables in the domain
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/game/PrivateTable.java`
-- Test: `src/test/java/fr/beelot/game/PublicTableTest.java` (create)
+- Modify: `game/PrivateTable`
+- Test: `tests/game/PublicTableTest` (create)
 
 **Interfaces:**
 - Produces:
@@ -72,9 +72,9 @@
 ### Task 2: Public-table operations in `PrivateTableService`
 
 **Files:**
-- Modify: `src/main/java/fr/beelot/application/privategame/PrivateTableService.java`
+- Modify: `application/privategame/PrivateTableService`
 - Modify: `src/main/resources/application.properties` (add `beelot.matchmaking.bot-fill-wait=PT60S`, `beelot.matchmaking.sweep-interval=PT5S`, mention `MatchmakingService` in the comment)
-- Test: `src/test/java/fr/beelot/application/privategame/PublicTableServiceTest.java` (create)
+- Test: `tests/application/privategame/PublicTableServiceTest` (create)
 
 **Interfaces:**
 - Consumes: Task 1 domain API.
@@ -113,12 +113,12 @@
 ### Task 3: Matchmaking service, endpoints and rate limit
 
 **Files:**
-- Create: `src/main/java/fr/beelot/application/matchmaking/MatchmakingService.java`
-- Create: `src/main/java/fr/beelot/application/matchmaking/MatchmakingController.java`
-- Modify: `src/main/java/fr/beelot/application/privategame/PrivateTableController.java` (leave endpoint; response fields; make `PrivateTableSessionResponse`, `PrivateTableResponse`, `SeatResponse`, `ErrorResponse` and their `from` methods `public` so the matchmaking controller can reuse them)
-- Modify: `src/main/java/fr/beelot/application/security/RequestRateLimitFilter.java:82-83` (add `/api/matchmaking/quick-match` to `isCreation`)
-- Modify: `src/main/java/fr/beelot/application/HomeController.java` (add `/online/public`, `/online/public/table/{tableId}`)
-- Test: `src/test/java/fr/beelot/application/matchmaking/MatchmakingServiceTest.java`, `MatchmakingControllerTest.java` (create); `PrivateTableControllerTest.java`, `RequestLimitFiltersTest.java`, `HomeControllerTest.java` (extend)
+- Create: `application/matchmaking/MatchmakingService`
+- Create: `application/matchmaking/MatchmakingController`
+- Modify: `application/privategame/PrivateTableController` (leave endpoint; response fields; make `PrivateTableSessionResponse`, `PrivateTableResponse`, `SeatResponse`, `ErrorResponse` and their `from` methods `public` so the matchmaking controller can reuse them)
+- Modify: `application/security/RequestRateLimitFilter:82-83` (add `/api/matchmaking/quick-match` to `isCreation`)
+- Modify: `application/HomeController` (add `/online/public`, `/online/public/table/{tableId}`)
+- Test: `tests/application/matchmaking/MatchmakingServiceTest`, `MatchmakingControllerTest` (create); `PrivateTableControllerTest`, `RequestLimitFiltersTest`, `HomeControllerTest` (extend)
 
 **Interfaces:**
 - Consumes: Task 2 service API.
@@ -159,7 +159,7 @@
 
 **Files:**
 - Modify: `src/main/resources/static/index.html`, `app.js`, `styles.css` (only if the waiting panel needs a rule), `i18n.js`, `i18n-nl.js`
-- Test: `src/test/java/fr/beelot/application/PublicMatchmakingUiTest.java` (create, style of `ContreeUiTest`)
+- Test: `tests/application/PublicMatchmakingUiTest` (create, style of `ContreeUiTest`)
 
 **Interfaces:**
 - Consumes: Task 3 endpoints and response fields.

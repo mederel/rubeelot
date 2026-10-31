@@ -1,6 +1,5 @@
 //! The snapshot contract: example snapshots, serialized, must match `tests/contract/*.json`. Run with
-//! `UPDATE_CONTRACT=1` to rewrite the files after an intended change, and review the diff. Also ports Java's
-//! `PlayerViewsTest` and checks the English messages against Java's.
+//! `UPDATE_CONTRACT=1` to rewrite the files after an intended change, and review the diff. Also checks the views and the English messages.
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -226,7 +225,7 @@ fn round_over_with_announcements() {
 }
 
 #[test]
-fn messages_match_java() {
+fn messages_are_the_expected_english_text() {
     let mut table = private(Variant::Contree, 5);
     for name in ["Ben", "Chloe", "David"] {
         table.join(name.into(), None, T0).unwrap();

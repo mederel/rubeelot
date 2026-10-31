@@ -1,4 +1,4 @@
-//! Port of the Java `DoubleDummySolverTest`. Seats are numbered in play order from 0; North–South
+//! Tests of the double-dummy solver. Seats are numbered in play order from 0; North–South
 //! hold the even seats.
 
 use std::collections::HashMap;
@@ -147,7 +147,7 @@ fn reports_the_score_of_a_finished_round() {
     assert_eq!(solution.best_card, None);
 }
 
-/// The plain minimax of the Java test, remembering the value of each trick start.
+/// The plain minimax, remembering the value of each trick start.
 struct Exhaustive {
     memo: HashMap<(Trump, Seat, [Vec<Card>; 4]), i32>,
 }
