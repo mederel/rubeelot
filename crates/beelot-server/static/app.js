@@ -184,6 +184,9 @@ const api = {
   async table(tableId) {
     return rememberSnapshot(await apiJson(`/api/tables/${tableId}`, jsonRequest("GET", undefined, tableId)));
   },
+  async hint(tableId) {
+    return apiJson(`/api/tables/${tableId}/hint`, jsonRequest("GET", undefined, tableId));
+  },
   async act(tableId, action) {
     return rememberSnapshot(await apiJson(`/api/tables/${tableId}/actions`, jsonRequest("POST", action, tableId)));
   }
@@ -192,6 +195,81 @@ const api = {
 // The newest snapshot known, or a fresh one.
 async function currentSnapshot(tableId) {
   return latestSnapshots.get(tableId) ?? api.table(tableId);
+}
+
+// Hints (US-065): at local tables, the card or bid the Challenging bot would choose for the player in turn, and why.
+// A hint is highlighted until the next render, which clears it.
+const hintReasons = {
+  LEAD_TRUMPS: "Lead trumps",
+  CASH_MASTER: "Cash a master card",
+  LEAD_LOW: "Lead a low card",
+  GIVE_POINTS: "Give points to your partner",
+  KEEP_PARTNERS_TRICK: "Keep your partner's trick",
+  WIN_CHEAPLY: "Win the trick cheaply",
+  THROW_CHEAPEST: "Throw your cheapest card",
+  BEST_FOR_ROUND: "The best card for the rest of the round",
+  SUPPORT_PARTNER: "Support your partner's bid",
+  BID_HAND_VALUE: "Bid what your hand is worth",
+  COINCHE: "Coinche: you expect to defeat them",
+  PASS_WEAK: "Pass: your hand is too weak"
+};
+
+function clearHint() {
+  document.querySelectorAll(".hint-card, .hint-bid").forEach((item) => item.classList.remove("hint-card", "hint-bid"));
+  document.querySelectorAll(".hint-reason").forEach((line) => {
+    line.hidden = true;
+    line.textContent = "";
+  });
+}
+
+// Shows or hides a Hint button for the table's next render, which also clears the previous hint.
+function offerHint(buttonSelector, gameId, offered) {
+  clearHint();
+  const button = document.querySelector(buttonSelector);
+  button.hidden = !offered;
+  button.disabled = false;
+  button.onclick = () => askForHint(gameId, button);
+}
+
+function highlightHintBid(action) {
+  const bidButton = {
+    pass: "#pass-bid-button",
+    coinche: "#coinche-button",
+    contract: "#contract-bid-button"
+  }[action.type];
+  let target = bidButton && document.querySelector(bidButton);
+  if (action.type === "trump") {
+    // In the first round the only trump to take is the upturned suit.
+    const accept = document.querySelector("#accept-upturned-button");
+    target = accept.hidden ? document.querySelector(`#trump-options button[data-suit="${action.suit}"]`) : accept;
+  } else if (action.type === "contract") {
+    setChoice("contract-value", action.value);
+    setChoice("contract-suit", action.suit);
+  }
+  target?.classList.add("hint-bid");
+}
+
+async function askForHint(gameId, button) {
+  button.disabled = true;
+  try {
+    const hint = await api.hint(gameId);
+    clearHint();
+    const bidding = hint.type === "bid";
+    if (bidding) {
+      highlightHintBid(hint.action);
+    } else {
+      document.querySelector(`#card-hand [data-card="${hint.card.rank}-${hint.card.suit}"]`)?.classList.add("hint-card");
+    }
+    const line = document.querySelector(bidding ? "#bid-hint-reason" : "#hint-reason");
+    line.textContent = hint.reason === "TAKE"
+      ? t("Take: strong hand in {0}", suitName(hint.action.suit, false))
+      : t(hintReasons[hint.reason]);
+    line.hidden = false;
+  } catch (_) {
+    // A failed request shows nothing new.
+  } finally {
+    button.disabled = false;
+  }
 }
 
 // A local table as the solo screens show it.
@@ -867,6 +945,8 @@ async function loadBotGame(gameId) {
     const { board, match } = snapshot;
     if (!board) throw new Error("The auction has not finished.");
     const handedOff = handOff(game, board.currentPlayer);
+    offerHint("#hint-button", gameId, snapshot.table.hints && board.activePlayerIndex === board.currentPlayerIndex
+      && !board.reviewingCompletedTrick && !board.roundResult);
     document.querySelector("#selected-difficulty").textContent = t(game.difficultyLabel);
     document.querySelector("#selected-variant").textContent = t(game.variantLabel);
     document.querySelector("#game-variant-title").textContent = t(game.variantLabel);
@@ -1023,6 +1103,7 @@ function cardElement(card) {
   item.className = `playing-card ${card.suit.toLowerCase()}`;
   item.setAttribute("aria-label", cardName(card));
   item.dataset.rank = card.rank;
+  item.dataset.card = `${card.rank}-${card.suit}`;
 
   const corner = (position) => {
     const index = document.createElement("span");
@@ -1525,6 +1606,7 @@ async function loadBidding(gameId) {
     updateAmountChoices("contract-value", bidding.highestBid);
     document.querySelector("#contract-bid-button").disabled = bidding.highestBid >= 160 || !bidding.playerTurn;
     document.querySelector("#pass-bid-button").disabled = !bidding.playerTurn;
+    offerHint("#bid-hint-button", gameId, snapshot.table.hints && bidding.playerTurn && !bidding.complete);
     document.querySelector("#coinche-button").hidden = !bidding.coincheAllowed;
     document.querySelectorAll("#trump-options button").forEach((button) => {
       button.disabled = !bidding.upturnedCard || button.dataset.suit === bidding.upturnedCard.suit;
