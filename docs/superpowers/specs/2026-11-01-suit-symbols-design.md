@@ -10,9 +10,9 @@ glance. From the backlog (`docs/product-backlog.md`):
 - The four suits differ by shape, not only by colour, and stay distinct at a
   small size.
 - Red and black keep a high contrast against the card face (WCAG AA at least).
-- Settings offers a "Large suit symbols" option and a four-colour option, both
-  remembered in the browser and applied to the hand, the trick and the bidding
-  buttons.
+- Settings offers a four-colour option, remembered in the browser and applied
+  to the hand, the trick and the bidding buttons. (There is no separate size
+  option: the symbols have one size, the one chosen below.)
 - The suit names stay available to screen readers (US-074).
 - New texts are translated into French and Dutch.
 
@@ -35,12 +35,12 @@ US-087.
   Rejected: a big centre numeral and a left-edge strip layout (they collided
   with the symbols at 72 px), and larger cards (they affect the whole table
   layout).
-- **Sizes relative to the card.** `.playing-card` becomes a size container
+- **One size, relative to the card.** `.playing-card` becomes a size container
   (`container-type: inline-size`) and the index is sized in `cqw`, so every card
-  size (hand, trick, small screens, tutorial) scales the same way. Default:
-  symbol about 40cqw wide, rank about 24cqw. With "Large suit symbols":
-  symbol about 52cqw, rank about 20cqw. The default is already the larger,
-  bolder symbol; the option goes further.
+  size (hand, trick, small screens, tutorial) scales the same way: symbol about
+  40cqw wide, rank about 24cqw. There is no "Large suit symbols" option: a
+  larger size covered too much of the court portraits, and the one size is
+  already much bigger than the old glyph.
 - **Four colours by token.** Each suit's colour is a token (`--suit-hearts`,
   `--suit-diamonds`, `--suit-spades`, `--suit-clubs`). By default hearts and
   diamonds use `--card-red` and spades and clubs use `--card-black`. With
@@ -51,12 +51,11 @@ US-087.
   `<svg class="suit suit-<suit>"><use href="/suits.svg#suit-<suit>"/></svg>`
   element for a suit name such as `"HEARTS"`. Cards and the bidding buttons use
   it, and US-098 and US-099 will reuse it.
-- **Two Settings checkboxes**, next to Reactions and Sound: "Large suit symbols"
-  and "Four suit colours". Stored as `beelot.suit-large` and
-  `beelot.suit-four-colors` (`"true"` when on), applied by `applySettings()` as
-  `document.body.dataset.suitSize = "large"` and
-  `document.body.dataset.suitColors = "four"`, with the same storage fallback
-  (a session variable when storage throws) as the effects level and theme.
+- **One Settings checkbox**, next to Reactions and Sound: "Four suit colours".
+  Stored as `beelot.suit-four-colors` (`"true"` when on), applied by
+  `applySettings()` as `document.body.dataset.suitColors = "four"`, with the same
+  storage fallback (a session variable when storage throws) as the effects level
+  and theme.
 - **Bidding buttons.** The trump buttons in the solo, private and pass-and-play
   bidding show the symbol, then the name, in place of the font glyph ("Clubs ♣"
   becomes the symbol and "Clubs"). The suit name stays as text.
@@ -86,8 +85,8 @@ US-087.
 
 ### Settings (`index.html`, `app.js`, `i18n.js`, `i18n-nl.js`)
 
-- Two `setting-choice` checkboxes with a one-line description each.
-- New FR and NL texts for both options and their descriptions.
+- One `setting-choice` checkbox with a one-line description.
+- New FR and NL texts for the option and its description.
 
 ## Testing
 
@@ -98,14 +97,13 @@ external references, and that the four shapes differ. The rest is verified in a
 real browser:
 
 1. All 32 faces rendered through `cardElement()` at hand, trick and tutorial
-   sizes, in normal, large, four-colour and greyscale: every suit identifiable,
-   no collision between rank, symbol and portrait, court portraits still
-   recognisable at the large size.
+   sizes, in red and black, four colours and greyscale: every suit identifiable, no
+   collision between rank, symbol and portrait, court portraits still
+   recognisable.
 2. Contrast of each suit colour against the card paper at least 4.5:1,
    including the four-colour blue and green.
-3. The two settings apply at once, survive a reload, work with storage blocked,
-   and are independent of each other and of the themes (US-087) and effects
-   level (US-094).
+3. The setting applies at once, survives a reload, works with storage blocked,
+   and is independent of the themes (US-087) and effects level (US-094).
 4. The trump buttons in the solo, private and pass-and-play bidding show the
    symbol and the name; screen-reader text is unchanged (accessibility tree).
 5. A real bot game at 1280 × 800 and 390 × 844 with no clipping or horizontal
