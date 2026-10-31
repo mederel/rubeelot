@@ -19,6 +19,21 @@
   --paper: #fffdf8;
   --black-card: #172125;
   --shadow: 0 24px 70px rgba(0, 0, 0, .34);
+  /* The comic table and cards (US-086). US-087 overrides these per theme. */
+  --card-ink: #111;
+  --outline-width: 3px;
+  --radius-card: 7px;
+  --radius-chip: 999px;
+  --shadow-hard: 4px 4px 0 var(--card-ink);
+  --felt: #1f9d8a;
+  --felt-dot: rgba(0, 0, 0, .12);
+  --rim: #5b2b82;
+  --rim-edge: var(--card-ink);
+  --card-paper: #fffdf2;
+  --card-red: #d62839;
+  --card-black: #1b1b2f;
+  --card-back-a: #5b2b82;
+  --card-back-b: #ffd23f;
 }
 
 * { box-sizing: border-box; }
@@ -360,18 +375,10 @@ h2, h3 { letter-spacing: -.025em; }
 
 .card-table {
   aspect-ratio: 1.65;
-  background:
-    radial-gradient(ellipse at center, rgba(68,224,180,.36), transparent 62%),
-    repeating-radial-gradient(circle at center, rgba(255,255,255,.022) 0 1px, transparent 1px 5px),
-    linear-gradient(145deg, #0a8f70, #075843);
-  border: 12px solid #49368e;
+  background: radial-gradient(var(--felt-dot) 1.4px, transparent 1.6px) 0 0 / 9px 9px, var(--felt);
+  border: 10px solid var(--rim);
   border-radius: 34% / 22%;
-  box-shadow:
-    inset 0 0 0 3px rgba(255,209,102,.38),
-    inset 0 0 70px rgba(0,0,0,.32),
-    0 28px 75px rgba(0,0,0,.42),
-    0 0 0 4px #241a57,
-    0 0 42px rgba(99,230,211,.1);
+  box-shadow: 0 0 0 4px var(--rim-edge), 8px 10px 0 var(--card-ink);
   margin: 1.5rem 0 1rem;
   min-height: 610px;
   overflow: hidden;
@@ -379,7 +386,7 @@ h2, h3 { letter-spacing: -.025em; }
   isolation: isolate;
 }
 .card-table::before {
-  border: 1px solid rgba(242,189,84,.16);
+  border: 2px dashed rgba(255,255,255,.22);
   border-radius: inherit;
   content: "";
   inset: 7%;
@@ -387,7 +394,7 @@ h2, h3 { letter-spacing: -.025em; }
   position: absolute;
 }
 .card-table::after {
-  color: rgba(255,255,255,.07);
+  color: rgba(255,255,255,.13);
   content: "♠  BEELOT  ♣";
   font-family: var(--font-sans);
   font-size: clamp(1.5rem, 4vw, 3.5rem);
@@ -435,20 +442,21 @@ h2, h3 { letter-spacing: -.025em; }
 
 .player-station {
   align-items: center;
-  background: rgba(29,23,72,.88);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 999px;
+  background: #2a1d5c;
+  border: var(--outline-width) solid var(--card-ink);
+  border-radius: var(--radius-chip);
+  box-shadow: 3px 3px 0 var(--card-ink);
   display: flex;
   gap: .55rem;
   min-width: 145px;
   padding: .42rem .75rem .42rem .42rem;
   position: absolute;
+  rotate: -1.5deg;
   transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
   z-index: 4;
 }
 .player-station.active-player {
-  border-color: var(--aqua);
-  box-shadow: 0 0 0 3px rgba(99,230,211,.18), 0 0 30px rgba(99,230,211,.35);
+  box-shadow: 0 0 0 var(--outline-width) var(--aqua), 3px 3px 0 var(--outline-width) var(--card-ink);
   transform: translateY(-2px);
 }
 .station-top.active-player, .station-bottom.active-player { transform: translateX(-50%) translateY(-2px); }
@@ -467,9 +475,9 @@ h2, h3 { letter-spacing: -.025em; }
 .player-call {
   animation: call-pop .28s cubic-bezier(.2, .9, .3, 1.25) both;
   background: var(--paper);
-  border: 2px solid var(--gold);
+  border: var(--outline-width) solid var(--card-ink);
   border-radius: 12px 12px 12px 4px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+  box-shadow: 3px 3px 0 var(--card-ink);
   color: #34224d;
   font-size: .68rem;
   font-weight: 900;
@@ -501,9 +509,9 @@ h2, h3 { letter-spacing: -.025em; }
 .player-call.call-arriving { animation: call-pop .7s cubic-bezier(.2, .9, .3, 1.1) both; }
 .player-call.stale { opacity: .6; }
 .player-call[data-red="true"] { color: #c2263f; }
-.player-call[data-kind="bid"], .player-call[data-kind="trump"] { background: #fff7d6; border-color: var(--gold); }
-.player-call[data-kind="pass"] { background: #d9d4e8; border-color: #9a93b8; color: #5a5378; font-weight: 700; }
-.player-call[data-kind="coinche"] { animation: call-pop .7s cubic-bezier(.2, .9, .3, 1.1) both, call-shake .5s .3s ease-in-out; background: #ff5d73; border-color: #fff; color: #fff; }
+.player-call[data-kind="bid"], .player-call[data-kind="trump"] { background: #fff7d6; }
+.player-call[data-kind="pass"] { background: #d9d4e8; color: #5a5378; font-weight: 700; }
+.player-call[data-kind="coinche"] { animation: call-pop .7s cubic-bezier(.2, .9, .3, 1.1) both, call-shake .5s .3s ease-in-out; background: #ff5d73; color: #fff; }
 
 /* The station reacts to its player's call with a coloured ripple, tinted by the kind of call. */
 .player-station { --call-color: rgba(255, 209, 102, .7); }
