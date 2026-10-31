@@ -856,7 +856,7 @@ six phases, in the recommended order. Each phase can ship on its own.
 | 3 — Compete and connect | Give signed-in players reasons to come back | US-068 to US-072 |
 | 4 — Reach more players | Install the game and play it without a mouse | US-073 to US-074 |
 | 5 — Accounts and privacy | Keep my history under my own name, and control my data | US-075 to US-084 (US-084 supersedes US-075, US-077 and US-079, ADR-005; US-076, US-078 and US-080 dropped or merged, ADR-004) |
-| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-097 (build US-094 first, with US-086) |
+| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-098 (build US-094 first, with US-086) |
 
 Why this order:
 
@@ -1550,6 +1550,28 @@ Acceptance criteria:
   (US-094 applies).
 - Hovering it, or focusing it, still shows the translated text "Dealer", and
   screen readers still announce "Dealer" (US-074).
+
+**US-098 — Show suit symbols next to suit names**
+
+As a player, I want every suit named in the text to appear with its symbol, so
+that I recognise the suit at a glance and without reading the word.
+
+Acceptance criteria:
+
+- Wherever the text names a suit, the suit symbol is shown next to the name,
+  with the symbol first (for example "♠ Spades"): the trump line, the contract
+  and the current contract, the bid and trump calls, the hints (US-065), the
+  table messages and the tutorial.
+- Where the symbol is already shown with a name close by (a call bubble, a
+  bidding button), the name may be dropped when the symbol is enough.
+- The symbol uses the style of US-095, including its large-symbol and
+  four-colour options.
+- The symbols come from one shared function next to `suitName`, so that every
+  sentence uses the same display, in English, French and Dutch.
+- Screen readers read the suit name once, not the name and the symbol
+  (US-074).
+- Existing translations are not duplicated: the suit names stay in the
+  language files.
 
 ### Decisions required for the roadmap
 
