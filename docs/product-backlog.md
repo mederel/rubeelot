@@ -1491,6 +1491,8 @@ Acceptance criteria:
 - Every effect of US-086 to US-093 honours the level.
 - The animations stay smooth on a mid-range phone.
 - New texts are translated into French and Dutch.
+- Later stories add their effects through the patterns in
+  `docs/superpowers/specs/2026-10-31-effects-level-design.md`.
 
 **US-095 — Read the suits at a glance**
 
