@@ -303,6 +303,240 @@ async fn hints_are_offered_at_local_tables_only() {
     );
 }
 
+async fn hint(app: &Router, player: &Player) -> (StatusCode, Value) {
+    let uri = format!("/api/tables/{}/hint", player.table);
+    call(app, get_request(&uri, Some(&player.token))).await
+}
+
+const CARD_REASONS: [&str; 8] = [
+    "LEAD_TRUMPS",
+    "CASH_MASTER",
+    "LEAD_LOW",
+    "GIVE_POINTS",
+    "KEEP_PARTNERS_TRICK",
+    "WIN_CHEAPLY",
+    "THROW_CHEAPEST",
+    "BEST_FOR_ROUND",
+];
+
+const BID_REASONS: [&str; 5] = [
+    "TAKE",
+    "SUPPORT_PARTNER",
+    "BID_HAND_VALUE",
+    "COINCHE",
+    "PASS_WEAK",
+];
+
+/// Bids 160 and passes until the cards are played, leaving the human to play.
+async fn into_card_play(app: &Router, player: &Player) -> Value {
+    let mut view = accepted(
+        app,
+        player,
+        json!({"type": "contract", "value": 160, "suit": "SPADES"}),
+    )
+    .await;
+    while view["bidding"]["complete"] != true {
+        view = accepted(app, player, json!({"type": "pass"})).await;
+    }
+    view
+}
+
+#[tokio::test]
+async fn a_solo_player_gets_a_card_hint() {
+    let (app, _) = app();
+    let player = solo(&app, "CONTREE").await;
+    let view = into_card_play(&app, &player).await;
+
+    let (status, answer) = hint(&app, &player).await;
+
+    assert_eq!(status, StatusCode::OK, "{answer}");
+    assert_eq!(answer["type"], "card");
+    assert!(
+        view["board"]["legalCards"]
+            .as_array()
+            .unwrap()
+            .contains(&answer["card"])
+    );
+    assert!(CARD_REASONS.contains(&answer["reason"].as_str().unwrap()));
+}
+
+#[tokio::test]
+async fn a_solo_player_gets_a_bid_hint() {
+    let (app, _) = app();
+    let player = solo(&app, "CONTREE").await;
+
+    let (status, answer) = hint(&app, &player).await;
+
+    assert_eq!(status, StatusCode::OK, "{answer}");
+    assert_eq!(answer["type"], "bid");
+    assert!(BID_REASONS.contains(&answer["reason"].as_str().unwrap()));
+    match answer["action"]["type"].as_str().unwrap() {
+        "contract" => {
+            assert!(answer["action"]["value"].is_i64());
+            assert!(answer["action"]["suit"].is_string());
+        }
+        "pass" | "coinche" => {}
+        other => panic!("a Contrée hint cannot be a {other}"),
+    }
+}
+
+#[tokio::test]
+async fn a_classic_hint_is_a_pass_or_a_trump_with_its_suit() {
+    let (app, _) = app();
+    let player = solo(&app, "CLASSIC").await;
+
+    let (status, answer) = hint(&app, &player).await;
+
+    assert_eq!(status, StatusCode::OK, "{answer}");
+    match answer["action"]["type"].as_str().unwrap() {
+        "trump" => {
+            assert!(answer["action"]["suit"].is_string(), "{answer}");
+            assert_eq!(answer["reason"], "TAKE");
+        }
+        "pass" => assert_eq!(answer["reason"], "PASS_WEAK"),
+        other => panic!("a Classic hint cannot be a {other}"),
+    }
+}
+
+#[tokio::test]
+async fn asking_for_a_hint_changes_nothing() {
+    let (app, _) = app();
+    let player = solo(&app, "CONTREE").await;
+    let before = snapshot(&app, &player).await;
+
+    for _ in 0..2 {
+        let (status, _) = hint(&app, &player).await;
+        assert_eq!(status, StatusCode::OK);
+    }
+
+    assert_eq!(snapshot(&app, &player).await, before);
+}
+
+#[tokio::test]
+async fn a_private_table_has_no_hint_route() {
+    let (app, _) = app();
+    let (owner, _) = private(&app, "Ana", "CONTREE").await;
+
+    let (status, _) = hint(&app, &owner).await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn a_hint_needs_the_players_token() {
+    let (app, _) = app();
+    let player = solo(&app, "CONTREE").await;
+    let uri = format!("/api/tables/{}/hint", player.table);
+
+    let (status, _) = call(&app, get_request(&uri, None)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let other = solo(&app, "CONTREE").await;
+    let (status, _) = hint(
+        &app,
+        &Player {
+            table: player.table.clone(),
+            token: other.token,
+        },
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn no_hint_while_a_trick_is_under_review() {
+    let (app, _) = app();
+    let player = solo(&app, "CONTREE").await;
+    let mut view = into_card_play(&app, &player).await;
+    for _ in 0..8 {
+        if view["board"]["reviewingCompletedTrick"] == true {
+            break;
+        }
+        let card = view["board"]["legalCards"][0].clone();
+        view = accepted(
+            &app,
+            &player,
+            json!({"type": "card", "rank": card["rank"], "suit": card["suit"], "declare": true}),
+        )
+        .await;
+    }
+    assert_eq!(view["board"]["reviewingCompletedTrick"], true);
+
+    let (status, error) = hint(&app, &player).await;
+
+    assert_eq!(status, StatusCode::CONFLICT, "{error}");
+    assert_eq!(error["error"], "no-hint");
+}
+
+#[tokio::test]
+async fn no_hint_once_the_round_is_over() {
+    let (app, _) = app();
+    let player = solo(&app, "CONTREE").await;
+    let mut view = into_card_play(&app, &player).await;
+    for _ in 0..64 {
+        if view["board"]["roundResult"].is_object() {
+            break;
+        }
+        let action = if view["board"]["reviewingCompletedTrick"] == true {
+            json!({"type": "continueTrick"})
+        } else {
+            let card = view["board"]["legalCards"][0].clone();
+            json!({"type": "card", "rank": card["rank"], "suit": card["suit"], "declare": true})
+        };
+        view = accepted(&app, &player, action).await;
+    }
+    assert!(view["board"]["roundResult"].is_object());
+
+    let (status, error) = hint(&app, &player).await;
+
+    assert_eq!(status, StatusCode::CONFLICT, "{error}");
+    assert_eq!(error["error"], "no-hint");
+}
+
+#[tokio::test]
+async fn a_pass_and_play_hint_is_for_the_player_in_turn() {
+    let (app, _) = app();
+    let player = create(
+        &app,
+        json!({"kind": "LOCAL", "difficulty": "RELAXED", "variant": "CONTREE",
+               "seats": ["Ana", null, "Ben", null]}),
+    )
+    .await;
+    let mut view = snapshot(&app, &player).await;
+    let mut asked_for = std::collections::BTreeSet::new();
+    for _ in 0..40 {
+        if view["board"]["roundResult"].is_object() {
+            break;
+        }
+        if view["board"]["reviewingCompletedTrick"] == true {
+            view = accepted(&app, &player, json!({"type": "continueTrick"})).await;
+            continue;
+        }
+        let (status, answer) = hint(&app, &player).await;
+        assert_eq!(status, StatusCode::OK, "{answer}");
+        asked_for.insert(view["you"].as_u64().unwrap());
+        // The answer is what the client would send to make the move.
+        let action = match answer["type"].as_str().unwrap() {
+            "card" => {
+                assert!(
+                    view["board"]["legalCards"]
+                        .as_array()
+                        .unwrap()
+                        .contains(&answer["card"])
+                );
+                json!({"type": "card", "rank": answer["card"]["rank"],
+                       "suit": answer["card"]["suit"], "declare": true})
+            }
+            _ => answer["action"].clone(),
+        };
+        view = accepted(&app, &player, action).await;
+    }
+    assert!(
+        asked_for.contains(&0) && asked_for.contains(&2),
+        "hints for both humans: {asked_for:?}"
+    );
+}
+
 #[tokio::test]
 async fn plays_a_legal_card_from_the_human_hand() {
     let (app, _) = app();
