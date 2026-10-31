@@ -9,11 +9,11 @@ use beelot_game::bidding::{AuctionDecision, BiddingState, CallType, SeatCall};
 use beelot_game::board::GameBoard;
 use beelot_game::card::{Card, Suit, Trump, Variant};
 use beelot_game::error::GameError;
-use beelot_game::rng::JavaRandom;
+use beelot_game::rng::SplitMix64;
 use beelot_game::scoring::RoundResult;
 
 fn bidding(variant: Variant, dealer: usize, seed: i64) -> BiddingState {
-    BiddingState::new(variant, dealer, Box::new(JavaRandom::new(seed)))
+    BiddingState::new(variant, dealer, Box::new(SplitMix64::new(seed)))
 }
 
 fn contree() -> BiddingState {

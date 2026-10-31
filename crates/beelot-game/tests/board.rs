@@ -585,7 +585,7 @@ fn deal_with(fixed: &[(usize, &str)], seed: i64) -> [Vec<Card>; 4] {
             .into_iter()
             .filter(|card| !hands.iter().flatten().any(|held| held == card))
             .collect();
-        beelot_game::java_shuffle(&mut rest, &mut beelot_game::JavaRandom::new(seed));
+        beelot_game::shuffle(&mut rest, &mut beelot_game::SplitMix64::new(seed));
         let asked: Vec<usize> = hands.iter().map(|hand| belotes(hand)).collect();
         for hand in &mut hands {
             while hand.len() < 8 {

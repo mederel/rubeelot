@@ -336,8 +336,8 @@ fn belote_points(view: &PlayView, hands: &[Vec<Card>; 4]) -> [i32; 2] {
     points
 }
 
-/// A number identifying the bot's view that is the same in every run, unlike Java's enum hash
-/// codes: Java mixes the `String` hash of each rank label.
+/// A number identifying the bot's view that is the same in every run: it mixes the hash of each rank's
+/// label, not an address or a randomly keyed hash.
 fn fingerprint(view: &PlayView) -> i64 {
     let mut hash = 31i64
         .wrapping_mul(view.seat as i64)
@@ -357,7 +357,7 @@ fn fingerprint(view: &PlayView) -> i64 {
 fn mix(hash: i64, card: Card) -> i64 {
     hash.wrapping_mul(GOLDEN_GAMMA)
         ^ 31i64
-            .wrapping_mul(i64::from(card.rank.java_hash()))
+            .wrapping_mul(i64::from(card.rank.label_hash()))
             .wrapping_add(card.suit.ordinal() as i64)
 }
 
@@ -374,7 +374,7 @@ mod tests {
     use crate::board::GameBoard;
     use crate::bot::turns::{play_turn, take_auction_turn};
     use crate::card::{Suit, Trump, Variant};
-    use crate::rng::JavaRandom;
+    use crate::rng::SplitMix64;
 
     fn card(code: &str) -> Card {
         code.parse().unwrap()
@@ -388,7 +388,7 @@ mod tests {
     /// `None` if redealt.
     fn board_after_tricks(seed: i64, tricks: usize) -> Option<GameBoard> {
         let rules = RuleBasedStrategy::new();
-        let mut bidding = BiddingState::new(Variant::Contree, 0, Box::new(JavaRandom::new(seed)));
+        let mut bidding = BiddingState::new(Variant::Contree, 0, Box::new(SplitMix64::new(seed)));
         while bidding.completed_board().is_none() && bidding.deals() == 1 {
             take_auction_turn(&mut bidding, &rules).unwrap();
         }
@@ -611,8 +611,8 @@ mod tests {
     }
 
     #[test]
-    fn the_fingerprint_mixes_the_java_hash_of_the_ranks() {
-        // 31 × seat + trump, then (hash × golden gamma) ^ (31 × "A".hashCode() + clubs), in Java.
+    fn the_fingerprint_mixes_the_label_hash_of_the_ranks() {
+        // 31 × seat + trump, then (hash × golden gamma) ^ (31 × the hash of "A" + clubs).
         let view = view(
             1,
             cards("AC"),

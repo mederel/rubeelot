@@ -2,7 +2,7 @@
 
 use beelot_game::Variant;
 
-use crate::java_format::fixed;
+use crate::report_format::fixed;
 
 const Z_95: f64 = 1.96;
 

@@ -17,11 +17,11 @@ use beelot_game::bot::BotStrategy;
 use beelot_game::bot::hand_features::{self, Feature};
 use beelot_game::bot::rule_based::RuleBasedStrategy;
 use beelot_game::bot::turns::play_turn;
-use beelot_game::rng::java_shuffle;
+use beelot_game::rng::shuffle;
 use beelot_game::scoring::RoundResult;
-use beelot_game::{Card, JavaRandom, SplitMix64, Trump, Variant};
+use beelot_game::{Card, SplitMix64, Trump, Variant};
 
-use crate::java_format::fixed;
+use crate::report_format::fixed;
 
 const PIVOT_TOLERANCE: f64 = 1e-9;
 
@@ -186,7 +186,7 @@ pub fn defence(deals: usize, seed: i64) -> Result<String, &'static str> {
         let mut bidding = BiddingState::new(
             Variant::Contree,
             deal % 4,
-            Box::new(JavaRandom::new(deal_seeds.next_long())),
+            Box::new(SplitMix64::new(deal_seeds.next_long())),
         )
         .with_announcements(true)
         .with_all_trumps(true);
@@ -258,10 +258,10 @@ pub fn defence(deals: usize, seed: i64) -> Result<String, &'static str> {
     Ok(report)
 }
 
-/// Four hands of eight cards from a deck shuffled as the Java tool does.
+/// Four hands of eight cards from a deck shuffled from the seed.
 fn deal(deal_seed: i64) -> [Vec<Card>; 4] {
     let mut deck = Card::deck();
-    java_shuffle(&mut deck, &mut JavaRandom::new(deal_seed));
+    shuffle(&mut deck, &mut SplitMix64::new(deal_seed));
     std::array::from_fn(|seat| deck[8 * seat..8 * seat + 8].to_vec())
 }
 

@@ -156,8 +156,9 @@ impl Rank {
         }
     }
 
-    /// Java's `String.hashCode` of the label.
-    pub fn java_hash(self) -> i32 {
+    /// The label's polynomial hash (31 × the hash so far + each character), precomputed. The sampling bot
+    /// mixes it into its seeds, so the values must not change.
+    pub fn label_hash(self) -> i32 {
         match self {
             Rank::Seven => 55,
             Rank::Eight => 56,

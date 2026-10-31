@@ -4,8 +4,8 @@
 
 pub mod arena;
 pub mod fit;
-pub mod java_format;
 pub mod report;
+pub mod report_format;
 
 pub use arena::{BotArena, Dealing};
 pub use report::{ArenaReport, Rate, Timing};

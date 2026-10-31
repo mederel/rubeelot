@@ -376,7 +376,7 @@ fn expects_to_defeat(view: &AuctionView) -> bool {
 /// plays with them.
 fn announcement_bonus(view: &AuctionView, trump: Trump) -> i32 {
     if view.announcements {
-        java_round(ANNOUNCEMENT_WEIGHT * f64::from(announcement_points(&view.hand, trump)))
+        round_half_up(ANNOUNCEMENT_WEIGHT * f64::from(announcement_points(&view.hand, trump)))
     } else {
         0
     }
@@ -412,7 +412,7 @@ pub(crate) fn defensive_estimate(hand: &[Card], trump: Trump, contract: i32) -> 
         suit => return suit_defensive_estimate(hand, suit.suit(), contract),
     };
     let cards = weighted(hand, hand_features::defence(trump), intercept, &weights);
-    java_round(f64::from(cards) - slope * f64::from(contract))
+    round_half_up(f64::from(cards) - slope * f64::from(contract))
 }
 
 /// The points the bot's team can expect to make in defence against the given suit contract,
@@ -437,12 +437,11 @@ pub(crate) fn suit_defensive_estimate(hand: &[Card], trump: Option<Suit>, contra
             estimate += 3.0;
         }
     }
-    java_round(estimate)
+    round_half_up(estimate)
 }
 
-/// Java's `(int) Math.round(value)`: the closest integer, halves rounded up (towards positive
-/// infinity). The estimates here are far from the `int` range.
-fn java_round(value: f64) -> i32 {
+/// The closest integer, halves rounded up (towards positive infinity). The estimates here are far from the `int` range.
+fn round_half_up(value: f64) -> i32 {
     let floor = value.floor();
     let rounded = if value - floor >= 0.5 {
         floor + 1.0
@@ -599,7 +598,7 @@ mod tests {
     use crate::bot::BotStrategy;
     use crate::bot::turns::take_auction_turn;
     use crate::card::{Card, Seat, Suit, Variant};
-    use crate::rng::JavaRandom;
+    use crate::rng::SplitMix64;
 
     const BID_SUIT: Suit = Suit::Hearts;
 
@@ -680,7 +679,7 @@ mod tests {
 
     /// The first seat to speak is seat 0, as in the Java tests.
     fn contree_bidding(seed: i64) -> BiddingState {
-        BiddingState::new(Variant::Contree, 3, Box::new(JavaRandom::new(seed)))
+        BiddingState::new(Variant::Contree, 3, Box::new(SplitMix64::new(seed)))
     }
 
     #[test]
@@ -1190,11 +1189,11 @@ mod tests {
 
     /// Java's `Math.round` rounds half up, also for negative values.
     #[test]
-    fn java_round_rounds_half_up() {
-        assert_eq!(java_round(2.5), 3);
-        assert_eq!(java_round(-2.5), -2);
-        assert_eq!(java_round(-2.6), -3);
-        assert_eq!(java_round(0.499_999_999_999_999_94), 0);
+    fn round_half_up_rounds_half_up() {
+        assert_eq!(round_half_up(2.5), 3);
+        assert_eq!(round_half_up(-2.5), -2);
+        assert_eq!(round_half_up(-2.6), -3);
+        assert_eq!(round_half_up(0.499_999_999_999_999_94), 0);
     }
 
     /// Java's `Stream.max` keeps the first of equal maximums, as `Stream.min` does.

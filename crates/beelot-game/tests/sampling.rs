@@ -12,12 +12,12 @@ use beelot_game::bot::rule_based::RuleBasedStrategy;
 use beelot_game::bot::sampling::SamplingStrategy;
 use beelot_game::bot::turns::{play_turn, take_auction_turn};
 use beelot_game::card::{Card, Variant};
-use beelot_game::rng::JavaRandom;
+use beelot_game::rng::SplitMix64;
 use common::{Step, load_deals};
 
 /// A seeded Contrée deal with the strategy bidding at every seat, or `None` if it was redealt.
 fn auction(seed: i64, strategy: &dyn BotStrategy) -> Option<GameBoard> {
-    let mut bidding = BiddingState::new(Variant::Contree, 0, Box::new(JavaRandom::new(seed)));
+    let mut bidding = BiddingState::new(Variant::Contree, 0, Box::new(SplitMix64::new(seed)));
     while bidding.completed_board().is_none() && bidding.deals() == 1 {
         take_auction_turn(&mut bidding, strategy).unwrap();
     }

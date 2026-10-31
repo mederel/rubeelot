@@ -12,7 +12,7 @@ use beelot_game::board::GameBoard;
 use beelot_game::bot::{BotStrategy, strategies, turns};
 use beelot_game::deck::Deck;
 use beelot_game::match_score::MatchScore;
-use beelot_game::{Card, Difficulty, GameError, JavaRandom, RandomSource, Rank};
+use beelot_game::{Card, Difficulty, GameError, RandomSource, Rank, SplitMix64};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -46,13 +46,13 @@ impl Default for TableSetup {
 }
 
 impl TableSetup {
-    /// Deals from `java.util.Random` generators seeded from `seed`, one per deal, so tests replay the same deals.
+    /// Deals from generators seeded from `seed`, one per deal, so tests replay the same deals.
     pub fn seeded(seed: i64) -> Self {
         let deals = Arc::new(AtomicI64::new(0));
         Self {
             rng: Arc::new(move || {
                 let deal = deals.fetch_add(1, Ordering::Relaxed);
-                Box::new(JavaRandom::new(
+                Box::new(SplitMix64::new(
                     seed.wrapping_mul(1_000_003).wrapping_add(deal),
                 ))
             }),

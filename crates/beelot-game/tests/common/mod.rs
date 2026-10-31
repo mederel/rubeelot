@@ -1,5 +1,4 @@
-//! Loads the deals recorded from the Java engine and replays them through the Rust engine.
-//! Shared by the integration tests that check the engine and the bots against Java.
+//! Loads the recorded deals. Shared by the integration tests that check the bots against them.
 
 #![allow(dead_code)]
 
@@ -7,12 +6,12 @@ use std::fs;
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use beelot_game::bidding::{AuctionDecision, AuctionView, BiddingState};
-use beelot_game::board::{GameBoard, PlayView};
+use beelot_game::bidding::{AuctionDecision, AuctionView};
+use beelot_game::board::PlayView;
 use beelot_game::bot::BotStrategy;
 use beelot_game::bot::rule_based::RuleBasedStrategy;
 use beelot_game::scoring::RoundResult;
-use beelot_game::{Card, JavaRandom, Seat, SplitMix64, Variant};
+use beelot_game::{Card, Seat, Variant};
 use serde::Deserialize;
 
 /// One deal as `FixtureRecorder` wrote it: the setup, every recorded step and the round's result.
@@ -86,144 +85,6 @@ pub fn load_deals() -> Vec<(String, Deal)> {
         }
     }
     deals
-}
-
-/// The deal's state: the auction, then the card play once a card play step arrives.
-enum Phase {
-    Bidding(Box<BiddingState>),
-    Board(Box<GameBoard>),
-    /// Only while switching from the auction to the board.
-    Switching,
-}
-
-/// Replays a deal through the engine. For each step, it asserts that the engine's view equals the
-/// recorded view, calls `check` with the deal's single bot generator, then applies the recorded
-/// decision. At the end it asserts that the result equals the recorded one (`None` ⇔ redeal).
-/// Panics name the step index and show the expected and actual values.
-pub fn replay(deal: &Deal, check: &mut dyn FnMut(&Step, &mut SplitMix64)) {
-    let bidding = BiddingState::new(
-        deal.variant,
-        deal.dealer,
-        Box::new(JavaRandom::new(deal.seed)),
-    )
-    .with_announcements(deal.announcements)
-    .with_all_trumps(deal.all_trumps);
-    let mut phase = Phase::Bidding(Box::new(bidding));
-    let mut bots = SplitMix64::new(deal.seed);
-
-    for (index, step) in deal.steps.iter().enumerate() {
-        match step {
-            Step::Auction {
-                seat,
-                view,
-                decision,
-            } => {
-                let Phase::Bidding(bidding) = &mut phase else {
-                    panic!("step {index}: an auction step after the auction completed");
-                };
-                assert!(
-                    bidding.completed_board().is_none() && bidding.deals() == 1,
-                    "step {index}: an auction step but the auction is over (deals: {})",
-                    bidding.deals()
-                );
-                assert_eq!(
-                    bidding.active_seat(),
-                    *seat,
-                    "step {index}: active seat (left: engine, right: recorded)"
-                );
-                let actual = bidding.auction_view(*seat);
-                assert_eq!(
-                    &actual, view,
-                    "step {index}: auction view (left: engine, right: recorded)"
-                );
-                check(step, &mut bots);
-                if let Err(error) = bidding.apply(*seat, *decision) {
-                    panic!("step {index}: {decision:?} by seat {seat} was refused: {error:?}");
-                }
-            }
-            Step::Play { seat, view, card } => {
-                let board = board(&mut phase, index);
-                assert!(
-                    !board.reviewing_completed_trick(),
-                    "step {index}: a play step while a completed trick is under review"
-                );
-                assert_eq!(
-                    board.active_seat(),
-                    *seat,
-                    "step {index}: active seat (left: engine, right: recorded)"
-                );
-                let actual = board.play_view(*seat);
-                assert_eq!(
-                    &actual, view,
-                    "step {index}: play view (left: engine, right: recorded)"
-                );
-                check(step, &mut bots);
-                if let Err(error) = board.play(*seat, *card, true) {
-                    panic!("step {index}: {card:?} by seat {seat} was refused: {error:?}");
-                }
-            }
-            Step::Continue {} => {
-                let board = board(&mut phase, index);
-                assert!(
-                    board.reviewing_completed_trick(),
-                    "step {index}: a continue step but no completed trick is under review"
-                );
-                check(step, &mut bots);
-                if let Err(error) = board.continue_after_trick() {
-                    panic!("step {index}: continuing after the trick was refused: {error:?}");
-                }
-            }
-        }
-    }
-
-    let steps = deal.steps.len();
-    match (&phase, &deal.result) {
-        (Phase::Bidding(bidding), None) => {
-            assert!(
-                bidding.completed_board().is_none(),
-                "after {steps} steps: the recorded deal was redealt but the engine completed the auction"
-            );
-            assert_eq!(
-                bidding.deals(),
-                2,
-                "after {steps} steps: deals (left: engine, right: recorded redeal)"
-            );
-        }
-        (Phase::Bidding(bidding), Some(expected)) => panic!(
-            "after {steps} steps: expected result {expected:?}, but the engine is still bidding \
-             (deals: {}, completed: {})",
-            bidding.deals(),
-            bidding.completed_board().is_some()
-        ),
-        (Phase::Board(board), expected) => assert_eq!(
-            board.round_result(),
-            expected.as_ref(),
-            "after {steps} steps: round result (left: engine, right: recorded)"
-        ),
-        (Phase::Switching, _) => unreachable!(),
-    }
-}
-
-/// The board, switching to it when the auction has just completed: the recorded steps decide when.
-fn board(phase: &mut Phase, index: usize) -> &mut GameBoard {
-    if let Phase::Bidding(_) = phase {
-        let Phase::Bidding(bidding) = std::mem::replace(phase, Phase::Switching) else {
-            unreachable!()
-        };
-        assert_eq!(
-            bidding.deals(),
-            1,
-            "step {index}: a card play step but the engine dealt again"
-        );
-        let Some(board) = bidding.into_board() else {
-            panic!("step {index}: a card play step but the engine's auction is not complete");
-        };
-        *phase = Phase::Board(Box::new(board));
-    }
-    match phase {
-        Phase::Board(board) => board,
-        Phase::Bidding(_) | Phase::Switching => unreachable!(),
-    }
 }
 
 /// Plays the current rules and counts the decisions it was asked for.
