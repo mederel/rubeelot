@@ -19,6 +19,21 @@
   --paper: #fffdf8;
   --black-card: #172125;
   --shadow: 0 24px 70px rgba(0, 0, 0, .34);
+  /* The comic table and cards (US-086). US-087 overrides these per theme. */
+  --card-ink: #111;
+  --outline-width: 3px;
+  --radius-card: 7px;
+  --radius-chip: 999px;
+  --shadow-hard: 4px 4px 0 var(--card-ink);
+  --felt: #1f9d8a;
+  --felt-dot: rgba(0, 0, 0, .12);
+  --rim: #5b2b82;
+  --rim-edge: var(--card-ink);
+  --card-paper: #fffdf2;
+  --card-red: #d62839;
+  --card-black: #1b1b2f;
+  --card-back-a: #5b2b82;
+  --card-back-b: #ffd23f;
 }
 
 * { box-sizing: border-box; }
@@ -360,18 +375,10 @@ h2, h3 { letter-spacing: -.025em; }
 
 .card-table {
   aspect-ratio: 1.65;
-  background:
-    radial-gradient(ellipse at center, rgba(68,224,180,.36), transparent 62%),
-    repeating-radial-gradient(circle at center, rgba(255,255,255,.022) 0 1px, transparent 1px 5px),
-    linear-gradient(145deg, #0a8f70, #075843);
-  border: 12px solid #49368e;
+  background: radial-gradient(var(--felt-dot) 1.4px, transparent 1.6px) 0 0 / 9px 9px, var(--felt);
+  border: 10px solid var(--rim);
   border-radius: 34% / 22%;
-  box-shadow:
-    inset 0 0 0 3px rgba(255,209,102,.38),
-    inset 0 0 70px rgba(0,0,0,.32),
-    0 28px 75px rgba(0,0,0,.42),
-    0 0 0 4px #241a57,
-    0 0 42px rgba(99,230,211,.1);
+  box-shadow: 0 0 0 4px var(--rim-edge), 8px 10px 0 var(--card-ink);
   margin: 1.5rem 0 1rem;
   min-height: 610px;
   overflow: hidden;
@@ -379,7 +386,7 @@ h2, h3 { letter-spacing: -.025em; }
   isolation: isolate;
 }
 .card-table::before {
-  border: 1px solid rgba(242,189,84,.16);
+  border: 2px dashed rgba(255,255,255,.22);
   border-radius: inherit;
   content: "";
   inset: 7%;
@@ -387,7 +394,7 @@ h2, h3 { letter-spacing: -.025em; }
   position: absolute;
 }
 .card-table::after {
-  color: rgba(255,255,255,.07);
+  color: rgba(255,255,255,.13);
   content: "♠  BEELOT  ♣";
   font-family: var(--font-sans);
   font-size: clamp(1.5rem, 4vw, 3.5rem);
@@ -435,20 +442,21 @@ h2, h3 { letter-spacing: -.025em; }
 
 .player-station {
   align-items: center;
-  background: rgba(29,23,72,.88);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 999px;
+  background: #2a1d5c;
+  border: var(--outline-width) solid var(--card-ink);
+  border-radius: var(--radius-chip);
+  box-shadow: 3px 3px 0 var(--card-ink);
   display: flex;
   gap: .55rem;
   min-width: 145px;
   padding: .42rem .75rem .42rem .42rem;
   position: absolute;
+  rotate: -1.5deg;
   transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
   z-index: 4;
 }
 .player-station.active-player {
-  border-color: var(--aqua);
-  box-shadow: 0 0 0 3px rgba(99,230,211,.18), 0 0 30px rgba(99,230,211,.35);
+  box-shadow: 0 0 0 var(--outline-width) var(--aqua), 3px 3px 0 var(--outline-width) var(--card-ink);
   transform: translateY(-2px);
 }
 .station-top.active-player, .station-bottom.active-player { transform: translateX(-50%) translateY(-2px); }
@@ -467,9 +475,9 @@ h2, h3 { letter-spacing: -.025em; }
 .player-call {
   animation: call-pop .28s cubic-bezier(.2, .9, .3, 1.25) both;
   background: var(--paper);
-  border: 2px solid var(--gold);
+  border: var(--outline-width) solid var(--card-ink);
   border-radius: 12px 12px 12px 4px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+  box-shadow: 3px 3px 0 var(--card-ink);
   color: #34224d;
   font-size: .68rem;
   font-weight: 900;
@@ -501,9 +509,9 @@ h2, h3 { letter-spacing: -.025em; }
 .player-call.call-arriving { animation: call-pop .7s cubic-bezier(.2, .9, .3, 1.1) both; }
 .player-call.stale { opacity: .6; }
 .player-call[data-red="true"] { color: #c2263f; }
-.player-call[data-kind="bid"], .player-call[data-kind="trump"] { background: #fff7d6; border-color: var(--gold); }
-.player-call[data-kind="pass"] { background: #d9d4e8; border-color: #9a93b8; color: #5a5378; font-weight: 700; }
-.player-call[data-kind="coinche"] { animation: call-pop .7s cubic-bezier(.2, .9, .3, 1.1) both, call-shake .5s .3s ease-in-out; background: #ff5d73; border-color: #fff; color: #fff; }
+.player-call[data-kind="bid"], .player-call[data-kind="trump"] { background: #fff7d6; }
+.player-call[data-kind="pass"] { background: #d9d4e8; color: #5a5378; font-weight: 700; }
+.player-call[data-kind="coinche"] { animation: call-pop .7s cubic-bezier(.2, .9, .3, 1.1) both, call-shake .5s .3s ease-in-out; background: #ff5d73; color: #fff; }
 
 /* The station reacts to its player's call with a coloured ripple, tinted by the kind of call. */
 .player-station { --call-color: rgba(255, 209, 102, .7); }
@@ -571,14 +579,10 @@ h2, h3 { letter-spacing: -.025em; }
 .station-right .hidden-hand { left: -42px; top: 50%; transform: rotate(90deg) translate(-50%, -50%); transform-origin: top left; }
 
 .card-back {
-  background:
-    radial-gradient(circle at center, rgba(255,255,255,.22) 0 2px, transparent 3px),
-    linear-gradient(135deg, transparent 42%, rgba(255,255,255,.2) 43% 48%, transparent 49%),
-    linear-gradient(145deg, #8c73ff, #db5fa9);
-  background-size: 9px 9px;
-  border: 2px solid var(--paper);
-  border-radius: 9px 9px 9px 4px;
-  box-shadow: 0 3px 8px rgba(0,0,0,.35);
+  background: repeating-conic-gradient(var(--card-back-a) 0 15deg, var(--card-back-b) 15deg 30deg);
+  border: var(--outline-width) solid var(--card-ink);
+  border-radius: var(--radius-card);
+  box-shadow: 2px 2px 0 var(--card-ink);
   height: 104px;
   left: calc(var(--card-index) * 8px);
   position: absolute;
@@ -586,6 +590,22 @@ h2, h3 { letter-spacing: -.025em; }
   transform: rotate(calc((var(--card-index) - 3.5) * 2deg));
   transform-origin: 50% 110%;
   width: 72px;
+}
+
+.card-back::after {
+  background: var(--card-paper);
+  border: 2px solid var(--card-ink);
+  border-radius: 50%;
+  color: var(--card-ink);
+  content: "B";
+  font: 900 .95rem/1.45rem var(--font-sans);
+  height: 1.7rem;
+  left: 50%;
+  margin: -.85rem 0 0 -.85rem;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  width: 1.7rem;
 }
 
 .table-center {
@@ -676,7 +696,7 @@ h2, h3 { letter-spacing: -.025em; }
 .trick-winner .winning-card {
   animation: winning-card-pulse .8s ease-in-out infinite alternate;
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px var(--gold), 0 0 28px rgba(255, 209, 102, .75), 0 12px 22px rgba(0, 0, 0, .38);
+  box-shadow: 0 0 0 var(--outline-width) var(--gold), 4px 4px 0 var(--outline-width) var(--card-ink);
   transform: translateY(-4px) scale(1.08);
 }
 .trick-winner .trick-player { bottom: auto; top: -20px; }
@@ -709,14 +729,11 @@ h2, h3 { letter-spacing: -.025em; }
   z-index: 5;
 }
 .playing-card {
-  background:
-    linear-gradient(145deg, rgba(255,255,255,.95), transparent 34%),
-    repeating-linear-gradient(90deg, rgba(122,90,50,.025) 0 1px, transparent 1px 4px),
-    var(--paper);
-  border: 1px solid rgba(20,40,42,.18);
-  border-radius: 10px 10px 10px 4px;
-  box-shadow: 0 7px 16px rgba(0,0,0,.26);
-  color: var(--black-card);
+  background: var(--card-paper);
+  border: var(--outline-width) solid var(--card-ink);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-hard);
+  color: var(--card-black);
   display: block;
   flex: 0 0 auto;
   font-family: var(--font-sans);
@@ -730,7 +747,7 @@ h2, h3 { letter-spacing: -.025em; }
 }
 .table-hand .playing-card { animation: hand-in .28s cubic-bezier(.2,.8,.2,1) both; }
 .table-hand .playing-card + .playing-card { margin-left: -11px; }
-.playing-card.hearts, .playing-card.diamonds { color: #bd3037; }
+.playing-card.hearts, .playing-card.diamonds { color: var(--card-red); }
 .card-index {
   align-items: center;
   display: flex;
@@ -754,7 +771,7 @@ h2, h3 { letter-spacing: -.025em; }
   justify-items: center;
 }
 .card-pip {
-  font-size: .76rem;
+  font-size: .9rem;
   font-style: normal;
   grid-column: var(--pip-column);
   grid-row: var(--pip-row);
@@ -767,31 +784,14 @@ h2, h3 { letter-spacing: -.025em; }
   font-size: 2.75rem;
   justify-content: center;
 }
-.court-face {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.court-figure {
-  align-items: center;
-  color: inherit;
-  display: flex;
-  font-family: var(--font-sans);
-  font-size: 3rem;
-  font-variant-emoji: text;
-  height: 100%;
-  justify-content: center;
-  line-height: 1;
-  width: 100%;
-}
-.court-clubs, .court-spades { color: var(--black-card); }
-.court-diamonds, .court-hearts { color: #bd3037; }
-.playing-card.legal-card { box-shadow: 0 0 0 2px var(--gold), 0 9px 20px rgba(0,0,0,.3); cursor: pointer; transform: translateY(-5px); }
-.playing-card.hint-card { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--gold), 0 9px 20px rgba(0,0,0,.3); transform: translateY(-12px); }
+.card-face.court-face { inset: 12% 6% 0; }
+.court-art { display: block; height: 100%; width: 100%; }
+.court-card .card-index { background: var(--card-paper); border-radius: 3px; }
+.playing-card.legal-card { box-shadow: 0 0 0 var(--outline-width) var(--gold), 4px 4px 0 var(--outline-width) var(--card-ink); cursor: pointer; transform: translateY(-5px); }
+.playing-card.hint-card { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--gold), 6px 6px 0 6px var(--card-ink); transform: translateY(-12px); }
 .hint-bid { outline: 3px dashed var(--gold); outline-offset: 3px; }
 .hint-reason { color: var(--gold); font-weight: 600; margin: .4rem 0; text-align: center; }
-.playing-card.legal-card:hover { box-shadow: 0 0 0 3px var(--gold), 0 0 24px rgba(255,209,102,.34), 0 15px 25px rgba(0,0,0,.35); transform: translateY(-15px) rotate(-1.5deg); }
+.playing-card.legal-card:hover { box-shadow: 0 0 0 var(--outline-width) var(--gold), 6px 6px 0 var(--outline-width) var(--card-ink); transform: translateY(-15px) rotate(-1.5deg); }
 
 .table-feedback { min-height: 3.6rem; text-align: center; }
 .declaration-message { color: var(--gold); font-family: var(--font-sans); font-size: 1rem; font-weight: 700; margin: .7rem 0 .2rem; min-height: 1.2rem; }
@@ -1201,11 +1201,11 @@ body[data-effects="reduced"] *::after {
   .station-right .hidden-hand { left: -34px; transform: rotate(90deg) translate(-50%, -50%); }
   .table-center { top: 49%; width: 55%; }
   .playing-card, .card-back { height: 84px; width: 58px; }
+  .card-back::after { font-size: .72rem; height: 1.25rem; line-height: 1.05rem; margin: -.625rem 0 0 -.625rem; width: 1.25rem; }
   .card-face { inset: 11px 8px; }
   .pip-field { inset: 17px 13px; }
-  .card-pip { font-size: .6rem; }
+  .card-pip { font-size: .7rem; }
   .ace-face { font-size: 2.2rem; }
-  .court-figure { font-size: 2.35rem; }
   .table-hand { bottom: 4%; max-width: 94%; }
   .table-hand .playing-card + .playing-card { margin-left: -14px; }
   .seat-list { grid-template-columns: 1fr; }
@@ -1358,7 +1358,6 @@ body[data-effects="reduced"] *::after {
   .pip-field { inset: 15px 11px; }
   .card-pip { font-size: .55rem; }
   .ace-face { font-size: 1.9rem; }
-  .court-figure { font-size: 1.9rem; }
   .card-index { font-size: .66rem; left: 3px; top: 3px; }
   .card-index strong { font-size: .76rem; }
   .card-index-bottom { bottom: 3px; left: auto; right: 3px; top: auto; }
@@ -1374,7 +1373,7 @@ body[data-effects="reduced"] *::after {
   .trick-slot-top { left: 65px; }
   .trick-slot-bottom { left: 65px; }
   .trick-slot-left, .trick-slot-right { top: 42px; }
-  .trick-slot .ace-face, .trick-slot .court-figure { font-size: 1.6rem; }
+  .trick-slot .ace-face { font-size: 1.6rem; }
   .trick-slot .card-pip { font-size: .45rem; }
   .trick-slot .card-index { font-size: .58rem; }
   .trick-slot .card-index strong { font-size: .68rem; }
@@ -1506,7 +1505,6 @@ body[data-effects="reduced"] *::after {
   .trick-slot-top, .trick-slot-bottom { left: calc(50% - var(--tcw) / 2); }
   .trick-slot-left, .trick-slot-right { top: calc(50% - var(--tch) / 2); }
   .trick-slot .ace-face { font-size: calc(var(--tch) * .4); }
-  .trick-slot .court-figure { font-size: calc(var(--tch) * .44); }
   .trick-progress { margin-bottom: .3rem; }
 
   .table-feedback { min-height: 0; }

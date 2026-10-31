@@ -1380,10 +1380,11 @@ looks fun the moment it opens.
 
 Acceptance criteria:
 
-- The table has a textured felt, a chunky wooden rim, soft shadows and
-  rounded, outlined shapes.
-- Cards have illustrated court cards (jack, queen, king) with outlines and
-  clean pips, and a designed card back.
+- The table has a halftone-textured felt, a chunky painted rim, hard offset
+  shadows and rounded, ink-outlined shapes (comic-book style).
+- Cards have twelve unique illustrated court cards (jack, queen, king; comic
+  royals with one personality per suit) with outlines and clean pips, and a
+  designed card back.
 - Suits stay distinguishable without colour alone.
 - The colours, outlines, radii and shadows are CSS custom properties, so that
   US-087 can swap them.

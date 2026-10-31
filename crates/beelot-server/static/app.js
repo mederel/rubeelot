@@ -1124,13 +1124,6 @@ function cardElement(card) {
     "9": [[1, 1], [1, 3], [2, 1], [2, 3], [3, 2], [4, 1], [4, 3], [5, 1], [5, 3]],
     "10": [[1, 1], [1, 3], [2, 1], [2, 3], [3, 1], [3, 3], [4, 1], [4, 3], [5, 1], [5, 3]]
   };
-  const courtIcons = {
-    CLUBS: { J: "♞︎", Q: "♛︎", K: "♚︎" },
-    DIAMONDS: { J: "⚔︎", Q: "✦︎", K: "♔︎" },
-    HEARTS: { J: "⚜︎", Q: "♕︎", K: "👑︎" },
-    SPADES: { J: "🗡︎", Q: "❦︎", K: "♜︎" }
-  };
-
   if (pipLayouts[card.rank]) {
     face.classList.add("pip-field");
     pipLayouts[card.rank].forEach(([row, column]) => {
@@ -1145,11 +1138,16 @@ function cardElement(card) {
     face.classList.add("ace-face");
     face.textContent = card.symbol;
   } else {
+    item.classList.add("court-card");
     face.classList.add("court-face", `court-${card.suit.toLowerCase()}`);
-    const figure = document.createElement("span");
-    figure.className = "court-figure";
-    figure.textContent = courtIcons[card.suit][card.rank];
-    face.append(figure);
+    const art = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    art.setAttribute("class", "court-art");
+    art.setAttribute("aria-hidden", "true");
+    art.setAttribute("viewBox", "0 0 100 130");
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", `/cards.svg#court-${card.rank}-${card.suit.toLowerCase()}`);
+    art.append(use);
+    face.append(art);
   }
 
   item.append(corner("top"), face, corner("bottom"));
