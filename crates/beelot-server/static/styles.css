@@ -1203,7 +1203,7 @@ h2, h3 { letter-spacing: -.025em; }
 .setting-choice { flex-wrap: wrap; justify-content: space-between; }
 .timer-settings .choice-label { margin: 0; }
 
-/* Mobile: game screens (game setup, bidding, card play, private table in play) fit the viewport without scrolling. */
+/* Mobile: game screens (game setup, bidding, card play, private table in play) fill the viewport and scroll when it is too short. */
 @media (max-width: 760px) {
   .shell:has([data-view="bot"]:not([hidden])),
   .shell:has([data-view="bot-game"]:not([hidden])),
@@ -1213,10 +1213,8 @@ h2, h3 { letter-spacing: -.025em; }
     --ch: 72px;
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-    min-height: 0;
-    overflow: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: .4rem .6rem calc(.4rem + env(safe-area-inset-bottom));
   }
   .shell:has([data-view="bot"]:not([hidden])) > .brand,
@@ -1373,7 +1371,7 @@ h2, h3 { letter-spacing: -.025em; }
   .shell:has(#private-game-panel:not([hidden])) { --cw: 44px; --ch: 64px; }
 }
 
-/* Laptop and desktop: game screens (bidding, card play, private table in play) fit the viewport without scrolling. */
+/* Laptop and desktop: game screens (bidding, card play, private table in play) fill the viewport and scroll when it is too short. */
 @media (min-width: 761px) and (min-height: 500px) {
   .shell { --ch: 104px; --cw: 72px; --tch: var(--ch); --tcw: var(--cw); }
   .shell:has([data-view="bot-game"]:not([hidden])),
@@ -1385,10 +1383,8 @@ h2, h3 { letter-spacing: -.025em; }
     --tcw: calc(var(--cw) * .8);
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-    min-height: 0;
-    overflow: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding-bottom: .6rem;
     padding-top: .6rem;
   }
