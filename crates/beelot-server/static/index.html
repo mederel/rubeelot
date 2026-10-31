@@ -157,6 +157,8 @@
             <div class="player-station station-bottom" id="bot-player-bottom"></div>
             <div class="card-hand table-hand" aria-label="Your eight cards" id="card-hand"></div>
         </div>
+        <div class="table-actions"><button class="button secondary-button" id="hint-button" type="button" hidden>Hint</button></div>
+        <p class="hint-reason" id="hint-reason" role="status" hidden></p>
         <label class="declare-option" id="declare-option" hidden><input checked id="declare-announcements" type="checkbox"> <span id="declare-label"></span></label>
         <div class="table-feedback" aria-live="polite">
             <p class="declaration-message" id="declaration-message" role="status"></p>
@@ -195,7 +197,9 @@
             <div class="table-actions">
                 <button class="button" id="accept-upturned-button" type="button">Accept upturned suit</button>
                 <button class="button secondary-button" id="pass-bid-button" type="button">Pass</button>
+                <button class="button secondary-button" id="bid-hint-button" type="button" hidden>Hint</button>
             </div>
+            <p class="hint-reason" id="bid-hint-reason" role="status" hidden></p>
             <div class="trump-options" id="trump-options" hidden>
                 <p class="trick-label">Choose a trump suit</p>
                 <button type="button" data-suit="CLUBS">Clubs ♣</button>

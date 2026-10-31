@@ -63,6 +63,8 @@ pub struct TableView {
     pub difficulty: Option<Difficulty>,
     pub difficulty_label: Option<&'static str>,
     pub pass_and_play: bool,
+    /// Whether the table offers hints (US-065): local tables do.
+    pub hints: bool,
 }
 
 /// `position` is the seat from 0 to 3 in table order; seats 0 and 2 play North–South.
@@ -360,6 +362,7 @@ fn table_view(table: &Table, you: usize) -> TableView {
         difficulty: table.difficulty,
         difficulty_label: table.difficulty.map(difficulty_label),
         pass_and_play: table.pass_and_play(),
+        hints: table.kind == TableKind::Local,
     }
 }
 

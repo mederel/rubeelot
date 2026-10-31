@@ -3,6 +3,7 @@
 pub mod actions;
 pub mod codes;
 pub mod finished;
+pub mod hints;
 pub mod matchmaking;
 pub mod messages;
 pub mod reactions;
@@ -13,6 +14,7 @@ pub mod table;
 use beelot_game::RandomSource;
 
 pub use actions::Action;
+pub use hints::{BidHint, Hint};
 pub use registry::{Access, TableHandle, TableRegistry};
 pub use seats::{
     Connection, Lobby, Seat, SeatKind, Status, TableKind, local_seats, required_name, valid_target,
