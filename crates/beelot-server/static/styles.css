@@ -1129,6 +1129,8 @@ body[data-effects="reduced"] .reaction-bubble {
   animation: fade-in var(--effect-fast) var(--reveal-delay, 0ms) both;
 }
 body[data-effects="reduced"] .table-hand .playing-card.undealt { animation: none; }
+/* A badge that is merely re-rendered must not pop again; only .call-arriving fades (rule above). */
+body[data-effects="reduced"] .player-call { animation: none; }
 body[data-effects="reduced"] .trick-collecting .trick-slot { animation: fade-out var(--effect-fast) forwards; }
 
 /* Reduced and Off: loops stop and leave a static state (border, glow or colour) that marks the same thing. */
@@ -1160,6 +1162,12 @@ body[data-effects="off"] *::after {
   animation: none !important;
   scroll-behavior: auto !important;
   transition: none !important;
+}
+/* Pacing is not an effect: cards and controls that wait for their turn to appear keep their delay, then show at once. */
+body[data-effects="off"] .current-trick .playing-card.card-arriving,
+body[data-effects="off"] .current-trick .trick-player.card-arriving,
+body[data-effects="off"] .arriving-late {
+  animation: fade-in 0s var(--reveal-delay, 0ms) both !important;
 }
 body[data-effects="off"] .trick-collecting .trick-slot,
 body[data-effects="off"] .trick-collecting::before { opacity: 0; }
