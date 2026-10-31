@@ -3,7 +3,7 @@
 ## Goal
 
 A learning player can ask which card or bid is best and why, while playing a
-local game. From the backlog (`mederel/beelot`, `docs/product-backlog.md`):
+local game. From the backlog (`docs/product-backlog.md`):
 
 - In solo games, a "Hint" button highlights the card or bid that the
   Challenging bot would choose, using only the player's view.
