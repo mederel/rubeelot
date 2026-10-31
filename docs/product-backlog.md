@@ -856,7 +856,7 @@ six phases, in the recommended order. Each phase can ship on its own.
 | 3 — Compete and connect | Give signed-in players reasons to come back | US-068 to US-072 |
 | 4 — Reach more players | Install the game and play it without a mouse | US-073 to US-074 |
 | 5 — Accounts and privacy | Keep my history under my own name, and control my data | US-075 to US-084 (US-084 supersedes US-075, US-077 and US-079, ADR-005; US-076, US-078 and US-080 dropped or merged, ADR-004) |
-| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-096 (build US-094 first, with US-086) |
+| 6 — A playful, cartoon table | Make the table graphical and entertaining | US-086 to US-097 (build US-094 first, with US-086) |
 
 Why this order:
 
@@ -1532,6 +1532,24 @@ Acceptance criteria:
 - It is exposed to screen readers as a live region that announces changes
   without interrupting play (US-074).
 - New texts are translated into French and Dutch.
+
+**US-097 — Show the dealer with a symbol**
+
+As a player, I want the dealer marked by a symbol rather than a letter, so that
+I recognise the dealer whatever language the game is in.
+
+Acceptance criteria:
+
+- The dealer marker is a pictogram, for example a dealer button or a hand
+  holding a deck, with no letter and no text in it.
+- It looks the same in English, French and Dutch, in bot games, at private
+  tables and in pass-and-play.
+- It is large enough to recognise at a glance and does not rely on colour
+  alone, and it fits the cartoon style of US-086.
+- It moves to the next seat when the deal passes, with a short animation
+  (US-094 applies).
+- Hovering it, or focusing it, still shows the translated text "Dealer", and
+  screen readers still announce "Dealer" (US-074).
 
 ### Decisions required for the roadmap
 
