@@ -34,7 +34,13 @@
   --card-black: #1b1b2f;
   --card-back-a: #5b2b82;
   --card-back-b: #ffd23f;
+  --seat-bg: #2a1d5c;
 }
+
+/* Table themes (US-087): each overrides only the table and card-back tokens; comic is the default above. */
+body[data-theme="classic-green"] { --felt: #2f8f4e; --felt-dot: rgba(0, 0, 0, .13); --rim: #7a4a22; --seat-bg: #3b2a18; --card-back-a: #b3202f; --card-back-b: #f1e3b5; }
+body[data-theme="midnight"] { --felt: #1b2a5e; --felt-dot: rgba(255, 255, 255, .09); --rim: #3d4f9e; --seat-bg: #0f1738; --card-back-a: #1b2a5e; --card-back-b: #4cc9f0; }
+body[data-theme="sunset"] { --felt: #e8704a; --felt-dot: rgba(0, 0, 0, .1); --rim: #8c2f39; --seat-bg: #5a1f2b; --card-back-a: #ff5d8f; --card-back-b: #ffd23f; }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -442,7 +448,7 @@ h2, h3 { letter-spacing: -.025em; }
 
 .player-station {
   align-items: center;
-  background: #2a1d5c;
+  background: var(--seat-bg);
   border: var(--outline-width) solid var(--card-ink);
   border-radius: var(--radius-chip);
   box-shadow: 3px 3px 0 var(--card-ink);
@@ -631,14 +637,18 @@ h2, h3 { letter-spacing: -.025em; }
 }
 .current-trick {
   align-items: center;
-  color: rgba(255,255,255,.58);
+  color: #fff;
   display: flex;
   font-size: .74rem;
+  font-weight: 700;
+  /* Ink outline: the table message stays readable on every theme's felt. */
+  text-shadow: 1px 1px 0 var(--card-ink), -1px 1px 0 var(--card-ink), 1px -1px 0 var(--card-ink), -1px -1px 0 var(--card-ink);
   gap: .45rem;
   justify-content: center;
   min-height: 92px;
   padding: .5rem;
 }
+.current-trick > * { text-shadow: none; }
 .current-trick .playing-card.card-arriving {
   animation: card-drop .45s cubic-bezier(.2, .8, .3, 1.15) var(--reveal-delay, 0ms) both;
 }
@@ -1259,6 +1269,17 @@ body[data-effects="reduced"] *::after {
   background: var(--gold);
   box-shadow: 0 0 0 3px rgba(255,209,102,.3);
   color: #173530;
+}
+.theme-choice span::before {
+  background: linear-gradient(90deg, var(--swatch-a) 50%, var(--swatch-b) 50%);
+  border: 2px solid var(--card-ink);
+  border-radius: 50%;
+  content: "";
+  display: inline-block;
+  height: .9rem;
+  margin-right: .45rem;
+  vertical-align: -.1rem;
+  width: .9rem;
 }
 .choice-group .choice input:focus-visible + span { outline: 3px solid var(--paper); outline-offset: 2px; }
 .choice-group .choice input:disabled + span { cursor: not-allowed; opacity: .3; }
