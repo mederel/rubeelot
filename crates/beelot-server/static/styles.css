@@ -1105,11 +1105,69 @@ h2, h3 { letter-spacing: -.025em; }
 .reaction-message { color: var(--gold-soft); flex-basis: 100%; font-size: .8rem; margin: 0; text-align: center; }
 .reaction-message:empty { display: none; }
 
-.reduced-motion .player-station.deciding, .reduced-motion .player-thinking i { animation: none !important; }
-.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after {
-  animation-duration: .01ms !important;
+/*
+ * Effects level (US-094): <body data-effects="full|reduced|off">.
+ * Patterns for every animation, present or future:
+ *  - one-shot movement: Full as authored; Reduced maps it to fade-in (or fade-out) of --effect-fast; Off removes it;
+ *  - a loop: Full as authored; Reduced and Off stop it and keep a static state that shows the same information;
+ *  - only transform, translate, scale and opacity are animated.
+ */
+body[data-effects="reduced"] { --effect-fast: 150ms; }
+body[data-effects="off"] { --effect-fast: 0s; }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+
+/* Reduced: movement becomes a short fade. */
+body[data-effects="reduced"] .table-hand .playing-card,
+body[data-effects="reduced"] .table-hand .playing-card.dealt-in,
+body[data-effects="reduced"] .current-trick .playing-card.card-arriving,
+body[data-effects="reduced"] .current-trick .trick-player.card-arriving,
+body[data-effects="reduced"] .arriving-late,
+body[data-effects="reduced"] .player-call.call-arriving,
+body[data-effects="reduced"] .player-call[data-kind="coinche"],
+body[data-effects="reduced"] .reaction-bubble {
+  animation: fade-in var(--effect-fast) var(--reveal-delay, 0ms) both;
+}
+body[data-effects="reduced"] .table-hand .playing-card.undealt { animation: none; }
+body[data-effects="reduced"] .trick-collecting .trick-slot { animation: fade-out var(--effect-fast) forwards; }
+
+/* Reduced and Off: loops stop and leave a static state (border, glow or colour) that marks the same thing. */
+body[data-effects="reduced"] .hero-suits span,
+body[data-effects="off"] .hero-suits span,
+body[data-effects="reduced"] .player-station.deciding,
+body[data-effects="off"] .player-station.deciding,
+body[data-effects="reduced"] .player-station.call-flash,
+body[data-effects="off"] .player-station.call-flash,
+body[data-effects="reduced"] .player-thinking i,
+body[data-effects="off"] .player-thinking i,
+body[data-effects="reduced"] .auction-waiting-view .active-player .player-avatar,
+body[data-effects="off"] .auction-waiting-view .active-player .player-avatar,
+body[data-effects="reduced"] .trick-winner .winning-card,
+body[data-effects="off"] .trick-winner .winning-card,
+body[data-effects="reduced"] .live-dot,
+body[data-effects="off"] .live-dot {
+  animation: none;
+}
+body[data-effects="reduced"] .player-thinking i,
+body[data-effects="off"] .player-thinking i { opacity: 1; }
+body[data-effects="reduced"] .player-station.deciding,
+body[data-effects="off"] .player-station.deciding { box-shadow: 0 0 0 4px rgba(255, 209, 102, .3), 0 0 18px var(--gold); }
+
+/* Off: nothing moves, fades or transitions; what an animation would have left behind is set directly. */
+body[data-effects="off"] *,
+body[data-effects="off"] *::before,
+body[data-effects="off"] *::after {
+  animation: none !important;
   scroll-behavior: auto !important;
-  transition-duration: .01ms !important;
+  transition: none !important;
+}
+body[data-effects="off"] .trick-collecting .trick-slot,
+body[data-effects="off"] .trick-collecting::before { opacity: 0; }
+body[data-effects="reduced"] *,
+body[data-effects="reduced"] *::before,
+body[data-effects="reduced"] *::after {
+  scroll-behavior: auto !important;
+  transition-duration: var(--effect-fast) !important;
 }
 
 @media (max-width: 760px) {
