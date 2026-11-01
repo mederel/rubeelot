@@ -629,16 +629,19 @@ function renderPrivateBiddingSeats(bidding, revealedCount) {
   const currentPlayerIndex = privateTableSnapshot.seats.findIndex((seat) => seat.you);
   const ownName = privateTableSnapshot.seats[currentPlayerIndex]?.name;
   const revealed = bidding.auction.slice(0, revealedCount);
+  // What the table shows: the revealed calls, plus the viewer's own call once it has been shown.
+  const shownCalls = bidding.auction.filter((call, index) =>
+    index < revealedCount || (privateOwnCallShown && call.playerName === ownName));
   const seats = privateTableSnapshot.seats.map((seat, index) => ({
     name: seat.name,
     cardCount: bidding.hand.length,
     active: seat.name === bidding.activePlayer,
     dealer: index === bidding.dealerIndex,
     team: index % 2 === 0 ? "North–South" : "East–West",
-    call: (seat.name === ownName && privateOwnCallShown ? bidding.auction : revealed)
+    call: (seat.name === ownName ? shownCalls : revealed)
       .findLast((call) => call.playerName === seat.name)?.call ?? ""
   }));
-  renderTableSeats("private", seats, currentPlayerIndex < 0 ? 0 : currentPlayerIndex);
+  renderTableSeats("private", seats, currentPlayerIndex < 0 ? 0 : currentPlayerIndex, contractFromAuction(shownCalls));
 }
 
 // Shows each new call as at the bot table: the caller thinks, then their call appears and is narrated.
@@ -739,7 +742,7 @@ function renderPrivateBoard(tableId, board, match) {
   document.querySelector("#private-scoreboard").hidden = false;
   document.querySelector("#private-card-table").hidden = false;
   renderTableSeats("private", board.seats.map((seat, index) => ({ ...seat, dealer: index === board.dealerIndex })),
-    board.currentPlayerIndex);
+    board.currentPlayerIndex, contractFromBoard(board));
   setSuitText(document.querySelector("#private-trump"), suitName(board.trump));
   document.querySelector("#private-declaring-team").textContent = t(board.declaringTeam);
   document.querySelector("#private-active-player").textContent = playerName(board.activePlayer);
@@ -994,7 +997,8 @@ async function loadBotGame(gameId) {
     const seatsForBoard = (cardCount) => board.seats.map((seat, index) => ({
       ...seat, dealer: index === board.dealerIndex, cardCount: cardCount ?? seat.cardCount
     }));
-    renderTableSeats("bot", seatsForBoard(secondDeal ? secondDeal.hand.length : undefined), board.currentPlayerIndex);
+    renderTableSeats("bot", seatsForBoard(secondDeal ? secondDeal.hand.length : undefined), board.currentPlayerIndex,
+      contractFromBoard(board));
     const legal = new Set(board.legalCards.map((card) => `${card.rank}-${card.suit}`));
     document.querySelector("#card-hand").replaceChildren(...orderHandForDisplay(board.hand, board.trump).map((card) => {
       const item = cardElement(card);
@@ -1041,7 +1045,7 @@ async function playSecondDeal(board, previousHand, seatsForBoard, showTrick) {
       { sizes: seatNames.map((_, index) => (index === takerIndex ? 1 : 0)), fromCenter: true }
     ]
   });
-  renderTableSeats("bot", seatsForBoard(), board.currentPlayerIndex);
+  renderTableSeats("bot", seatsForBoard(), board.currentPlayerIndex, contractFromBoard(board));
   showTrick();
 }
 
@@ -1668,7 +1672,9 @@ async function loadBidding(gameId) {
       dealer: index === bidding.dealerIndex,
       team: index % 2 === 0 ? "North–South" : "East–West",
       call: animateDeal ? "" : bidding.calls.find((call) => call.playerName === seat.name)?.call ?? ""
-    })), currentPlayerIndex < 0 ? 0 : currentPlayerIndex);
+    })), currentPlayerIndex < 0 ? 0 : currentPlayerIndex,
+    // The opening reveal builds the badge call by call through showPlayerCall.
+    animateDeal ? null : contractFromAuction(bidding.auction));
     const isSecondRound = bidding.round === 2;
     document.querySelector("#accept-upturned-button").hidden = isContree || isSecondRound;
     document.querySelector("#trump-options").hidden = isContree || !isSecondRound;
