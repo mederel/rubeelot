@@ -485,6 +485,8 @@ const fr = {
   // Game board (client-built)
   "Contract: {0} {1}{2}": "Contrat : {0} {1}{2}",
   " · coinched": " · coinché",
+  ", contract {0}": ", contrat {0}",
+  ", coinched": ", coinché",
   "{0} are trump": "{0} est l'atout",
   "Contract made": "Contrat rempli",
   "Contract failed": "Contrat chuté",

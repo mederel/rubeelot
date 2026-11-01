@@ -1032,6 +1032,34 @@ h2, h3 { letter-spacing: -.025em; }
   top: -8px;
   width: 22px;
 }
+/* The contract badge is a flex item at the end of the seat pill, after the name: it cannot overlap the avatar, the name,
+   the dealer chip (absolute, top right) or the call bubble (absolute, above or beside the pill). */
+.contract-badge {
+  align-items: center;
+  animation: badge-bounce .5s cubic-bezier(.2, .9, .3, 1.3) both;
+  background: #fff7d6;
+  border: 2px solid var(--card-ink);
+  border-radius: 999px;
+  box-shadow: 2px 2px 0 var(--card-ink);
+  color: #34224d;
+  display: inline-flex;
+  font-size: .72rem;
+  font-weight: 900;
+  gap: .2rem;
+  flex: none;
+  line-height: 1;
+  margin-right: .75rem; /* keeps clear of the dealer chip, which hangs over the pill's top right corner */
+  padding: .2rem .45rem;
+  white-space: nowrap;
+}
+.contract-badge[data-red="true"] { color: #c2263f; }
+.contract-badge .suit-inline { height: 1em; width: 1em; }
+.contract-mark { font-size: .6rem; font-weight: 900; }
+@keyframes badge-bounce {
+  0% { transform: scale(.4); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
 @keyframes deal-in { from { opacity: 0; transform: translateY(-30px) scale(.6) rotate(-10deg); } }
 @keyframes card-drop { from { opacity: 0; transform: translateY(-40px) scale(1.15) rotate(-8deg); } }
 @keyframes label-in { from { opacity: 0; } }
@@ -1118,6 +1146,7 @@ body[data-effects="reduced"] .reaction-bubble {
 body[data-effects="reduced"] .table-hand .playing-card.undealt { animation: none; }
 /* A badge that is merely re-rendered must not pop again; only .call-arriving fades (rule above). */
 body[data-effects="reduced"] .player-call { animation: none; }
+body[data-effects="reduced"] .contract-badge, body[data-effects="off"] .contract-badge { animation: none; }
 body[data-effects="reduced"] .trick-collecting .trick-slot { animation: fade-out var(--effect-fast) forwards; }
 
 /* Reduced and Off: loops stop and leave a static state (border, glow or colour) that marks the same thing. */

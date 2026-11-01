@@ -472,6 +472,8 @@ window.beelotLocales = window.beelotLocales || {};
     // Game board (client-built)
     "Contract: {0} {1}{2}": "Contract: {0} {1}{2}",
     " · coinched": " · gecoinched",
+    ", contract {0}": ", contract {0}",
+    ", coinched": ", gecoinched",
     "{0} are trump": "{0} is troef",
     "Contract made": "Contract gehaald",
     "Contract failed": "Contract mislukt",

@@ -1301,7 +1301,54 @@ function revealAfterTrick(button, container, visible) {
   button.classList.add("arriving-late");
 }
 
-function renderTableSeats(prefix, seats, currentPlayerIndex = 0) {
+// The contract currently drawn on each table ("private", "bot", "bidding"), advanced call by call during an auction.
+const shownContract = {};
+
+// The badge text for a contract, e.g. "80 Hearts" or just the suit when trump was chosen without a bid.
+function contractLabel(contract) {
+  const suit = suitName(contract.suit, false);
+  return contract.value == null ? suit : `${contract.value} ${suit}`;
+}
+
+// Puts the contract badge on the bidder's seat and takes it off every other seat of the table.
+// The badge bounces only when the contract changed since the last time it was shown.
+function showContractBadge(prefix, contract) {
+  for (const station of document.querySelectorAll(`[id^="${prefix}-player-"]`)) {
+    const mine = contract && station.dataset.playerName === contract.player;
+    const key = mine ? [contract.player, contract.value, contract.suit, contract.coinched].join("|") : "";
+    const previous = station.dataset.contractKey || "";
+    let badge = station.querySelector(".contract-badge");
+    if (!mine) {
+      badge?.remove();
+      delete station.dataset.contractKey;
+      continue;
+    }
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "contract-badge";
+      badge.setAttribute("aria-hidden", "true");
+      const details = station.querySelector(".player-details");
+      if (details) details.after(badge);
+      else station.append(badge);
+    }
+    const suits = setSuitText(badge, contractLabel(contract), { symbolOnly: true });
+    badge.dataset.red = suits.some((suit) => suit === "hearts" || suit === "diamonds");
+    if (contract.coinched) {
+      const mark = document.createElement("span");
+      mark.className = "contract-mark";
+      mark.textContent = "×2";
+      badge.append(mark);
+    }
+    badge.classList.remove("badge-bounce");
+    if (key !== previous) {
+      void badge.offsetWidth;
+      badge.classList.add("badge-bounce");
+    }
+    station.dataset.contractKey = key;
+  }
+}
+
+function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contract = null) {
   const placements = ["bottom", "left", "top", "right"];
   placements.forEach((placement, offset) => {
     const seatIndex = (currentPlayerIndex + offset) % seats.length;
@@ -1311,7 +1358,10 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0) {
     station.classList.toggle("active-player", seat.active);
     station.dataset.playerName = seat.name;
     station.dataset.seatIndex = seatIndex;
-    station.setAttribute("aria-label", t("{0}, {1}, {2}{3}", playerName(seat.name), t(seat.team), t(`${seat.cardCount} cards`), seat.active ? t(", active player") : ""));
+    station.setAttribute("aria-label", t("{0}, {1}, {2}{3}", playerName(seat.name), t(seat.team), t(`${seat.cardCount} cards`), seat.active ? t(", active player") : "")
+      + (contract && contract.player === seat.name
+        ? t(", contract {0}", contractLabel(contract)) + (contract.coinched ? t(", coinched") : "")
+        : ""));
 
     const avatar = document.createElement("span");
     avatar.className = "player-avatar";
@@ -1355,6 +1405,8 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0) {
     }
     station.replaceChildren(...contents);
   });
+  shownContract[prefix] = contract;
+  showContractBadge(prefix, contract);
 }
 
 function fillHiddenHand(hiddenHand, count) {
@@ -1497,6 +1549,8 @@ function showPlayerCall(prefix, player, call, playerIsId = false) {
   bubble.dataset.call = text;
   bubble.dataset.red = suits.some((suit) => suit === "hearts" || suit === "diamonds");
   station.append(bubble);
+  shownContract[prefix] = contractAfterCall(shownContract[prefix] ?? null, station.dataset.playerName, call);
+  showContractBadge(prefix, shownContract[prefix]);
   station.dataset.callKind = kind;
   station.classList.remove("call-flash");
   void station.offsetWidth;
