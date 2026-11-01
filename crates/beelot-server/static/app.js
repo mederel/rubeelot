@@ -1336,9 +1336,11 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0) {
     if (seat.call) {
       const call = document.createElement("span");
       call.className = "player-call";
-      call.textContent = callText(seat.call);
+      const text = callText(seat.call);
+      const suits = setSuitText(call, text, { symbolOnly: true });
+      call.dataset.call = text;
       call.dataset.kind = callKind(seat.call);
-      call.dataset.red = /[♥♦]/.test(call.textContent);
+      call.dataset.red = suits.some((suit) => suit === "hearts" || suit === "diamonds");
       contents.push(call);
     }
     if (offset !== 0) {
@@ -1458,9 +1460,9 @@ function callLabel(action, body = {}) {
   return "";
 }
 
-// The text shown in a call bubble; suit names gain their symbol so the choice reads at a glance.
+// The translated text of a call; bubbles show its suit names as symbols (see setSuitText).
 function callText(call) {
-  return t(call).replace(suitTail, (suit) => `${suit} ${suitSymbols[suit.toLowerCase()]}`);
+  return t(call);
 }
 
 function callKind(call) {
@@ -1480,7 +1482,7 @@ function showPlayerCall(prefix, player, call, playerIsId = false) {
   if (!station || !call) return false;
   const text = callText(call);
   const existing = station.querySelector(".player-call:not(.player-thinking)");
-  if (existing?.textContent === text) return false;
+  if (existing?.dataset.call === text) return false;
   existing?.remove();
   // Earlier calls fade back so the newest one is always the focus.
   document.querySelectorAll(`[id^="${prefix}-player-"] .player-call`).forEach((old) => old.classList.add("stale"));
@@ -1488,8 +1490,9 @@ function showPlayerCall(prefix, player, call, playerIsId = false) {
   const bubble = document.createElement("span");
   bubble.className = "player-call call-arriving";
   bubble.dataset.kind = kind;
-  bubble.dataset.red = /[♥♦]/.test(text);
-  bubble.textContent = text;
+  const suits = setSuitText(bubble, text, { symbolOnly: true });
+  bubble.dataset.call = text;
+  bubble.dataset.red = suits.some((suit) => suit === "hearts" || suit === "diamonds");
   station.append(bubble);
   station.dataset.callKind = kind;
   station.classList.remove("call-flash");
@@ -1529,7 +1532,7 @@ function callNarration(name, call) {
 async function announceCall(prefix, player, call) {
   const station = callStation(prefix, player, false);
   if (!station || !call) return;
-  const already = station.querySelector(".player-call:not(.player-thinking)")?.textContent === callText(call);
+  const already = station.querySelector(".player-call:not(.player-thinking)")?.dataset.call === callText(call);
   if (already) return;
   const message = document.querySelector(prefix === "private" ? "#private-game-message" : `#${prefix}-message`);
   if (message) message.textContent = t(`${player} is deciding.`);
