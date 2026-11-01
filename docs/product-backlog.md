@@ -1502,16 +1502,18 @@ symbols on the cards, so that I can identify every suit without effort.
 
 Acceptance criteria:
 
-- Each suit has a large, bold symbol on the card, in the corner indices as well
-  as the centre. The symbols are much bigger than the rank letters beside them.
+- Each suit has a large, bold symbol in the top-left index of the card. The
+  centre symbols and the bottom-right index are removed: number cards and aces
+  have a plain centre. The
+  symbols are much bigger than the rank letters beside them.
 - The four suits differ by shape, not only by colour, and the symbols are
   distinct from one another at a small size: for example spades and clubs are
   not mistaken, and hearts and diamonds are not mistaken.
 - Red and black keep a high contrast against the card face (WCAG AA at least).
-- Settings offers a "Large suit symbols" option, and an option for four
-  colours, one per suit, for players who need more help. Both are remembered in
-  the browser and apply to the hand, the trick, the contract at the bidder's seat (US-099) and the
-  bidding buttons.
+- The symbols apply to the hand, the trick, the contract at the bidder's seat
+  (US-099) and the bidding buttons. They have a single size and keep the usual
+  red (hearts, diamonds) and black (spades, clubs); there is no Settings option
+  for size or colours.
 - The suit names stay available to screen readers (US-074).
 - New texts are translated into French and Dutch.
 
@@ -1566,8 +1568,7 @@ Acceptance criteria:
   table messages and the tutorial.
 - Where the symbol is already shown with a name close by (a call bubble, a
   bidding button), the name may be dropped when the symbol is enough.
-- The symbol uses the style of US-095, including its large-symbol and
-  four-colour options.
+- The symbol uses the style of US-095.
 - The symbols come from one shared function next to `suitName`, so that every
   sentence uses the same display, in English, French and Dutch.
 - Screen readers read the suit name once, not the name and the symbol
