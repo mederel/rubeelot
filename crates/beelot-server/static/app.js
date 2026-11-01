@@ -1046,6 +1046,7 @@ async function playSecondDeal(board, previousHand, seatsForBoard, showTrick) {
 }
 
 async function playCard(gameId, card) {
+  clearHint();
   try {
     await api.act(gameId, { type: "card", rank: card.rank, suit: card.suit, declare: declareChoice("") });
     loadBotGame(gameId);
@@ -1646,6 +1647,7 @@ async function loadBidding(gameId) {
 }
 
 async function submitBid(action, body) {
+  clearHint();
   const gameId = window.location.pathname.split("/").at(-1);
   const biddingView = document.querySelector("#bidding-card-table").closest("[data-view]");
   biddingView.classList.add("auction-waiting-view");
