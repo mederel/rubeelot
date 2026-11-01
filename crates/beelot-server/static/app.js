@@ -1391,9 +1391,16 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = u
     if (seat.dealer) {
       const chip = document.createElement("span");
       chip.className = "dealer-chip";
-      chip.textContent = "D";
-      chip.title = t("Dealer");
+      chip.setAttribute("role", "img");
+      chip.tabIndex = 0;
       chip.setAttribute("aria-label", t("Dealer"));
+      chip.dataset.label = t("Dealer");
+      const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      icon.setAttribute("aria-hidden", "true");
+      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+      use.setAttribute("href", "/icons.svg#icon-dealer");
+      icon.append(use);
+      chip.append(icon);
       contents.push(chip);
     }
     if (seat.call) {
@@ -1417,6 +1424,37 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = u
   });
   shownContract[prefix] = contract;
   showContractBadge(prefix, contract, contractArg === undefined);
+  moveDealerChip(prefix, seats.find((seat) => seat.dealer)?.name);
+}
+
+// The dealer last drawn, with the game it belongs to; null until the first draw of the page.
+// The chip animates only when the dealer changes within the same game.
+let lastDealer = null;
+
+// Moves the new dealer's chip from the previous dealer's seat when the deal passes (US-097).
+function moveDealerChip(prefix, dealerName) {
+  if (dealerName === undefined) return;
+  const game = window.location.pathname.split("/").at(-1);
+  const previous = lastDealer;
+  lastDealer = { game, name: dealerName };
+  if (!previous || previous.game !== game || previous.name === dealerName) return;
+  const level = effectsLevel();
+  if (level === "off") return;
+  const chip = seatStation(prefix, dealerName)?.querySelector(".dealer-chip");
+  if (!chip) return;
+  if (level === "reduced") {
+    const fast = parseFloat(getComputedStyle(document.body).getPropertyValue("--effect-fast")) || 150;
+    chip.animate({ opacity: [0, 1] }, { duration: fast, easing: "ease-out" });
+    return;
+  }
+  const from = seatStation(prefix, previous.name)?.getBoundingClientRect();
+  const to = chip.parentElement.getBoundingClientRect();
+  if (!from || !from.width || !to.width) return;
+  const dx = from.right - to.right;
+  const dy = from.top - to.top;
+  chip.animate(
+    { transform: [`translate(${dx}px, ${dy}px)`, "translate(0, 0)"] },
+    { duration: 600, easing: "ease-out" });
 }
 
 function fillHiddenHand(hiddenHand, count) {

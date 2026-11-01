@@ -1017,20 +1017,51 @@ h2, h3 { letter-spacing: -.025em; }
 }
 .deal-packet .card-back { height: 68px; left: calc(var(--card-index) * 3px); top: calc(var(--card-index) * -2px); transform: none; width: 48px; }
 .dealer-chip {
+  align-items: center;
   background: linear-gradient(135deg, var(--gold), #ff9f43);
-  border: 2px solid rgba(255, 255, 255, .7);
+  border: var(--outline-width) solid var(--card-ink);
   border-radius: 50%;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
-  color: #34224d;
-  font-size: .62rem;
-  font-weight: 900;
-  height: 22px;
-  line-height: 18px;
+  box-shadow: 2px 2px 0 var(--card-ink);
+  color: var(--card-ink);
+  display: flex;
+  height: 28px;
+  justify-content: center;
   position: absolute;
-  right: -4px;
-  text-align: center;
-  top: -8px;
-  width: 22px;
+  right: -6px;
+  top: -12px;
+  width: 28px;
+  z-index: 2;
+}
+.dealer-chip svg { height: 20px; width: 20px; }
+.dealer-chip:focus-visible { outline: 3px solid var(--aqua); outline-offset: 2px; }
+.dealer-chip::after {
+  background: var(--card-ink);
+  border-radius: 8px;
+  color: #fff;
+  content: attr(data-label);
+  font-size: .75rem;
+  font-weight: 800;
+  opacity: 0;
+  padding: .2rem .5rem;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  transition: opacity .15s ease;
+  white-space: nowrap;
+}
+/* The left seat sits against the table edge: its tooltip opens towards the table. */
+.station-left .dealer-chip::after { left: 0; right: auto; }
+.dealer-chip:hover::after, .dealer-chip:focus-visible::after { opacity: 1; }
+/* Seats are stacking contexts: lift the one whose tooltip is open above its neighbours. */
+.player-station:has(.dealer-chip:hover), .player-station:has(.dealer-chip:focus-visible) { z-index: 30; }
+@media (max-width: 760px) {
+  .dealer-chip { height: 24px; right: -5px; top: -10px; width: 24px; }
+  .dealer-chip svg { height: 17px; width: 17px; }
+}
+/* Seats shrink to their avatar here: the chip hangs off the pill's corner instead of covering the avatar. */
+@media (max-width: 430px) {
+  .dealer-chip { right: -13px; top: -13px; }
 }
 /* The contract badge is a flex item at the end of the seat pill, after the name: it cannot overlap the avatar, the name,
    the dealer chip (absolute, top right) or the call bubble (absolute, above or beside the pill). */
