@@ -1307,6 +1307,8 @@ function revealAfterTrick(button, container, visible) {
 
 // The contract currently drawn on each table ("private", "bot", "bidding"), advanced call by call during an auction.
 const shownContract = {};
+// Identity of the contract last drawn on any table; the badge bounces when it changes.
+let lastBadgeKey = "";
 
 // The badge text for a contract, e.g. "80 Hearts" or just the suit when trump was chosen without a bid.
 function contractLabel(contract) {
@@ -1317,14 +1319,17 @@ function contractLabel(contract) {
 // Puts the contract badge on the bidder's seat and takes it off every other seat of the table.
 // The badge bounces only when the contract changed since the last time it was shown.
 function showContractBadge(prefix, contract) {
+  // Language-independent, and shared by every table: the auction and the board it ends in show the same contract.
+  const key = contract
+    ? [contract.player, contract.value, suitKey(contract.suit), contract.coinched].join("|")
+    : "";
+  const changed = key !== lastBadgeKey;
+  lastBadgeKey = key;
   for (const station of document.querySelectorAll(`[id^="${prefix}-player-"]`)) {
     const mine = contract && station.dataset.playerName === contract.player;
-    const key = mine ? [contract.player, contract.value, contract.suit, contract.coinched].join("|") : "";
-    const previous = station.dataset.contractKey || "";
     let badge = station.querySelector(".contract-badge");
     if (!mine) {
       badge?.remove();
-      delete station.dataset.contractKey;
       continue;
     }
     if (!badge) {
@@ -1344,11 +1349,10 @@ function showContractBadge(prefix, contract) {
       badge.append(mark);
     }
     badge.classList.remove("badge-bounce");
-    if (key !== previous) {
+    if (changed) {
       void badge.offsetWidth;
       badge.classList.add("badge-bounce");
     }
-    station.dataset.contractKey = key;
   }
 }
 

@@ -619,6 +619,12 @@ function suitName(suit, capitalise = true) {
   return capitalise ? name.charAt(0).toUpperCase() + name.slice(1) : name;
 }
 
+// The English lower-case key of a suit name in any form (HEARTS, Hearts, Cœur): the same for one suit in every language.
+function suitKey(text) {
+  const word = String(text ?? "").toLowerCase().replace("_", " ");
+  return Object.entries(locale?.suits ?? {}).find(([, name]) => name.toLowerCase() === word)?.[0] ?? word;
+}
+
 // Every suit word the page may show (active language and English), lower case, mapped to its suit key.
 function suitWordMap() {
   const words = {};
