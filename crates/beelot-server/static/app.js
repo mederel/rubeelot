@@ -261,9 +261,9 @@ async function askForHint(gameId, button) {
       document.querySelector(`#card-hand [data-card="${hint.card.rank}-${hint.card.suit}"]`)?.classList.add("hint-card");
     }
     const line = document.querySelector(bidding ? "#bid-hint-reason" : "#hint-reason");
-    line.textContent = hint.reason === "TAKE"
+    setSuitText(line, hint.reason === "TAKE"
       ? t("Take: strong hand in {0}", suitName(hint.action.suit, false))
-      : t(hintReasons[hint.reason]);
+      : t(hintReasons[hint.reason]));
     line.hidden = false;
   } catch (_) {
     // A failed request shows nothing new.
@@ -327,7 +327,7 @@ function openTableStream(tableId, retry = 1000) {
       // The server refused the stream: a bot keeps the seat.
       stream.refused = true;
       source.close();
-      document.querySelector("#private-table-message").textContent = t(JSON.parse(event.data).message);
+      setSuitText(document.querySelector("#private-table-message"), t(JSON.parse(event.data).message));
       return;
     }
     window.clearTimeout(stream.timer);
@@ -375,8 +375,8 @@ function showTutorialStep() {
   const step = tutorialSteps[tutorialStep];
   document.querySelector("#tutorial-progress").textContent = t("Lesson {0} of {1}", tutorialStep + 1, tutorialSteps.length);
   document.querySelector("#tutorial-title").textContent = t(step.title);
-  document.querySelector("#tutorial-prompt").textContent = t(step.prompt);
-  document.querySelector("#tutorial-feedback").textContent = t("Choose a card to continue.");
+  setSuitText(document.querySelector("#tutorial-prompt"), t(step.prompt));
+  setSuitText(document.querySelector("#tutorial-feedback"), t("Choose a card to continue."));
   document.querySelector("#tutorial-next-button").disabled = true;
   document.querySelector("#tutorial-next-button").textContent = t(tutorialStep === tutorialSteps.length - 1 ? "Finish tutorial" : "Next lesson");
   document.querySelector("#tutorial-cards").replaceChildren(...step.cards.map((card, index) => {
@@ -393,7 +393,7 @@ function chooseTutorialCard(index) {
   const cards = document.querySelectorAll("#tutorial-cards .tutorial-card");
   cards.forEach((card, cardIndex) => card.classList.toggle("tutorial-correct", cardIndex === step.correct));
   playSound(index === step.correct ? "correct" : "wrong");
-  document.querySelector("#tutorial-feedback").textContent = t(index === step.correct ? step.feedback : "Not quite. Look at the highlighted card, then try the next lesson.");
+  setSuitText(document.querySelector("#tutorial-feedback"), t(index === step.correct ? step.feedback : "Not quite. Look at the highlighted card, then try the next lesson."));
   document.querySelector("#tutorial-next-button").disabled = false;
 }
 
@@ -691,8 +691,8 @@ async function renderPrivateBidding(bidding, variant) {
   document.querySelector("#private-declaration-message").textContent = "";
   document.querySelector("#private-round-result").hidden = true;
   document.querySelector("#private-card-table").hidden = false;
-  document.querySelector("#private-current-contract").textContent = bidding.highestBid
-    ? t("Current contract: {0} {1} by {2}", bidding.highestBid, suitName(bidding.highestBidSuit, false), playerName(bidding.highestBidder)) : t("No contract yet");
+  setSuitText(document.querySelector("#private-current-contract"), bidding.highestBid
+    ? t("Current contract: {0} {1} by {2}", bidding.highestBid, suitName(bidding.highestBidSuit, false), playerName(bidding.highestBidder)) : t("No contract yet"));
   document.querySelector("#private-current-contract").hidden = variant !== "CONTREE";
   updateAmountChoices("private-contract-value", bidding.highestBid);
   document.querySelector("#private-bid-button").hidden = variant !== "CONTREE";
@@ -711,7 +711,7 @@ async function renderPrivateBidding(bidding, variant) {
   });
   offerAllTrumpChoices("private-contract-suit", variant === "CONTREE" && privateAllTrumps);
   if (calls.length) await revealPrivateCalls(calls);
-  document.querySelector("#private-game-message").textContent = t(bidding.message);
+  setSuitText(document.querySelector("#private-game-message"), t(bidding.message));
   showPrivateThinking(bidding);
 }
 
@@ -731,23 +731,23 @@ function renderPrivateBoard(tableId, board, match) {
   document.querySelector("#private-game-heading").textContent = board.variant === "CONTREE"
     ? `${board.contractValue} ${suitName(board.trump)}${board.coinched ? t(" · coinched") : ""}`
     : t("{0} are trump", suitName(board.trump));
-  document.querySelector("#private-game-message").textContent = board.roundResult
+  setSuitText(document.querySelector("#private-game-message"), board.roundResult
     ? t(board.roundResult.contractMade ? "Contract made." : "Contract failed.")
-    : t("{0}'s turn · {1} of 8 tricks completed", playerName(board.activePlayer), board.completedTricks);
+    : t("{0}'s turn · {1} of 8 tricks completed", playerName(board.activePlayer), board.completedTricks));
   document.querySelector("#private-auction-actions").hidden = true;
   document.querySelector("#private-play-status").hidden = false;
   document.querySelector("#private-scoreboard").hidden = false;
   document.querySelector("#private-card-table").hidden = false;
   renderTableSeats("private", board.seats.map((seat, index) => ({ ...seat, dealer: index === board.dealerIndex })),
     board.currentPlayerIndex);
-  document.querySelector("#private-trump").textContent = suitName(board.trump);
+  setSuitText(document.querySelector("#private-trump"), suitName(board.trump));
   document.querySelector("#private-declaring-team").textContent = t(board.declaringTeam);
   document.querySelector("#private-active-player").textContent = playerName(board.activePlayer);
   document.querySelector("#private-north-south-score").textContent = board.northSouthScore;
   document.querySelector("#private-east-west-score").textContent = board.eastWestScore;
   renderPrivateMatchScore(match);
-  document.querySelector("#private-declaration-message").textContent = board.declarationMessage
-    ? `${t(board.declarationMessage)}${board.beloteBonusPoints ? t(" Belote/Rebelote bonus: {0} points.", board.beloteBonusPoints) : ""}` : "";
+  setSuitText(document.querySelector("#private-declaration-message"), board.declarationMessage
+    ? `${t(board.declarationMessage)}${board.beloteBonusPoints ? t(" Belote/Rebelote bonus: {0} points.", board.beloteBonusPoints) : ""}` : "");
   renderAnnouncements("private-", board);
   const privateTrick = document.querySelector("#private-current-trick");
   renderTrickDiamond(privateTrick, board.currentTrick, board.seats, board.activePlayerIndex, board.currentPlayerIndex,
@@ -950,19 +950,17 @@ async function loadBotGame(gameId) {
     document.querySelector("#selected-difficulty").textContent = t(game.difficultyLabel);
     document.querySelector("#selected-variant").textContent = t(game.variantLabel);
     document.querySelector("#game-variant-title").textContent = t(game.variantLabel);
-    document.querySelector("#contract-summary").textContent = board.variant === "CONTREE"
-      ? t("Contract: {0} {1}{2}", board.contractValue, suitName(board.trump), board.coinched ? t(" · coinched") : "") : "";
-    document.querySelector("#trump-suit").textContent = suitName(board.trump);
+    setSuitText(document.querySelector("#contract-summary"), board.variant === "CONTREE"
+      ? t("Contract: {0} {1}{2}", board.contractValue, suitName(board.trump), board.coinched ? t(" · coinched") : "") : "");
+    setSuitText(document.querySelector("#trump-suit"), suitName(board.trump));
     document.querySelector("#declaring-team").textContent = t(board.declaringTeam);
     document.querySelector("#active-player").textContent = playerName(board.activePlayer);
     document.querySelector("#north-south-score").textContent = board.northSouthScore;
     document.querySelector("#east-west-score").textContent = board.eastWestScore;
     document.querySelector("#match-score").textContent = t("Match score — North–South {0} · East–West {1} · to {2}",
       match.northSouth, match.eastWest, formatNumber(match.target));
-    document.querySelector("#declaration-message").textContent = t(board.declarationMessage || "");
-    if (board.beloteBonusPoints) {
-      document.querySelector("#declaration-message").textContent += t(" Belote/Rebelote bonus: {0} points.", board.beloteBonusPoints);
-    }
+    setSuitText(document.querySelector("#declaration-message"), t(board.declarationMessage || "")
+      + (board.beloteBonusPoints ? t(" Belote/Rebelote bonus: {0} points.", board.beloteBonusPoints) : ""));
     renderAnnouncements("", board);
     document.querySelector("#completed-tricks").textContent = board.completedTricks;
     const currentTrick = document.querySelector("#current-trick");
@@ -1107,6 +1105,33 @@ function suitSymbol(suit) {
   use.setAttribute("href", `/suits.svg#suit-${name}`);
   svg.append(use);
   return svg;
+}
+
+// Shows `text` in `element` with a symbol before each suit name. Returns the suit keys found, in order.
+// With `symbolOnly` the name stays for screen readers but is hidden on screen.
+function setSuitText(element, text, { symbolOnly = false } = {}) {
+  const nodes = [];
+  const suits = [];
+  for (const part of splitSuitText(text, suitWordMap())) {
+    if (typeof part === "string") {
+      nodes.push(part);
+      continue;
+    }
+    suits.push(part.suit);
+    const symbol = suitSymbol(part.suit);
+    symbol.classList.add("suit-inline");
+    nodes.push(symbol);
+    if (symbolOnly) {
+      const word = document.createElement("span");
+      word.className = "visually-hidden";
+      word.textContent = part.word;
+      nodes.push(word);
+    } else {
+      nodes.push(` ${part.word}`);
+    }
+  }
+  element.replaceChildren(...nodes);
+  return suits;
 }
 
 function cardElement(card) {
@@ -1512,7 +1537,7 @@ async function announceCall(prefix, player, call) {
   await pause(biddingThinkDelay);
   stopThinking();
   if (showPlayerCall(prefix, player, call)) {
-    if (message) message.textContent = callNarration(player, call);
+    if (message) setSuitText(message, callNarration(player, call));
     await pause(biddingRevealDelay);
   }
 }
@@ -1556,7 +1581,7 @@ async function loadBidding(gameId) {
     const snapshot = await api.table(gameId);
     const game = localGame(snapshot);
     const { bidding } = snapshot;
-    document.querySelector("#bidding-message").textContent = t(bidding.message);
+    setSuitText(document.querySelector("#bidding-message"), t(bidding.message));
     const isContree = bidding.variant === "CONTREE";
     document.querySelector("#bidding-eyebrow").textContent = t(isContree ? "Contrée auction" : "Choose trump");
     document.querySelector("#bidding-variant").textContent = t("{0} · {1} bots", t(game.variantLabel), t(game.difficultyLabel));
@@ -1589,9 +1614,9 @@ async function loadBidding(gameId) {
     document.querySelector("#trump-options").hidden = isContree || !isSecondRound;
     document.querySelector("#contree-options").hidden = !isContree;
     offerAllTrumpChoices("contract-suit", isContree && game.allTrumps);
-    document.querySelector("#current-contract").textContent = bidding.highestBid
+    setSuitText(document.querySelector("#current-contract"), bidding.highestBid
       ? t("Current contract: {0} {1} by {2}", bidding.highestBid, suitName(bidding.highestBidSuit, false), playerName(bidding.highestBidder))
-      : t("No contract yet");
+      : t("No contract yet"));
     updateAmountChoices("contract-value", bidding.highestBid);
     document.querySelector("#contract-bid-button").disabled = bidding.highestBid >= 160 || !bidding.playerTurn;
     document.querySelector("#pass-bid-button").disabled = !bidding.playerTurn;
@@ -1631,7 +1656,7 @@ async function submitBid(action, body) {
       renderView();
       return;
     }
-    document.querySelector("#bidding-message").textContent = t(response.message);
+    setSuitText(document.querySelector("#bidding-message"), t(response.message));
     loadBidding(gameId);
   } catch (error) {
     document.querySelector("#bidding-message").textContent = error.message;
