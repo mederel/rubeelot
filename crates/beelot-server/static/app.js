@@ -533,7 +533,10 @@ function showPrivateTable(table) {
   document.querySelector("#private-table-message").textContent = table.status === "IN_PROGRESS"
     ? t("The game has started. Calls and card play update for every player automatically.")
     : "";
-  if (table.status !== "IN_PROGRESS") privateAuctionShown = { auctionId: null, count: 0 };
+  if (table.status !== "IN_PROGRESS") {
+    privateAuctionShown = { auctionId: null, count: 0 };
+    shownContract.private = null;
+  }
 }
 
 function updatePublicCountdown() {
@@ -1310,13 +1313,13 @@ function contractLabel(contract) {
 
 // Puts the contract badge on the bidder's seat and takes it off every other seat of the table.
 // The badge bounces only when the contract changed since the last time it was shown.
-function showContractBadge(prefix, contract) {
+function showContractBadge(prefix, contract, keepKey = false) {
   // Language-independent, and shared by every table: the auction and the board it ends in show the same contract.
   const key = contract
     ? [contract.player, contract.value, suitKey(contract.suit), contract.coinched].join("|")
     : "";
-  const changed = lastBadgeKey !== null && key !== lastBadgeKey;
-  lastBadgeKey = key;
+  const changed = !keepKey && lastBadgeKey !== null && key !== lastBadgeKey;
+  if (!keepKey) lastBadgeKey = key;
   for (const station of document.querySelectorAll(`[id^="${prefix}-player-"]`)) {
     const mine = contract && station.dataset.playerName === contract.player;
     let badge = station.querySelector(".contract-badge");
@@ -1348,7 +1351,9 @@ function showContractBadge(prefix, contract) {
   }
 }
 
-function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contract = null) {
+// `contract` undefined redraws the seats with the contract already shown (a lobby refresh must not wipe the badge).
+function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = undefined) {
+  const contract = contractArg === undefined ? shownContract[prefix] ?? null : contractArg;
   const placements = ["bottom", "left", "top", "right"];
   placements.forEach((placement, offset) => {
     const seatIndex = (currentPlayerIndex + offset) % seats.length;
@@ -1406,7 +1411,7 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contract = null
     station.replaceChildren(...contents);
   });
   shownContract[prefix] = contract;
-  showContractBadge(prefix, contract);
+  showContractBadge(prefix, contract, contractArg === undefined);
 }
 
 function fillHiddenHand(hiddenHand, count) {
