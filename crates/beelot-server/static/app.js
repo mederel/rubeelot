@@ -1299,7 +1299,8 @@ function revealAfterTrick(button, container, visible) {
 // The contract currently drawn on each table ("private", "bot", "bidding"), advanced call by call during an auction.
 const shownContract = {};
 // Identity of the contract last drawn on any table; the badge bounces when it changes.
-let lastBadgeKey = "";
+// null until the first draw: a page loaded mid-game shows the standing contract without a bounce.
+let lastBadgeKey = null;
 
 // The badge text for a contract, e.g. "80 Hearts" or just the suit when trump was chosen without a bid.
 function contractLabel(contract) {
@@ -1314,7 +1315,7 @@ function showContractBadge(prefix, contract) {
   const key = contract
     ? [contract.player, contract.value, suitKey(contract.suit), contract.coinched].join("|")
     : "";
-  const changed = key !== lastBadgeKey;
+  const changed = lastBadgeKey !== null && key !== lastBadgeKey;
   lastBadgeKey = key;
   for (const station of document.querySelectorAll(`[id^="${prefix}-player-"]`)) {
     const mine = contract && station.dataset.playerName === contract.player;
@@ -1721,6 +1722,8 @@ async function submitBid(action, body) {
     setSuitText(document.querySelector("#bidding-message"), t(response.message));
     loadBidding(gameId);
   } catch (error) {
+    // A refused call must not stay on the table: redraw the auction as the server holds it, badge included.
+    await loadBidding(gameId);
     document.querySelector("#bidding-message").textContent = error.message;
   } finally {
     biddingView.classList.remove("auction-waiting-view");
