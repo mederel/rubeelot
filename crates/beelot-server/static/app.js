@@ -533,7 +533,10 @@ function showPrivateTable(table) {
   document.querySelector("#private-table-message").textContent = table.status === "IN_PROGRESS"
     ? t("The game has started. Calls and card play update for every player automatically.")
     : "";
-  if (table.status !== "IN_PROGRESS") privateAuctionShown = { auctionId: null, count: 0 };
+  if (table.status !== "IN_PROGRESS") {
+    privateAuctionShown = { auctionId: null, count: 0 };
+    shownContract.private = null;
+  }
 }
 
 function updatePublicCountdown() {
@@ -629,16 +632,19 @@ function renderPrivateBiddingSeats(bidding, revealedCount) {
   const currentPlayerIndex = privateTableSnapshot.seats.findIndex((seat) => seat.you);
   const ownName = privateTableSnapshot.seats[currentPlayerIndex]?.name;
   const revealed = bidding.auction.slice(0, revealedCount);
+  // What the table shows: the revealed calls, plus the viewer's own call once it has been shown.
+  const shownCalls = bidding.auction.filter((call, index) =>
+    index < revealedCount || (privateOwnCallShown && call.playerName === ownName));
   const seats = privateTableSnapshot.seats.map((seat, index) => ({
     name: seat.name,
     cardCount: bidding.hand.length,
     active: seat.name === bidding.activePlayer,
     dealer: index === bidding.dealerIndex,
     team: index % 2 === 0 ? "North–South" : "East–West",
-    call: (seat.name === ownName && privateOwnCallShown ? bidding.auction : revealed)
+    call: (seat.name === ownName ? shownCalls : revealed)
       .findLast((call) => call.playerName === seat.name)?.call ?? ""
   }));
-  renderTableSeats("private", seats, currentPlayerIndex < 0 ? 0 : currentPlayerIndex);
+  renderTableSeats("private", seats, currentPlayerIndex < 0 ? 0 : currentPlayerIndex, contractFromAuction(shownCalls));
 }
 
 // Shows each new call as at the bot table: the caller thinks, then their call appears and is narrated.
@@ -691,9 +697,6 @@ async function renderPrivateBidding(bidding, variant) {
   document.querySelector("#private-declaration-message").textContent = "";
   document.querySelector("#private-round-result").hidden = true;
   document.querySelector("#private-card-table").hidden = false;
-  setSuitText(document.querySelector("#private-current-contract"), bidding.highestBid
-    ? t("Current contract: {0} {1} by {2}", bidding.highestBid, suitName(bidding.highestBidSuit, false), playerName(bidding.highestBidder)) : t("No contract yet"));
-  document.querySelector("#private-current-contract").hidden = variant !== "CONTREE";
   updateAmountChoices("private-contract-value", bidding.highestBid);
   document.querySelector("#private-bid-button").hidden = variant !== "CONTREE";
   document.querySelector("#private-coinche-button").hidden = !bidding.coincheAllowed;
@@ -728,9 +731,7 @@ function renderPrivateBoard(tableId, board, match) {
   lastRenderedPrivateBoardJson = snapshot;
   privateGameStage = "board";
   stopPrivateThinking();
-  setSuitText(document.querySelector("#private-game-heading"), board.variant === "CONTREE"
-    ? `${board.contractValue} ${suitName(board.trump)}${board.coinched ? t(" · coinched") : ""}`
-    : t("{0} are trump", suitName(board.trump)));
+  document.querySelector("#private-game-heading").textContent = board.variant === "CONTREE" ? t("Contrée") : t("Classic Belote");
   setSuitText(document.querySelector("#private-game-message"), board.roundResult
     ? t(board.roundResult.contractMade ? "Contract made." : "Contract failed.")
     : t("{0}'s turn · {1} of 8 tricks completed", playerName(board.activePlayer), board.completedTricks));
@@ -739,8 +740,7 @@ function renderPrivateBoard(tableId, board, match) {
   document.querySelector("#private-scoreboard").hidden = false;
   document.querySelector("#private-card-table").hidden = false;
   renderTableSeats("private", board.seats.map((seat, index) => ({ ...seat, dealer: index === board.dealerIndex })),
-    board.currentPlayerIndex);
-  setSuitText(document.querySelector("#private-trump"), suitName(board.trump));
+    board.currentPlayerIndex, contractFromBoard(board));
   document.querySelector("#private-declaring-team").textContent = t(board.declaringTeam);
   document.querySelector("#private-active-player").textContent = playerName(board.activePlayer);
   document.querySelector("#private-north-south-score").textContent = board.northSouthScore;
@@ -814,6 +814,8 @@ async function privateAction(action) {
     await loadPrivateTable(session.tableId);
   } catch (error) {
     privateOwnCallShown = false;
+    // A refused call must not stay on the table: redraw the auction as the server holds it, then show the error.
+    if (auctionAction) await loadPrivateTable(session.tableId);
     document.querySelector("#private-game-message").textContent = error.message;
   } finally {
     if (auctionAction) privatePanel.classList.remove("auction-waiting-view");
@@ -950,9 +952,6 @@ async function loadBotGame(gameId) {
     document.querySelector("#selected-difficulty").textContent = t(game.difficultyLabel);
     document.querySelector("#selected-variant").textContent = t(game.variantLabel);
     document.querySelector("#game-variant-title").textContent = t(game.variantLabel);
-    setSuitText(document.querySelector("#contract-summary"), board.variant === "CONTREE"
-      ? t("Contract: {0} {1}{2}", board.contractValue, suitName(board.trump), board.coinched ? t(" · coinched") : "") : "");
-    setSuitText(document.querySelector("#trump-suit"), suitName(board.trump));
     document.querySelector("#declaring-team").textContent = t(board.declaringTeam);
     document.querySelector("#active-player").textContent = playerName(board.activePlayer);
     document.querySelector("#north-south-score").textContent = board.northSouthScore;
@@ -994,7 +993,8 @@ async function loadBotGame(gameId) {
     const seatsForBoard = (cardCount) => board.seats.map((seat, index) => ({
       ...seat, dealer: index === board.dealerIndex, cardCount: cardCount ?? seat.cardCount
     }));
-    renderTableSeats("bot", seatsForBoard(secondDeal ? secondDeal.hand.length : undefined), board.currentPlayerIndex);
+    renderTableSeats("bot", seatsForBoard(secondDeal ? secondDeal.hand.length : undefined), board.currentPlayerIndex,
+      contractFromBoard(board));
     const legal = new Set(board.legalCards.map((card) => `${card.rank}-${card.suit}`));
     document.querySelector("#card-hand").replaceChildren(...orderHandForDisplay(board.hand, board.trump).map((card) => {
       const item = cardElement(card);
@@ -1041,7 +1041,7 @@ async function playSecondDeal(board, previousHand, seatsForBoard, showTrick) {
       { sizes: seatNames.map((_, index) => (index === takerIndex ? 1 : 0)), fromCenter: true }
     ]
   });
-  renderTableSeats("bot", seatsForBoard(), board.currentPlayerIndex);
+  renderTableSeats("bot", seatsForBoard(), board.currentPlayerIndex, contractFromBoard(board));
   showTrick();
 }
 
@@ -1301,7 +1301,66 @@ function revealAfterTrick(button, container, visible) {
   button.classList.add("arriving-late");
 }
 
-function renderTableSeats(prefix, seats, currentPlayerIndex = 0) {
+// The contract currently drawn on each table ("private", "bot", "bidding"), advanced call by call during an auction.
+const shownContract = {};
+// Identity of the contract last drawn on any table; the badge bounces when it changes.
+// null until the first draw: a page loaded mid-game shows the standing contract without a bounce.
+let lastBadgeKey = null;
+
+// The badge text for a contract, e.g. "80 Hearts" or just the suit when trump was chosen without a bid.
+function contractLabel(contract) {
+  const suit = suitName(contract.suit, false);
+  return contract.value == null ? suit : `${contract.value} ${suit}`;
+}
+
+// Puts the contract badge on the bidder's seat and takes it off every other seat of the table.
+// The badge bounces only when the contract changed since the last time it was shown.
+function showContractBadge(prefix, contract, keepKey = false) {
+  // Language-independent, and shared by every table: the auction and the board it ends in show the same contract.
+  const key = contract
+    ? [contract.player, contract.value, suitKey(contract.suit), contract.coinched].join("|")
+    : "";
+  const changed = !keepKey && lastBadgeKey !== null && key !== lastBadgeKey;
+  if (!keepKey) lastBadgeKey = key;
+  for (const station of document.querySelectorAll(`[id^="${prefix}-player-"]`)) {
+    const mine = contract && station.dataset.playerName === contract.player;
+    // The badge is aria-hidden: the holder's seat label carries the contract instead.
+    if (station.dataset.seatLabel !== undefined) {
+      station.setAttribute("aria-label", station.dataset.seatLabel
+        + (mine ? t(", contract {0}", contractLabel(contract)) + (contract.coinched ? t(", coinched") : "") : ""));
+    }
+    let badge = station.querySelector(".contract-badge");
+    if (!mine) {
+      badge?.remove();
+      continue;
+    }
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "contract-badge";
+      badge.setAttribute("aria-hidden", "true");
+      const details = station.querySelector(".player-details");
+      if (details) details.after(badge);
+      else station.append(badge);
+    }
+    const suits = setSuitText(badge, contractLabel(contract), { symbolOnly: true });
+    badge.dataset.red = suits.some((suit) => suit === "hearts" || suit === "diamonds");
+    if (contract.coinched) {
+      const mark = document.createElement("span");
+      mark.className = "contract-mark";
+      mark.textContent = "×2";
+      badge.append(mark);
+    }
+    badge.classList.remove("badge-bounce");
+    if (changed) {
+      void badge.offsetWidth;
+      badge.classList.add("badge-bounce");
+    }
+  }
+}
+
+// `contract` undefined redraws the seats with the contract already shown (a lobby refresh must not wipe the badge).
+function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = undefined) {
+  const contract = contractArg === undefined ? shownContract[prefix] ?? null : contractArg;
   const placements = ["bottom", "left", "top", "right"];
   placements.forEach((placement, offset) => {
     const seatIndex = (currentPlayerIndex + offset) % seats.length;
@@ -1311,7 +1370,8 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0) {
     station.classList.toggle("active-player", seat.active);
     station.dataset.playerName = seat.name;
     station.dataset.seatIndex = seatIndex;
-    station.setAttribute("aria-label", t("{0}, {1}, {2}{3}", playerName(seat.name), t(seat.team), t(`${seat.cardCount} cards`), seat.active ? t(", active player") : ""));
+    // The contract is appended by showContractBadge, which keeps the label in step with the badge.
+    station.dataset.seatLabel = t("{0}, {1}, {2}{3}", playerName(seat.name), t(seat.team), t(`${seat.cardCount} cards`), seat.active ? t(", active player") : "");
 
     const avatar = document.createElement("span");
     avatar.className = "player-avatar";
@@ -1355,6 +1415,8 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0) {
     }
     station.replaceChildren(...contents);
   });
+  shownContract[prefix] = contract;
+  showContractBadge(prefix, contract, contractArg === undefined);
 }
 
 function fillHiddenHand(hiddenHand, count) {
@@ -1497,6 +1559,11 @@ function showPlayerCall(prefix, player, call, playerIsId = false) {
   bubble.dataset.call = text;
   bubble.dataset.red = suits.some((suit) => suit === "hearts" || suit === "diamonds");
   station.append(bubble);
+  // The viewer's own call arrives translated ("Passer"), so a pass is recognised by its kind, not by its text.
+  if (kind !== "pass") {
+    shownContract[prefix] = contractAfterCall(shownContract[prefix] ?? null, station.dataset.playerName, call);
+    showContractBadge(prefix, shownContract[prefix]);
+  }
   station.dataset.callKind = kind;
   station.classList.remove("call-flash");
   void station.offsetWidth;
@@ -1614,15 +1681,14 @@ async function loadBidding(gameId) {
       dealer: index === bidding.dealerIndex,
       team: index % 2 === 0 ? "North–South" : "East–West",
       call: animateDeal ? "" : bidding.calls.find((call) => call.playerName === seat.name)?.call ?? ""
-    })), currentPlayerIndex < 0 ? 0 : currentPlayerIndex);
+    })), currentPlayerIndex < 0 ? 0 : currentPlayerIndex,
+    // The opening reveal builds the badge call by call through showPlayerCall.
+    animateDeal ? null : contractFromAuction(bidding.auction));
     const isSecondRound = bidding.round === 2;
     document.querySelector("#accept-upturned-button").hidden = isContree || isSecondRound;
     document.querySelector("#trump-options").hidden = isContree || !isSecondRound;
     document.querySelector("#contree-options").hidden = !isContree;
     offerAllTrumpChoices("contract-suit", isContree && game.allTrumps);
-    setSuitText(document.querySelector("#current-contract"), bidding.highestBid
-      ? t("Current contract: {0} {1} by {2}", bidding.highestBid, suitName(bidding.highestBidSuit, false), playerName(bidding.highestBidder))
-      : t("No contract yet"));
     updateAmountChoices("contract-value", bidding.highestBid);
     document.querySelector("#contract-bid-button").disabled = bidding.highestBid >= 160 || !bidding.playerTurn;
     document.querySelector("#pass-bid-button").disabled = !bidding.playerTurn;
@@ -1657,7 +1723,11 @@ async function submitBid(action, body) {
     await pause(ownCallDelay);
     const response = (await api.act(gameId, { type: action, ...body })).bidding;
     // Taking a trump or coinching ends the auction: the card table follows at once.
-    if (action !== "trump" && action !== "coinche") await revealCalls("bidding", response.calls, humanName);
+    // The server lists the calls by seat; the badge must follow them in speaking order, starting after the dealer.
+    const speakingOrder = (response.calls ?? []).map((call, seat) => ({ call, seat }))
+      .sort((left, right) => ((left.seat - response.dealerIndex + 3) % 4) - ((right.seat - response.dealerIndex + 3) % 4))
+      .map(({ call }) => call);
+    if (action !== "trump" && action !== "coinche") await revealCalls("bidding", speakingOrder, humanName);
     if (action === "trump" || action === "coinche" || response.complete) {
       window.history.pushState({}, "", `/play/bot/game/${gameId}`);
       renderView();
@@ -1666,6 +1736,9 @@ async function submitBid(action, body) {
     setSuitText(document.querySelector("#bidding-message"), t(response.message));
     loadBidding(gameId);
   } catch (error) {
+    // A refused call must not stay on the table: redraw the auction as the server holds it, badge included.
+    // Only a server refusal leaves the table intact; on a network failure stay put and show the error.
+    if (error.status) await loadBidding(gameId);
     document.querySelector("#bidding-message").textContent = error.message;
   } finally {
     biddingView.classList.remove("auction-waiting-view");

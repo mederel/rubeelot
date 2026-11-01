@@ -75,7 +75,6 @@ const fr = {
   "East–West": "Est–Ouest",
   "VS": "VS",
   "Game status": "État de la partie",
-  "Trump": "Atout",
   "Contract": "Contrat",
   "Turn": "Tour",
   "Four-player card table": "Table de cartes à quatre joueurs",
@@ -102,7 +101,6 @@ const fr = {
   "Diamonds": "Carreau",
   "Hearts": "Cœur",
   "Spades": "Pique",
-  "No contract yet": "Pas encore de contrat",
   "Contract value": "Valeur du contrat",
   "Trump suit": "Couleur d'atout",
   "Make bid": "Annoncer",
@@ -111,7 +109,6 @@ const fr = {
   "{0} passes.": "{0} passe.",
   "{0} takes with {1}.": "{0} prend à {1}.",
   "Contrée auction": "Enchères de Contrée",
-  "Current contract: {0} {1} by {2}": "Contrat actuel : {0} {1} par {2}",
 
   // Public matchmaking
   "Sign in to keep track of your matches.": "Connectez-vous pour garder la trace de vos parties.",
@@ -483,9 +480,8 @@ const fr = {
     "Les cartes utilisent toujours à la fois un symbole et une couleur. Les commandes fonctionnent au toucher et au clavier.",
 
   // Game board (client-built)
-  "Contract: {0} {1}{2}": "Contrat : {0} {1}{2}",
-  " · coinched": " · coinché",
-  "{0} are trump": "{0} est l'atout",
+  ", contract {0}": ", contrat {0}",
+  ", coinched": ", coinché",
   "Contract made": "Contrat rempli",
   "Contract failed": "Contrat chuté",
   "Contract made.": "Contrat rempli.",
@@ -615,6 +611,12 @@ function suitName(suit, capitalise = true) {
   const key = String(suit).toLowerCase().replace("_", " ");
   const name = locale ? locale.suits[key] ?? key : key;
   return capitalise ? name.charAt(0).toUpperCase() + name.slice(1) : name;
+}
+
+// The English lower-case key of a suit name in any form (HEARTS, Hearts, Cœur): the same for one suit in every language.
+function suitKey(text) {
+  const word = String(text ?? "").toLowerCase().replace("_", " ");
+  return Object.entries(locale?.suits ?? {}).find(([, name]) => name.toLowerCase() === word)?.[0] ?? word;
 }
 
 // Every suit word the page may show (active language and English), lower case, mapped to its suit key.
