@@ -835,6 +835,7 @@ h2, h3 { letter-spacing: -.025em; }
   padding: .65rem .9rem;
 }
 .trump-options button:hover:not(:disabled) { background: var(--gold); color: #173530; }
+.trump-options .suit, .suit-choice .suit { height: 1.1em; vertical-align: -.2em; width: 1.1em; }
 .trump-options button:disabled { cursor: not-allowed; opacity: .3; }
 #coinche-button, #private-coinche-button { background: var(--paper); box-shadow: inset 0 0 0 2px var(--red); color: #982f35; }
 
