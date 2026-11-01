@@ -1054,7 +1054,7 @@ h2, h3 { letter-spacing: -.025em; }
 .station-left .dealer-chip::after { left: 0; right: auto; }
 .dealer-chip:hover::after, .dealer-chip:focus-visible::after { opacity: 1; }
 /* Seats are stacking contexts: lift the one whose tooltip is open above its neighbours. */
-.player-station:has(.dealer-chip:hover), .player-station:has(.dealer-chip:focus-visible) { z-index: 30; }
+.player-station.dealer-moving, .player-station:has(.dealer-chip:hover), .player-station:has(.dealer-chip:focus-visible) { z-index: 30; }
 @media (max-width: 760px) {
   .dealer-chip { height: 24px; right: -5px; top: -10px; width: 24px; }
   .dealer-chip svg { height: 17px; width: 17px; }

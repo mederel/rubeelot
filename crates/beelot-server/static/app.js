@@ -1363,6 +1363,7 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = u
   const contract = contractArg === undefined ? shownContract[prefix] ?? null : contractArg;
   const placements = ["bottom", "left", "top", "right"];
   placements.forEach((placement, offset) => {
+    let refocusChip = null;
     const seatIndex = (currentPlayerIndex + offset) % seats.length;
     const seat = seats[seatIndex];
     const station = document.querySelector(`#${prefix}-player-${placement}`);
@@ -1388,6 +1389,8 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = u
     details.append(name, meta);
 
     const contents = [avatar, details];
+    // The seat is rebuilt below: a focused dealer chip must not lose focus (and its tooltip) on every redraw.
+    const chipHadFocus = document.activeElement?.classList.contains("dealer-chip") && station.contains(document.activeElement);
     if (seat.dealer) {
       const chip = document.createElement("span");
       chip.className = "dealer-chip";
@@ -1402,6 +1405,7 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = u
       icon.append(use);
       chip.append(icon);
       contents.push(chip);
+      if (chipHadFocus) refocusChip = chip;
     }
     if (seat.call) {
       const call = document.createElement("span");
@@ -1421,6 +1425,7 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = u
       contents.push(hiddenHand);
     }
     station.replaceChildren(...contents);
+    if (refocusChip) refocusChip.focus({ preventScroll: true });
   });
   shownContract[prefix] = contract;
   showContractBadge(prefix, contract, contractArg === undefined);
@@ -1443,8 +1448,7 @@ function moveDealerChip(prefix, dealerName) {
   const chip = seatStation(prefix, dealerName)?.querySelector(".dealer-chip");
   if (!chip) return;
   if (level === "reduced") {
-    const fast = parseFloat(getComputedStyle(document.body).getPropertyValue("--effect-fast")) || 150;
-    chip.animate({ opacity: [0, 1] }, { duration: fast, easing: "ease-out" });
+    chip.animate({ opacity: [0, 1] }, { duration: cssDurationMs("--effect-fast", 150), easing: "ease-out" });
     return;
   }
   const from = seatStation(prefix, previous.name)?.getBoundingClientRect();
@@ -1452,9 +1456,22 @@ function moveDealerChip(prefix, dealerName) {
   if (!from || !from.width || !to.width) return;
   const dx = from.right - to.right;
   const dy = from.top - to.top;
-  chip.animate(
+  // Keep the seat (and so the chip) above the other seats while it slides.
+  const station = chip.parentElement;
+  station.classList.add("dealer-moving");
+  const slide = chip.animate(
     { transform: [`translate(${dx}px, ${dy}px)`, "translate(0, 0)"] },
     { duration: 600, easing: "ease-out" });
+  slide.addEventListener("finish", () => station.classList.remove("dealer-moving"));
+  slide.addEventListener("cancel", () => station.classList.remove("dealer-moving"));
+}
+
+// A CSS custom property holding a duration ("150ms", "0.15s" or "0s"), in milliseconds.
+function cssDurationMs(name, fallback) {
+  const value = getComputedStyle(document.body).getPropertyValue(name).trim();
+  const number = parseFloat(value);
+  if (Number.isNaN(number)) return fallback;
+  return value.endsWith("ms") ? number : value.endsWith("s") ? number * 1000 : number;
 }
 
 function fillHiddenHand(hiddenHand, count) {
