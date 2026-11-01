@@ -149,6 +149,14 @@ visually hidden text next to the "+N").
   private table's do. If a snapshot lacks it before the board exists, the bar
   waits for the first board there.
 
+Checked in the source while building Task 2 (the browser check is still to run):
+a local table (bot game and pass-and-play) starts its match when it is created
+(`Table::begin_match`, called from the local constructor in `tables/table.rs`),
+before the first deal, so its bidding snapshots carry `match`. Each round's
+`Board` starts with `north_south_score` and `east_west_score` at 0
+(`board.rs`) and adds trick points, the last trick's 10, announcements and
+Belote, so they are the current round's points.
+
 ## Out of scope
 
 - The count-up and the progress bar (US-091).

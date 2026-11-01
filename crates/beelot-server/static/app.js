@@ -337,7 +337,43 @@ function openTableStream(tableId, retry = 1000) {
   });
 }
 
+// The score bar above the table: each team's match score and round points, the target, and the viewer's team.
+// The live region speaks only when its sentence changes, so tricks and repeated renders stay silent.
+let scoreBarSentence = "";
+
+function showScoreBar(match, board, myTeam) {
+  const model = scoreBarModel({ match, board, myTeam });
+  if (!model) {
+    hideScoreBar();
+    return;
+  }
+  const bar = document.querySelector("#score-bar");
+  model.teams.forEach((team, index) => {
+    const chip = bar.querySelector(`[data-team="${index}"]`);
+    chip.querySelector(".team-name").textContent = t(team.name);
+    chip.querySelector(".match-points").textContent = formatNumber(team.matchScore);
+    const round = chip.querySelector(".round-points");
+    round.textContent = team.roundPoints == null ? "" : `+${formatNumber(team.roundPoints)}`;
+    round.title = team.roundPoints == null ? "" : t("Round points");
+    chip.querySelector(".you-mark").hidden = !team.mine;
+    chip.classList.toggle("mine", team.mine);
+  });
+  bar.querySelector(".score-target").textContent = t("to {0}", formatNumber(model.target));
+  bar.hidden = false;
+  const sentence = scoreBarAnnouncement(model, t, formatNumber);
+  if (sentence !== scoreBarSentence) {
+    scoreBarSentence = sentence;
+    document.querySelector("#score-bar-live").textContent = sentence;
+  }
+}
+
+function hideScoreBar() {
+  document.querySelector("#score-bar").hidden = true;
+  scoreBarSentence = "";
+}
+
 function renderView() {
+  hideScoreBar();
   const activeView = viewForPath(window.location.pathname);
   document.querySelectorAll("[data-view]").forEach((view) => {
     view.hidden = view.dataset.view !== activeView;
@@ -954,10 +990,10 @@ async function loadBotGame(gameId) {
     document.querySelector("#game-variant-title").textContent = t(game.variantLabel);
     document.querySelector("#declaring-team").textContent = t(board.declaringTeam);
     document.querySelector("#active-player").textContent = playerName(board.activePlayer);
-    document.querySelector("#north-south-score").textContent = board.northSouthScore;
-    document.querySelector("#east-west-score").textContent = board.eastWestScore;
-    document.querySelector("#match-score").textContent = t("Match score — North–South {0} · East–West {1} · to {2}",
-      match.northSouth, match.eastWest, formatNumber(match.target));
+    // In pass and play, "You" waits for the hand-off, so the bar does not tell who holds the device next.
+    if (viewForPath(window.location.pathname) === "bot-game") {
+      showScoreBar(match, board, game.passAndPlay ? null : board.currentPlayerIndex % 2);
+    }
     setSuitText(document.querySelector("#declaration-message"), t(board.declarationMessage || "")
       + (board.beloteBonusPoints ? t(" Belote/Rebelote bonus: {0} points.", board.beloteBonusPoints) : ""));
     renderAnnouncements("", board);
@@ -1015,6 +1051,7 @@ async function loadBotGame(gameId) {
       return item;
     }));
     await handedOff;
+    if (viewForPath(window.location.pathname) === "bot-game") showScoreBar(match, board, board.currentPlayerIndex % 2);
     if (secondDeal) await playSecondDeal(board, secondDeal.hand, seatsForBoard, showTrick);
   } catch (error) {
     window.history.replaceState({}, "", "/play/bot");
@@ -1752,7 +1789,12 @@ async function loadBidding(gameId) {
     document.querySelectorAll("#trump-options button").forEach((button) => {
       button.disabled = !bidding.upturnedCard || button.dataset.suit === bidding.upturnedCard.suit;
     });
+    // In pass and play, "You" waits for the hand-off, so the bar does not tell who holds the device next.
+    if (viewForPath(window.location.pathname) === "bidding") {
+      showScoreBar(snapshot.match, null, game.passAndPlay ? null : currentPlayerIndex % 2);
+    }
     await handedOff;
+    if (viewForPath(window.location.pathname) === "bidding") showScoreBar(snapshot.match, null, currentPlayerIndex % 2);
     if (animateDeal) await playOpeningDeal(game, bidding, currentPlayerIndex);
     // A bot took the contract before the player's first call: show its call, then move to the card table.
     if (bidding.complete) {
