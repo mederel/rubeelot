@@ -137,25 +137,27 @@ visually hidden text next to the "+N").
 - Project checks from `AGENTS.md`: `cargo fmt --check`, `cargo clippy
   --all-targets -- -D warnings`, `cargo test --workspace` (Docker running).
 
-## To verify while building
+## What the verification found
 
-- That `board.northSouthScore` is the points of the **current round** (card
-  points, announcements, belote) and resets with each new round, not the match
-  total. The code (`GameBoard::scores`) and the existing "Team scores" labels
-  suggest so; the plan's first task confirms it in the browser. If the field
-  turns out to be something else, the fix is a mapping in `scoreBarModel`, not a
-  server change.
-- That the bot and pass-and-play snapshots carry `match` during bidding, as the
-  private table's do. If a snapshot lacks it before the board exists, the bar
-  waits for the first board there.
+Checked in the browser (Playwright, 2026-11-01) in bot Contrée and classic
+games, pass-and-play and a private table started with bots.
 
-Checked in the source while building Task 2 (the browser check is still to run):
-a local table (bot game and pass-and-play) starts its match when it is created
-(`Table::begin_match`, called from the local constructor in `tables/table.rs`),
-before the first deal, so its bidding snapshots carry `match`. Each round's
-`Board` starts with `north_south_score` and `east_west_score` at 0
-(`board.rs`) and adds trick points, the last trick's 10, announcements and
-Belote, so they are the current round's points.
+- **Round points are the current round's points.** `board.northSouthScore`
+  and `board.eastWestScore` start at 0 with each deal (the bar showed `+0`
+  for both teams at the first card of every round) and grow trick by trick
+  with card points, the last trick's 10, announcements and Belote. They are
+  the round's raw points, not what the round adds to the match score: in a
+  classic round where the contract is made the two are equal (`+88`/`+74`,
+  match 88–74), but in Contrée the match adds the contract's result
+  instead (a capot showed `+182` while East–West's match score went from 0
+  to 370; another round showed `+92` while North–South's rose by 182). The
+  breakdown under the table explains the difference, so `scoreBarModel`
+  keeps the field as it is.
+- **Bot and pass-and-play snapshots carry `match` during bidding.** The bar
+  appeared with both match scores and the target, and no round points, on
+  the first bidding render of a bot game and of a pass-and-play game, as it
+  does at a private table. The local table starts its match when it is
+  created (`Table::begin_match`), before the first deal.
 
 ## Out of scope
 
