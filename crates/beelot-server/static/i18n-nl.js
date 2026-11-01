@@ -63,7 +63,6 @@ window.beelotLocales = window.beelotLocales || {};
     "East–West": "Oost–West",
     "VS": "VS",
     "Game status": "Spelstatus",
-    "Trump": "Troef",
     "Contract": "Contract",
     "Turn": "Beurt",
     "Four-player card table": "Kaarttafel voor vier spelers",
@@ -90,7 +89,6 @@ window.beelotLocales = window.beelotLocales || {};
     "Diamonds": "Ruiten",
     "Hearts": "Harten",
     "Spades": "Schoppen",
-    "No contract yet": "Nog geen contract",
     "Contract value": "Contractwaarde",
     "Trump suit": "Troefkleur",
     "Make bid": "Bieden",
@@ -99,7 +97,6 @@ window.beelotLocales = window.beelotLocales || {};
     "{0} passes.": "{0} past.",
     "{0} takes with {1}.": "{0} kiest {1} als troef.",
     "Contrée auction": "Contrée-veiling",
-    "Current contract: {0} {1} by {2}": "Huidig contract: {0} {1} van {2}",
 
     // Public matchmaking
     "Sign in to keep track of your matches.": "Log in om je potjes bij te houden.",
@@ -470,11 +467,8 @@ window.beelotLocales = window.beelotLocales || {};
       "Kaarten gebruiken altijd zowel een kleursymbool als een kleur. De bediening werkt met aanraking en toetsenbord.",
 
     // Game board (client-built)
-    "Contract: {0} {1}{2}": "Contract: {0} {1}{2}",
-    " · coinched": " · gecoinched",
     ", contract {0}": ", contract {0}",
     ", coinched": ", gecoinched",
-    "{0} are trump": "{0} is troef",
     "Contract made": "Contract gehaald",
     "Contract failed": "Contract mislukt",
     "Contract made.": "Contract gehaald.",

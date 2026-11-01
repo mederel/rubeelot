@@ -694,9 +694,6 @@ async function renderPrivateBidding(bidding, variant) {
   document.querySelector("#private-declaration-message").textContent = "";
   document.querySelector("#private-round-result").hidden = true;
   document.querySelector("#private-card-table").hidden = false;
-  setSuitText(document.querySelector("#private-current-contract"), bidding.highestBid
-    ? t("Current contract: {0} {1} by {2}", bidding.highestBid, suitName(bidding.highestBidSuit, false), playerName(bidding.highestBidder)) : t("No contract yet"));
-  document.querySelector("#private-current-contract").hidden = variant !== "CONTREE";
   updateAmountChoices("private-contract-value", bidding.highestBid);
   document.querySelector("#private-bid-button").hidden = variant !== "CONTREE";
   document.querySelector("#private-coinche-button").hidden = !bidding.coincheAllowed;
@@ -731,9 +728,7 @@ function renderPrivateBoard(tableId, board, match) {
   lastRenderedPrivateBoardJson = snapshot;
   privateGameStage = "board";
   stopPrivateThinking();
-  setSuitText(document.querySelector("#private-game-heading"), board.variant === "CONTREE"
-    ? `${board.contractValue} ${suitName(board.trump)}${board.coinched ? t(" · coinched") : ""}`
-    : t("{0} are trump", suitName(board.trump)));
+  document.querySelector("#private-game-heading").textContent = board.variant === "CONTREE" ? t("Contrée") : t("Classic Belote");
   setSuitText(document.querySelector("#private-game-message"), board.roundResult
     ? t(board.roundResult.contractMade ? "Contract made." : "Contract failed.")
     : t("{0}'s turn · {1} of 8 tricks completed", playerName(board.activePlayer), board.completedTricks));
@@ -743,7 +738,6 @@ function renderPrivateBoard(tableId, board, match) {
   document.querySelector("#private-card-table").hidden = false;
   renderTableSeats("private", board.seats.map((seat, index) => ({ ...seat, dealer: index === board.dealerIndex })),
     board.currentPlayerIndex, contractFromBoard(board));
-  setSuitText(document.querySelector("#private-trump"), suitName(board.trump));
   document.querySelector("#private-declaring-team").textContent = t(board.declaringTeam);
   document.querySelector("#private-active-player").textContent = playerName(board.activePlayer);
   document.querySelector("#private-north-south-score").textContent = board.northSouthScore;
@@ -953,9 +947,6 @@ async function loadBotGame(gameId) {
     document.querySelector("#selected-difficulty").textContent = t(game.difficultyLabel);
     document.querySelector("#selected-variant").textContent = t(game.variantLabel);
     document.querySelector("#game-variant-title").textContent = t(game.variantLabel);
-    setSuitText(document.querySelector("#contract-summary"), board.variant === "CONTREE"
-      ? t("Contract: {0} {1}{2}", board.contractValue, suitName(board.trump), board.coinched ? t(" · coinched") : "") : "");
-    setSuitText(document.querySelector("#trump-suit"), suitName(board.trump));
     document.querySelector("#declaring-team").textContent = t(board.declaringTeam);
     document.querySelector("#active-player").textContent = playerName(board.activePlayer);
     document.querySelector("#north-south-score").textContent = board.northSouthScore;
@@ -1687,9 +1678,6 @@ async function loadBidding(gameId) {
     document.querySelector("#trump-options").hidden = isContree || !isSecondRound;
     document.querySelector("#contree-options").hidden = !isContree;
     offerAllTrumpChoices("contract-suit", isContree && game.allTrumps);
-    setSuitText(document.querySelector("#current-contract"), bidding.highestBid
-      ? t("Current contract: {0} {1} by {2}", bidding.highestBid, suitName(bidding.highestBidSuit, false), playerName(bidding.highestBidder))
-      : t("No contract yet"));
     updateAmountChoices("contract-value", bidding.highestBid);
     document.querySelector("#contract-bid-button").disabled = bidding.highestBid >= 160 || !bidding.playerTurn;
     document.querySelector("#pass-bid-button").disabled = !bidding.playerTurn;
