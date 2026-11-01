@@ -1112,6 +1112,7 @@ function suitSymbol(suit) {
 function cardElement(card) {
   const item = document.createElement("div");
   item.className = `playing-card ${card.suit.toLowerCase()}`;
+  item.setAttribute("role", "img");
   item.setAttribute("aria-label", cardName(card));
   item.dataset.rank = card.rank;
   item.dataset.card = `${card.rank}-${card.suit}`;
