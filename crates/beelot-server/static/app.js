@@ -1000,7 +1000,7 @@ async function loadBotGame(gameId) {
     document.querySelector("#declaring-team").textContent = t(board.declaringTeam);
     document.querySelector("#active-player").textContent = playerName(board.activePlayer);
     // In pass and play, "You" waits for the hand-off, so the bar does not tell who holds the device next.
-    if (viewForPath(window.location.pathname) === "bot-game") {
+    if (window.location.pathname === `/play/bot/game/${gameId}`) {
       showScoreBar(match, board, game.passAndPlay ? null : board.currentPlayerIndex % 2);
     }
     setSuitText(document.querySelector("#declaration-message"), t(board.declarationMessage || "")
@@ -1060,7 +1060,7 @@ async function loadBotGame(gameId) {
       return item;
     }));
     await handedOff;
-    if (viewForPath(window.location.pathname) === "bot-game") showScoreBar(match, board, board.currentPlayerIndex % 2);
+    if (window.location.pathname === `/play/bot/game/${gameId}`) showScoreBar(match, board, board.currentPlayerIndex % 2);
     if (secondDeal) await playSecondDeal(board, secondDeal.hand, seatsForBoard, showTrick);
   } catch (error) {
     window.history.replaceState({}, "", "/play/bot");
@@ -1799,11 +1799,11 @@ async function loadBidding(gameId) {
       button.disabled = !bidding.upturnedCard || button.dataset.suit === bidding.upturnedCard.suit;
     });
     // In pass and play, "You" waits for the hand-off, so the bar does not tell who holds the device next.
-    if (viewForPath(window.location.pathname) === "bidding") {
+    if (window.location.pathname === `/play/bot/bidding/${gameId}`) {
       showScoreBar(snapshot.match, null, game.passAndPlay ? null : currentPlayerIndex % 2);
     }
     await handedOff;
-    if (viewForPath(window.location.pathname) === "bidding") showScoreBar(snapshot.match, null, currentPlayerIndex % 2);
+    if (window.location.pathname === `/play/bot/bidding/${gameId}`) showScoreBar(snapshot.match, null, currentPlayerIndex % 2);
     if (animateDeal) await playOpeningDeal(game, bidding, currentPlayerIndex);
     // A bot took the contract before the player's first call: show its call, then move to the card table.
     if (bidding.complete) {
