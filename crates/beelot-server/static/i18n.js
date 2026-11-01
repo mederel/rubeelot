@@ -98,10 +98,10 @@ const fr = {
   "Accept upturned suit": "Prendre à la couleur retournée",
   "Pass": "Passer",
   "Choose a trump suit": "Choisissez une couleur d'atout",
-  "Clubs ♣": "Trèfle ♣",
-  "Diamonds ♦": "Carreau ♦",
-  "Hearts ♥": "Cœur ♥",
-  "Spades ♠": "Pique ♠",
+  "Clubs": "Trèfle",
+  "Diamonds": "Carreau",
+  "Hearts": "Cœur",
+  "Spades": "Pique",
   "No contract yet": "Pas encore de contrat",
   "Contract value": "Valeur du contrat",
   "Trump suit": "Couleur d'atout",
@@ -473,6 +473,12 @@ const fr = {
   "Full": "Complets",
   "Reduced": "Réduits",
   "No effects": "Aucun effet",
+  "Table theme": "Thème de la table",
+  "Choose the colours of the table and the card back.": "Choisissez les couleurs de la table et du dos des cartes.",
+  "Comic": "BD",
+  "Classic green": "Vert classique",
+  "Midnight": "Minuit",
+  "Sunset": "Coucher de soleil",
   "Cards always use both a suit symbol and colour. Controls support touch and keyboard use.":
     "Les cartes utilisent toujours à la fois un symbole et une couleur. Les commandes fonctionnent au toucher et au clavier.",
 
@@ -587,15 +593,6 @@ const locales = { fr: frenchLocale, ...(window.beelotLocales ?? {}) };
 const locale = locales[language];
 const serverPatterns = locale ? locale.patterns(suitWord) : [];
 
-// Suit name (any language, lower case) -> symbol, used to decorate call bubbles.
-const suitSymbols = {};
-const symbolBySuit = { clubs: "♣", diamonds: "♦", hearts: "♥", spades: "♠" };
-Object.entries(symbolBySuit).forEach(([suit, symbol]) => { suitSymbols[suit] = symbol; });
-Object.values(locales).forEach((entry) => Object.entries(entry.suits).forEach(([suit, word]) => {
-  suitSymbols[word] = symbolBySuit[suit];
-}));
-const suitTail = new RegExp(`(${Object.keys(suitSymbols).join("|")})$`, "i");
-
 function translateServer(text) {
   for (const [pattern, handler] of serverPatterns) {
     const match = pattern.exec(text);
@@ -618,6 +615,17 @@ function suitName(suit, capitalise = true) {
   const key = String(suit).toLowerCase().replace("_", " ");
   const name = locale ? locale.suits[key] ?? key : key;
   return capitalise ? name.charAt(0).toUpperCase() + name.slice(1) : name;
+}
+
+// Every suit word the page may show (active language and English), lower case, mapped to its suit key.
+function suitWordMap() {
+  const words = {};
+  for (const names of [locale?.suits, { clubs: "clubs", diamonds: "diamonds", hearts: "hearts", spades: "spades" }]) {
+    for (const suit of ["clubs", "diamonds", "hearts", "spades"]) {
+      if (names?.[suit]) words[names[suit].toLowerCase()] = suit;
+    }
+  }
+  return words;
 }
 
 function rankLabel(rank) {
