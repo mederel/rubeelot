@@ -1553,8 +1553,11 @@ function showPlayerCall(prefix, player, call, playerIsId = false) {
   bubble.dataset.call = text;
   bubble.dataset.red = suits.some((suit) => suit === "hearts" || suit === "diamonds");
   station.append(bubble);
-  shownContract[prefix] = contractAfterCall(shownContract[prefix] ?? null, station.dataset.playerName, call);
-  showContractBadge(prefix, shownContract[prefix]);
+  // The viewer's own call arrives translated ("Passer"), so a pass is recognised by its kind, not by its text.
+  if (kind !== "pass") {
+    shownContract[prefix] = contractAfterCall(shownContract[prefix] ?? null, station.dataset.playerName, call);
+    showContractBadge(prefix, shownContract[prefix]);
+  }
   station.dataset.callKind = kind;
   station.classList.remove("call-flash");
   void station.offsetWidth;
