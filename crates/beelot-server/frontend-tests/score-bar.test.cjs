@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { scoreBarModel, scoreBarAnnouncement } = require("../static/score-bar.js");
+const { scoreBarModel, scoreBarAnnouncement, countValue } = require("../static/score-bar.js");
 
 const MATCH = { northSouth: 420, eastWest: 310, target: 1000 };
 
@@ -49,4 +49,62 @@ test("announcement", () => {
   const text = scoreBarAnnouncement(model, t, format);
   assert.equal(text, "Match score: North–South 10,420, East–West 310, to 1,000.");
   assert.ok(!text.includes("62"));
+});
+
+test("progress is the share of the target", () => {
+  const model = scoreBarModel({ match: { northSouth: 500, eastWest: 250, target: 1000 }, board: null, myTeam: 0 });
+  assert.equal(model.teams[0].progress, 0.5);
+  assert.equal(model.teams[1].progress, 0.25);
+});
+
+test("progress is clamped", () => {
+  const model = scoreBarModel({ match: { northSouth: 1200, eastWest: -50, target: 1000 }, board: null, myTeam: 0 });
+  assert.equal(model.teams[0].progress, 1);
+  assert.equal(model.teams[1].progress, 0);
+});
+
+test("progress without a usable target is 0", () => {
+  for (const target of [0, null, undefined]) {
+    const model = scoreBarModel({ match: { northSouth: 500, eastWest: 250, target }, board: null, myTeam: 0 });
+    assert.deepEqual(model.teams.map((t) => t.progress), [0, 0]);
+  }
+});
+
+test("countValue endpoints", () => {
+  assert.equal(countValue(100, 250, 0), 100);
+  assert.equal(countValue(100, 250, 1), 250);
+  assert.equal(countValue(100, 250, -1), 100);
+  assert.equal(countValue(100, 250, 2), 250);
+});
+
+test("countValue never decreases", () => {
+  let previous = 100;
+  for (let i = 0; i <= 10; i++) {
+    const value = countValue(100, 250, i / 10);
+    assert.ok(value >= previous);
+    assert.ok(value <= 250);
+    previous = value;
+  }
+});
+
+test("countValue with no rise returns to", () => {
+  assert.equal(countValue(300, 300, 0.5), 300);
+  assert.equal(countValue(300, 100, 0.5), 100);
+});
+
+test("countValue returns integers", () => {
+  for (let i = 0; i <= 10; i++) assert.ok(Number.isInteger(countValue(0, 77, i / 10)));
+});
+
+test("progress exactly at the target is 1", () => {
+  const model = scoreBarModel({ match: { northSouth: 1000, eastWest: 1000, target: 1000 }, board: null, myTeam: 0 });
+  assert.deepEqual(model.teams.map((t) => t.progress), [1, 1]);
+});
+
+test("a non-finite score or target gives progress 0", () => {
+  const nan = scoreBarModel({ match: { northSouth: NaN, eastWest: 250, target: 1000 }, board: null, myTeam: 0 });
+  assert.equal(nan.teams[0].progress, 0);
+  assert.equal(nan.teams[1].progress, 0.25);
+  const inf = scoreBarModel({ match: { northSouth: 500, eastWest: 250, target: Infinity }, board: null, myTeam: 0 });
+  assert.deepEqual(inf.teams.map((t) => t.progress), [0, 0]);
 });

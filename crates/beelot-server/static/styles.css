@@ -372,7 +372,8 @@ h2, h3 { letter-spacing: -.025em; }
 .game-status .turn-pill { background: rgba(99,230,211,.18); box-shadow: inset 0 0 0 1px rgba(99,230,211,.22); color: var(--aqua); }
 
 /* The score bar (US-096): stays at the top of the page through the whole game. Its z-index is above the seats
-   (at most 30) and below the pass-and-play cover (1000). It has no transition, so effects Off needs no rule. */
+   (at most 30) and below the pass-and-play cover (1000). Only its progress bars transition (US-091); the effects
+   rules below shorten that to --effect-fast at Reduced and remove it at Off. */
 .score-bar {
   align-items: center;
   background: var(--seat-bg);
@@ -394,15 +395,36 @@ h2, h3 { letter-spacing: -.025em; }
   border: var(--outline-width) solid transparent;
   border-radius: var(--radius-chip);
   display: flex;
-  gap: .45rem;
+  flex-wrap: wrap;
+  gap: .15rem .45rem;
   min-width: 0;
   padding: .1rem .7rem;
 }
 .score-team[data-team="1"] { justify-content: flex-end; }
+/* Each chip's distance to the target: the outlined track shows even at 0; only the fill's transform moves. */
+.score-progress {
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--card-ink);
+  border-radius: var(--radius-chip);
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 100%;
+  height: 6px;
+  overflow: hidden;
+}
+.score-progress i {
+  background: var(--gold);
+  display: block;
+  height: 100%;
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left;
+  transition: transform 700ms ease-out;
+}
+.score-team.progress-snap .score-progress i { transition: none; }
 .score-team.mine { background: rgba(255, 209, 102, .14); border-color: var(--gold); }
-.team-name { color: var(--muted); font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.team-name { color: var(--muted); font-size: .78rem; font-weight: 800; line-height: 1.2; white-space: nowrap; }
 .match-points { color: var(--gold); font-size: 1.35rem; font-variant-numeric: tabular-nums; font-weight: 900; }
-.round-points { color: var(--aqua); font-size: .8rem; font-variant-numeric: tabular-nums; font-weight: 800; }
+.round-points { color: var(--aqua); font-size: .8rem; font-variant-numeric: tabular-nums; font-weight: 800; line-height: 1.2; }
 .round-points:empty { display: none; }
 .you-mark {
   align-self: center;
@@ -412,6 +434,7 @@ h2, h3 { letter-spacing: -.025em; }
   font-size: .62rem;
   font-style: normal;
   font-weight: 900;
+  line-height: 1.2;
   padding: .1rem .4rem;
   text-transform: uppercase;
 }
@@ -426,13 +449,16 @@ h2, h3 { letter-spacing: -.025em; }
     gap: 0 .35rem;
     grid-template-columns: auto auto;
     justify-content: start;
-    padding: .1rem .5rem;
+    padding: .1rem .5rem calc(.1rem + 7px);
+    position: relative;
   }
   .score-team[data-team="1"] { justify-content: end; }
   .team-name { font-size: .66rem; }
   .match-points { font-size: 1.1rem; line-height: 1.2; }
   .round-points { font-size: .7rem; grid-column: 1; }
   .you-mark { font-size: .55rem; grid-column: 2; grid-row: 2; justify-self: start; }
+  /* Out of the grid, so the track always spans the chip's content width, whatever the digits. */
+  .score-progress { bottom: .1rem; left: .5rem; position: absolute; right: .5rem; }
   .score-target { font-size: .68rem; }
 }
 
@@ -1237,6 +1263,9 @@ body[data-effects="reduced"] .table-hand .playing-card.undealt { animation: none
 body[data-effects="reduced"] .player-call { animation: none; }
 body[data-effects="reduced"] .contract-badge.badge-bounce, body[data-effects="off"] .contract-badge.badge-bounce { animation: none; }
 body[data-effects="reduced"] .trick-collecting .trick-slot { animation: fade-out var(--effect-fast) forwards; }
+/* A one-shot transition: Reduced shortens it to --effect-fast; Off removes it (the rule for every element below). */
+body[data-effects="reduced"] .score-progress i { transition: transform var(--effect-fast) ease-out; }
+body[data-effects="off"] .score-progress i { transition: none; }
 
 /* Reduced and Off: loops stop and leave a static state (border, glow or colour) that marks the same thing. */
 body[data-effects="reduced"] .hero-suits span,

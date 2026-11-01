@@ -343,6 +343,63 @@ function openTableStream(tableId, retry = 1000) {
 const scoreBarViews = ["bidding", "bot-game", "private-table"];
 let scoreBarSentence = "";
 let scoreBarGame = "";
+// The numbers and progress each team's chip shows now, `{ match, round, progress }`, forgotten with the game key
+// so the first show of a game writes its score at once (US-091).
+let shownScores = [{}, {}];
+// One running count per number, keyed "team-kind": `{ frame, to, element }`.
+const scoreCounts = new Map();
+
+function cancelScoreCount(key) {
+  const count = scoreCounts.get(key);
+  if (!count) return;
+  cancelAnimationFrame(count.frame);
+  count.element.removeAttribute("aria-hidden");
+  scoreCounts.delete(key);
+}
+
+function cancelScoreCounts() {
+  [...scoreCounts.keys()].forEach(cancelScoreCount);
+}
+
+// Writes one number of the bar. A rise counts up from the value shown, over `duration`, at the Full effects level;
+// a first value, a drop or another level writes it at once. The number is hidden from assistive technology while it
+// counts, so only the live region speaks the score.
+function showScoreNumber(team, kind, element, value, duration, prefix = "") {
+  const key = `${team}-${kind}`;
+  if (scoreCounts.get(key)?.to === value) return;
+  cancelScoreCount(key);
+  const write = (shown) => {
+    shownScores[team][kind] = shown;
+    element.textContent = shown == null ? "" : `${prefix}${formatNumber(shown)}`;
+  };
+  const from = shownScores[team][kind];
+  if (value == null || from == null || !(value > from) || effectsLevel() !== "full") {
+    write(value);
+    return;
+  }
+  element.setAttribute("aria-hidden", "true");
+  const start = performance.now();
+  const step = (now) => {
+    const progress = (now - start) / duration;
+    write(countValue(from, value, progress));
+    if (progress >= 1) cancelScoreCount(key);
+    else scoreCounts.get(key).frame = requestAnimationFrame(step);
+  };
+  scoreCounts.set(key, { frame: requestAnimationFrame(step), to: value, element });
+}
+
+// Sets the chip's progress bar; a first value or a drop jumps there without its transition.
+function showScoreProgress(team, chip, progress) {
+  const shown = shownScores[team].progress;
+  shownScores[team].progress = progress;
+  const snap = shown == null || progress < shown;
+  chip.classList.toggle("progress-snap", snap);
+  chip.style.setProperty("--progress", progress);
+  if (snap) {
+    void chip.offsetWidth;
+    chip.classList.remove("progress-snap");
+  }
+}
 
 function showScoreBar(match, board, myTeam) {
   const model = scoreBarModel({ match, board, myTeam });
@@ -354,10 +411,11 @@ function showScoreBar(match, board, myTeam) {
   model.teams.forEach((team, index) => {
     const chip = bar.querySelector(`[data-team="${index}"]`);
     chip.querySelector(".team-name").textContent = t(team.name);
-    chip.querySelector(".match-points").textContent = formatNumber(team.matchScore);
+    showScoreNumber(index, "match", chip.querySelector(".match-points"), team.matchScore, 700);
     const round = chip.querySelector(".round-points");
-    round.textContent = team.roundPoints == null ? "" : `+${formatNumber(team.roundPoints)}`;
+    showScoreNumber(index, "round", round, team.roundPoints, 300, "+");
     round.title = team.roundPoints == null ? "" : t("Round points");
+    showScoreProgress(index, chip, team.progress);
     chip.querySelector(".you-mark").hidden = !team.mine;
     chip.classList.toggle("mine", team.mine);
   });
@@ -371,6 +429,7 @@ function showScoreBar(match, board, myTeam) {
 }
 
 function hideScoreBar() {
+  cancelScoreCounts();
   document.querySelector("#score-bar").hidden = true;
 }
 
@@ -381,6 +440,8 @@ function renderView() {
   if (game !== scoreBarGame) {
     scoreBarGame = game;
     scoreBarSentence = "";
+    cancelScoreCounts();
+    shownScores = [{}, {}];
     document.querySelector("#score-bar-live").textContent = "";
   }
   document.querySelectorAll("[data-view]").forEach((view) => {
