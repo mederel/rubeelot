@@ -1098,6 +1098,17 @@ document.querySelector("#tutorial-replay-button").addEventListener("click", () =
   showTutorialStep();
 });
 
+function suitSymbol(suit) {
+  const name = String(suit).toLowerCase();
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", `suit suit-${name}`);
+  svg.setAttribute("aria-hidden", "true");
+  const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  use.setAttribute("href", `/suits.svg#suit-${name}`);
+  svg.append(use);
+  return svg;
+}
+
 function cardElement(card) {
   const item = document.createElement("div");
   item.className = `playing-card ${card.suit.toLowerCase()}`;
@@ -1105,41 +1116,17 @@ function cardElement(card) {
   item.dataset.rank = card.rank;
   item.dataset.card = `${card.rank}-${card.suit}`;
 
-  const corner = (position) => {
-    const index = document.createElement("span");
-    index.className = `card-index card-index-${position}`;
-    const rank = document.createElement("strong");
-    rank.textContent = rankLabel(card.rank);
-    const suit = document.createElement("span");
-    suit.textContent = card.symbol;
-    index.append(rank, suit);
-    return index;
-  };
+  const index = document.createElement("span");
+  index.className = "card-index";
+  const rank = document.createElement("strong");
+  rank.textContent = rankLabel(card.rank);
+  index.append(rank, suitSymbol(card.suit));
+  item.append(index);
 
-  const face = document.createElement("span");
-  face.className = "card-face";
-  const pipLayouts = {
-    "7": [[1, 1], [1, 3], [2, 2], [3, 1], [3, 3], [5, 1], [5, 3]],
-    "8": [[1, 1], [1, 3], [2, 2], [3, 1], [3, 3], [4, 2], [5, 1], [5, 3]],
-    "9": [[1, 1], [1, 3], [2, 1], [2, 3], [3, 2], [4, 1], [4, 3], [5, 1], [5, 3]],
-    "10": [[1, 1], [1, 3], [2, 1], [2, 3], [3, 1], [3, 3], [4, 1], [4, 3], [5, 1], [5, 3]]
-  };
-  if (pipLayouts[card.rank]) {
-    face.classList.add("pip-field");
-    pipLayouts[card.rank].forEach(([row, column]) => {
-      const pip = document.createElement("i");
-      pip.className = "card-pip";
-      pip.textContent = card.symbol;
-      pip.style.setProperty("--pip-row", row);
-      pip.style.setProperty("--pip-column", column);
-      face.append(pip);
-    });
-  } else if (card.rank === "A") {
-    face.classList.add("ace-face");
-    face.textContent = card.symbol;
-  } else {
+  if (card.rank === "J" || card.rank === "Q" || card.rank === "K") {
     item.classList.add("court-card");
-    face.classList.add("court-face", `court-${card.suit.toLowerCase()}`);
+    const face = document.createElement("span");
+    face.className = `card-face court-face court-${card.suit.toLowerCase()}`;
     const art = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     art.setAttribute("class", "court-art");
     art.setAttribute("aria-hidden", "true");
@@ -1148,9 +1135,8 @@ function cardElement(card) {
     use.setAttribute("href", `/cards.svg#court-${card.rank}-${card.suit.toLowerCase()}`);
     art.append(use);
     face.append(art);
+    item.append(face);
   }
-
-  item.append(corner("top"), face, corner("bottom"));
   return item;
 }
 

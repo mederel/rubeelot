@@ -744,6 +744,7 @@ h2, h3 { letter-spacing: -.025em; }
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-hard);
   color: var(--card-black);
+  container-type: inline-size;
   display: block;
   flex: 0 0 auto;
   font-family: var(--font-sans);
@@ -762,41 +763,16 @@ h2, h3 { letter-spacing: -.025em; }
   align-items: center;
   display: flex;
   flex-direction: column;
-  font-size: .76rem;
   left: 4px;
-  line-height: .88;
+  line-height: 1;
   position: absolute;
-  top: 4px;
+  top: 3px;
   z-index: 2;
 }
-.card-index strong { font-size: .88rem; }
-.card-index-bottom { bottom: 4px; left: auto; right: 4px; top: auto; transform: rotate(180deg); }
-.card-face { inset: 13px 10px; position: absolute; }
-.pip-field {
-  align-items: center;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(5, 1fr);
-  inset: 19px 15px;
-  justify-items: center;
-}
-.card-pip {
-  font-size: .9rem;
-  font-style: normal;
-  grid-column: var(--pip-column);
-  grid-row: var(--pip-row);
-  line-height: 1;
-}
-.card-pip:nth-child(n+6) { transform: rotate(180deg); }
-.ace-face {
-  align-items: center;
-  display: flex;
-  font-size: 2.75rem;
-  justify-content: center;
-}
-.card-face.court-face { inset: 12% 6% 0; }
+.card-index strong { font-size: 24cqw; }
+.card-index .suit { display: block; height: 40cqw; width: 40cqw; }
+.card-face.court-face { bottom: 0; height: 76%; position: absolute; right: 2%; width: 76%; }
 .court-art { display: block; height: 100%; width: 100%; }
-.court-card .card-index { background: var(--card-paper); border-radius: 3px; }
 .playing-card.legal-card { box-shadow: 0 0 0 var(--outline-width) var(--gold), 4px 4px 0 var(--outline-width) var(--card-ink); cursor: pointer; transform: translateY(-5px); }
 .playing-card.hint-card { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--gold), 6px 6px 0 6px var(--card-ink); transform: translateY(-12px); }
 .hint-bid { outline: 3px dashed var(--gold); outline-offset: 3px; }
@@ -1212,10 +1188,6 @@ body[data-effects="reduced"] *::after {
   .table-center { top: 49%; width: 55%; }
   .playing-card, .card-back { height: 84px; width: 58px; }
   .card-back::after { font-size: .72rem; height: 1.25rem; line-height: 1.05rem; margin: -.625rem 0 0 -.625rem; width: 1.25rem; }
-  .card-face { inset: 11px 8px; }
-  .pip-field { inset: 17px 13px; }
-  .card-pip { font-size: .7rem; }
-  .ace-face { font-size: 2.2rem; }
   .table-hand { bottom: 4%; max-width: 94%; }
   .table-hand .playing-card + .playing-card { margin-left: -14px; }
   .seat-list { grid-template-columns: 1fr; }
@@ -1375,13 +1347,6 @@ body[data-effects="reduced"] *::after {
   .station-left .hidden-hand { left: 0; }
   .station-right .hidden-hand { left: auto; right: 0; }
   .table-center { top: 47%; width: 60%; }
-  .card-face { inset: 10px 7px; }
-  .pip-field { inset: 15px 11px; }
-  .card-pip { font-size: .55rem; }
-  .ace-face { font-size: 1.9rem; }
-  .card-index { font-size: .66rem; left: 3px; top: 3px; }
-  .card-index strong { font-size: .76rem; }
-  .card-index-bottom { bottom: 3px; left: auto; right: 3px; top: auto; }
   .player-call { font-size: .68rem; padding: .3rem .5rem; }
   .playing-card.legal-card { transform: translateY(-4px); }
 
@@ -1394,10 +1359,6 @@ body[data-effects="reduced"] *::after {
   .trick-slot-top { left: 65px; }
   .trick-slot-bottom { left: 65px; }
   .trick-slot-left, .trick-slot-right { top: 42px; }
-  .trick-slot .ace-face { font-size: 1.6rem; }
-  .trick-slot .card-pip { font-size: .45rem; }
-  .trick-slot .card-index { font-size: .58rem; }
-  .trick-slot .card-index strong { font-size: .68rem; }
   .trick-player { font-size: .5rem; max-width: 60px; }
   .trick-points { font-size: .58rem; }
   .deal-packet, .deal-packet .card-back { height: 52px; width: 36px; }
@@ -1525,7 +1486,6 @@ body[data-effects="reduced"] *::after {
   .trick-slot, .trick-slot .playing-card { height: var(--tch); width: var(--tcw); }
   .trick-slot-top, .trick-slot-bottom { left: calc(50% - var(--tcw) / 2); }
   .trick-slot-left, .trick-slot-right { top: calc(50% - var(--tch) / 2); }
-  .trick-slot .ace-face { font-size: calc(var(--tch) * .4); }
   .trick-progress { margin-bottom: .3rem; }
 
   .table-feedback { min-height: 0; }
