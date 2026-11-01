@@ -1543,3 +1543,18 @@ body[data-effects="reduced"] *::after {
   .station-bottom.active-player { transform: translateY(-2px); }
   .table-center { top: calc(50% - (var(--ch) - 2.8rem) / 2); }
 }
+
+.suit-with-name { white-space: nowrap; }
+.suit-inline { height: 1.05em; margin-right: .2em; vertical-align: -.15em; width: 1.05em; }
+
+.visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
