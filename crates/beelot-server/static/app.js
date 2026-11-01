@@ -1322,6 +1322,11 @@ function showContractBadge(prefix, contract, keepKey = false) {
   if (!keepKey) lastBadgeKey = key;
   for (const station of document.querySelectorAll(`[id^="${prefix}-player-"]`)) {
     const mine = contract && station.dataset.playerName === contract.player;
+    // The badge is aria-hidden: the holder's seat label carries the contract instead.
+    if (station.dataset.seatLabel !== undefined) {
+      station.setAttribute("aria-label", station.dataset.seatLabel
+        + (mine ? t(", contract {0}", contractLabel(contract)) + (contract.coinched ? t(", coinched") : "") : ""));
+    }
     let badge = station.querySelector(".contract-badge");
     if (!mine) {
       badge?.remove();
@@ -1363,10 +1368,8 @@ function renderTableSeats(prefix, seats, currentPlayerIndex = 0, contractArg = u
     station.classList.toggle("active-player", seat.active);
     station.dataset.playerName = seat.name;
     station.dataset.seatIndex = seatIndex;
-    station.setAttribute("aria-label", t("{0}, {1}, {2}{3}", playerName(seat.name), t(seat.team), t(`${seat.cardCount} cards`), seat.active ? t(", active player") : "")
-      + (contract && contract.player === seat.name
-        ? t(", contract {0}", contractLabel(contract)) + (contract.coinched ? t(", coinched") : "")
-        : ""));
+    // The contract is appended by showContractBadge, which keeps the label in step with the badge.
+    station.dataset.seatLabel = t("{0}, {1}, {2}{3}", playerName(seat.name), t(seat.team), t(`${seat.cardCount} cards`), seat.active ? t(", active player") : "");
 
     const avatar = document.createElement("span");
     avatar.className = "player-avatar";
