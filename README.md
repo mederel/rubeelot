@@ -5,6 +5,7 @@
 # Beelot
 
 [![Build](https://github.com/mederel/rubeelot/actions/workflows/build.yml/badge.svg)](https://github.com/mederel/rubeelot/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/mederel/rubeelot?sort=semver)](https://github.com/mederel/rubeelot/releases/latest)
 ![Rust 1.95](https://img.shields.io/badge/Rust-1.95-orange?logo=rust)
 ![axum](https://img.shields.io/badge/axum-tokio-blue)
 ![French, English, Dutch](https://img.shields.io/badge/languages-FR%20%C2%B7%20EN%20%C2%B7%20NL-purple)
@@ -126,6 +127,17 @@ The server is `target/release/beelot-server`. It finds the frontend in the
 crate's `static/` folder at the path it was built from; when the binary runs
 elsewhere, copy `crates/beelot-server/static/` next to it and point
 `BEELOT_STATIC_DIR` at the copy.
+
+### Releases
+
+Every push to `main` that changes more than documentation, and passes the
+checks, publishes a release: a `vMAJOR.MINOR.PATCH` tag, a GitHub release and a
+workflow artifact holding `beelot-<version>-linux-x86_64.tar.gz` (the server,
+its `static/` folder and this README; run it with `BEELOT_STATIC_DIR=static`).
+The first release is `v1.0.0`. After that, the version goes up by a minor when
+a commit since the previous tag is a feature (its subject starts with `feat:`,
+`feat(scope):` or `feat!:`), and by a patch otherwise.
+`.github/scripts/next-version.sh` computes it.
 
 ## Bot arena
 
