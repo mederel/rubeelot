@@ -814,6 +814,8 @@ async function privateAction(action) {
     await loadPrivateTable(session.tableId);
   } catch (error) {
     privateOwnCallShown = false;
+    // A refused call must not stay on the table: redraw the auction as the server holds it, then show the error.
+    if (auctionAction) await loadPrivateTable(session.tableId);
     document.querySelector("#private-game-message").textContent = error.message;
   } finally {
     if (auctionAction) privatePanel.classList.remove("auction-waiting-view");
@@ -1721,7 +1723,11 @@ async function submitBid(action, body) {
     await pause(ownCallDelay);
     const response = (await api.act(gameId, { type: action, ...body })).bidding;
     // Taking a trump or coinching ends the auction: the card table follows at once.
-    if (action !== "trump" && action !== "coinche") await revealCalls("bidding", response.calls, humanName);
+    // The server lists the calls by seat; the badge must follow them in speaking order, starting after the dealer.
+    const speakingOrder = (response.calls ?? []).map((call, seat) => ({ call, seat }))
+      .sort((left, right) => ((left.seat - response.dealerIndex + 3) % 4) - ((right.seat - response.dealerIndex + 3) % 4))
+      .map(({ call }) => call);
+    if (action !== "trump" && action !== "coinche") await revealCalls("bidding", speakingOrder, humanName);
     if (action === "trump" || action === "coinche" || response.complete) {
       window.history.pushState({}, "", `/play/bot/game/${gameId}`);
       renderView();
@@ -1731,7 +1737,8 @@ async function submitBid(action, body) {
     loadBidding(gameId);
   } catch (error) {
     // A refused call must not stay on the table: redraw the auction as the server holds it, badge included.
-    await loadBidding(gameId);
+    // Only a server refusal leaves the table intact; on a network failure stay put and show the error.
+    if (error.status) await loadBidding(gameId);
     document.querySelector("#bidding-message").textContent = error.message;
   } finally {
     biddingView.classList.remove("auction-waiting-view");
