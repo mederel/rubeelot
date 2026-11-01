@@ -626,6 +626,7 @@ async function loadPrivateTable(tableId) {
     const table = snapshot.table;
     showPrivateTable(table);
     if (table.status === "IN_PROGRESS") await loadPrivateGame(tableId, table.variant, requestId, snapshot);
+    else if (privateTableOnScreen(tableId)) hideScoreBar();
     document.querySelector("#private-reaction-bar").hidden = table.status !== "IN_PROGRESS" || !reactionsEnabled()
       || session?.tableId !== tableId;
     if (table.status === "IN_PROGRESS") loadReactions(tableId, snapshot.reactions);
@@ -647,7 +648,6 @@ async function loadPrivateGame(tableId, variant, requestId = ++privateTableReque
   panel.hidden = false;
   const snapshot = known ?? await currentSnapshot(tableId);
   if (requestId !== privateTableRequestId) return;
-  // The match score is shown during the auction too.
   const match = snapshot.match ?? null;
   if (snapshot.board) {
     // The auction ended since the last refresh: reveal its closing calls before the cards are played.
@@ -655,9 +655,10 @@ async function loadPrivateGame(tableId, variant, requestId = ++privateTableReque
       await renderPrivateBidding(snapshot.bidding, variant);
       if (requestId !== privateTableRequestId) return;
     }
-    renderPrivateBoard(tableId, snapshot.board, match);
+    renderPrivateBoard(tableId, snapshot.board, match, snapshot.you);
   } else if (snapshot.bidding) {
-    renderPrivateMatchScore(match);
+    // The match score is shown during the auction too, without round points.
+    showPrivateScoreBar(tableId, match, null, snapshot.you);
     await renderPrivateBidding(snapshot.bidding, variant);
   }
 }
@@ -737,7 +738,6 @@ async function renderPrivateBidding(bidding, variant) {
   document.querySelector("#private-game-hand").replaceChildren(...orderHandForDisplay(bidding.hand).map(cardElement));
   document.querySelector("#private-auction-actions").hidden = false;
   document.querySelector("#private-play-status").hidden = true;
-  document.querySelector("#private-scoreboard").hidden = true;
   document.querySelector("#private-declaration-message").textContent = "";
   document.querySelector("#private-round-result").hidden = true;
   document.querySelector("#private-card-table").hidden = false;
@@ -762,14 +762,19 @@ async function renderPrivateBidding(bidding, variant) {
   showPrivateThinking(bidding);
 }
 
-// The team scores added up over the rounds of the match so far.
-function renderPrivateMatchScore(match) {
-  document.querySelector("#private-match-score").textContent = match
-    ? t("Match score — North–South {0} · East–West {1} · to {2}", match.northSouth, match.eastWest,
-      formatNumber(match.target)) : "";
+// Whether the player still looks at this table: a snapshot that arrives after they left must not draw over another view.
+function privateTableOnScreen(tableId) {
+  return viewForPath(window.location.pathname) === "private-table" && privateTableId() === tableId;
 }
 
-function renderPrivateBoard(tableId, board, match) {
+// `you` is the viewer's seat, or null when they hold none: then no team is marked "You".
+function showPrivateScoreBar(tableId, match, board, you) {
+  if (privateTableOnScreen(tableId)) showScoreBar(match, board, you == null ? null : you % 2);
+}
+
+function renderPrivateBoard(tableId, board, match, you) {
+  // Before the unchanged-snapshot check: renderView hides the bar, and coming back to the table must show it again.
+  showPrivateScoreBar(tableId, match, board, you);
   const snapshot = JSON.stringify({ board, match });
   if (snapshot === lastRenderedPrivateBoardJson) return;
   lastRenderedPrivateBoardJson = snapshot;
@@ -781,15 +786,11 @@ function renderPrivateBoard(tableId, board, match) {
     : t("{0}'s turn · {1} of 8 tricks completed", playerName(board.activePlayer), board.completedTricks));
   document.querySelector("#private-auction-actions").hidden = true;
   document.querySelector("#private-play-status").hidden = false;
-  document.querySelector("#private-scoreboard").hidden = false;
   document.querySelector("#private-card-table").hidden = false;
   renderTableSeats("private", board.seats.map((seat, index) => ({ ...seat, dealer: index === board.dealerIndex })),
     board.currentPlayerIndex, contractFromBoard(board));
   document.querySelector("#private-declaring-team").textContent = t(board.declaringTeam);
   document.querySelector("#private-active-player").textContent = playerName(board.activePlayer);
-  document.querySelector("#private-north-south-score").textContent = board.northSouthScore;
-  document.querySelector("#private-east-west-score").textContent = board.eastWestScore;
-  renderPrivateMatchScore(match);
   setSuitText(document.querySelector("#private-declaration-message"), board.declarationMessage
     ? `${t(board.declarationMessage)}${board.beloteBonusPoints ? t(" Belote/Rebelote bonus: {0} points.", board.beloteBonusPoints) : ""}` : "");
   renderAnnouncements("private-", board);
