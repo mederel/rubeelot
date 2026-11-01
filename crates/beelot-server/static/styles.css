@@ -422,9 +422,9 @@ h2, h3 { letter-spacing: -.025em; }
 }
 .score-team.progress-snap .score-progress i { transition: none; }
 .score-team.mine { background: rgba(255, 209, 102, .14); border-color: var(--gold); }
-.team-name { color: var(--muted); font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.team-name { color: var(--muted); font-size: .78rem; font-weight: 800; line-height: 1.2; white-space: nowrap; }
 .match-points { color: var(--gold); font-size: 1.35rem; font-variant-numeric: tabular-nums; font-weight: 900; }
-.round-points { color: var(--aqua); font-size: .8rem; font-variant-numeric: tabular-nums; font-weight: 800; }
+.round-points { color: var(--aqua); font-size: .8rem; font-variant-numeric: tabular-nums; font-weight: 800; line-height: 1.2; }
 .round-points:empty { display: none; }
 .you-mark {
   align-self: center;
@@ -434,6 +434,7 @@ h2, h3 { letter-spacing: -.025em; }
   font-size: .62rem;
   font-style: normal;
   font-weight: 900;
+  line-height: 1.2;
   padding: .1rem .4rem;
   text-transform: uppercase;
 }
