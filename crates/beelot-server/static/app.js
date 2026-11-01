@@ -728,9 +728,9 @@ function renderPrivateBoard(tableId, board, match) {
   lastRenderedPrivateBoardJson = snapshot;
   privateGameStage = "board";
   stopPrivateThinking();
-  document.querySelector("#private-game-heading").textContent = board.variant === "CONTREE"
+  setSuitText(document.querySelector("#private-game-heading"), board.variant === "CONTREE"
     ? `${board.contractValue} ${suitName(board.trump)}${board.coinched ? t(" · coinched") : ""}`
-    : t("{0} are trump", suitName(board.trump));
+    : t("{0} are trump", suitName(board.trump)));
   setSuitText(document.querySelector("#private-game-message"), board.roundResult
     ? t(board.roundResult.contractMade ? "Contract made." : "Contract failed.")
     : t("{0}'s turn · {1} of 8 tricks completed", playerName(board.activePlayer), board.completedTricks));
@@ -1120,14 +1120,16 @@ function setSuitText(element, text, { symbolOnly = false } = {}) {
     suits.push(part.suit);
     const symbol = suitSymbol(part.suit);
     symbol.classList.add("suit-inline");
-    nodes.push(symbol);
     if (symbolOnly) {
       const word = document.createElement("span");
       word.className = "visually-hidden";
       word.textContent = part.word;
-      nodes.push(word);
+      nodes.push(symbol, word);
     } else {
-      nodes.push(` ${part.word}`);
+      const withName = document.createElement("span");
+      withName.className = "suit-with-name";
+      withName.append(symbol, ` ${part.word}`);
+      nodes.push(withName);
     }
   }
   element.replaceChildren(...nodes);
