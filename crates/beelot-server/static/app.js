@@ -337,8 +337,52 @@ function openTableStream(tableId, retry = 1000) {
   });
 }
 
+// The score bar above the table: each team's match score and round points, the target, and the viewer's team.
+// The live region speaks only when its sentence changes, so tricks, repeated renders and the move from bidding to
+// the card table stay silent; the sentence is forgotten only when the player leaves the game (see renderView).
+const scoreBarViews = ["bidding", "bot-game", "private-table"];
+let scoreBarSentence = "";
+let scoreBarGame = "";
+
+function showScoreBar(match, board, myTeam) {
+  const model = scoreBarModel({ match, board, myTeam });
+  if (!model) {
+    hideScoreBar();
+    return;
+  }
+  const bar = document.querySelector("#score-bar");
+  model.teams.forEach((team, index) => {
+    const chip = bar.querySelector(`[data-team="${index}"]`);
+    chip.querySelector(".team-name").textContent = t(team.name);
+    chip.querySelector(".match-points").textContent = formatNumber(team.matchScore);
+    const round = chip.querySelector(".round-points");
+    round.textContent = team.roundPoints == null ? "" : `+${formatNumber(team.roundPoints)}`;
+    round.title = team.roundPoints == null ? "" : t("Round points");
+    chip.querySelector(".you-mark").hidden = !team.mine;
+    chip.classList.toggle("mine", team.mine);
+  });
+  bar.querySelector(".score-target").textContent = t("to {0}", formatNumber(model.target));
+  bar.hidden = false;
+  const sentence = scoreBarAnnouncement(model, t, formatNumber);
+  if (sentence !== scoreBarSentence) {
+    scoreBarSentence = sentence;
+    document.querySelector("#score-bar-live").textContent = sentence;
+  }
+}
+
+function hideScoreBar() {
+  document.querySelector("#score-bar").hidden = true;
+}
+
 function renderView() {
+  hideScoreBar();
   const activeView = viewForPath(window.location.pathname);
+  const game = scoreBarViews.includes(activeView) ? window.location.pathname.split("/").at(-1) : "";
+  if (game !== scoreBarGame) {
+    scoreBarGame = game;
+    scoreBarSentence = "";
+    document.querySelector("#score-bar-live").textContent = "";
+  }
   document.querySelectorAll("[data-view]").forEach((view) => {
     view.hidden = view.dataset.view !== activeView;
   });
@@ -582,6 +626,7 @@ async function loadPrivateTable(tableId) {
     const table = snapshot.table;
     showPrivateTable(table);
     if (table.status === "IN_PROGRESS") await loadPrivateGame(tableId, table.variant, requestId, snapshot);
+    else if (privateTableOnScreen(tableId)) hideScoreBar();
     document.querySelector("#private-reaction-bar").hidden = table.status !== "IN_PROGRESS" || !reactionsEnabled()
       || session?.tableId !== tableId;
     if (table.status === "IN_PROGRESS") loadReactions(tableId, snapshot.reactions);
@@ -603,7 +648,6 @@ async function loadPrivateGame(tableId, variant, requestId = ++privateTableReque
   panel.hidden = false;
   const snapshot = known ?? await currentSnapshot(tableId);
   if (requestId !== privateTableRequestId) return;
-  // The match score is shown during the auction too.
   const match = snapshot.match ?? null;
   if (snapshot.board) {
     // The auction ended since the last refresh: reveal its closing calls before the cards are played.
@@ -611,9 +655,10 @@ async function loadPrivateGame(tableId, variant, requestId = ++privateTableReque
       await renderPrivateBidding(snapshot.bidding, variant);
       if (requestId !== privateTableRequestId) return;
     }
-    renderPrivateBoard(tableId, snapshot.board, match);
+    renderPrivateBoard(tableId, snapshot.board, match, snapshot.you);
   } else if (snapshot.bidding) {
-    renderPrivateMatchScore(match);
+    // The match score is shown during the auction too, without round points.
+    showPrivateScoreBar(tableId, match, null, snapshot.you);
     await renderPrivateBidding(snapshot.bidding, variant);
   }
 }
@@ -693,7 +738,6 @@ async function renderPrivateBidding(bidding, variant) {
   document.querySelector("#private-game-hand").replaceChildren(...orderHandForDisplay(bidding.hand).map(cardElement));
   document.querySelector("#private-auction-actions").hidden = false;
   document.querySelector("#private-play-status").hidden = true;
-  document.querySelector("#private-scoreboard").hidden = true;
   document.querySelector("#private-declaration-message").textContent = "";
   document.querySelector("#private-round-result").hidden = true;
   document.querySelector("#private-card-table").hidden = false;
@@ -718,14 +762,19 @@ async function renderPrivateBidding(bidding, variant) {
   showPrivateThinking(bidding);
 }
 
-// The team scores added up over the rounds of the match so far.
-function renderPrivateMatchScore(match) {
-  document.querySelector("#private-match-score").textContent = match
-    ? t("Match score — North–South {0} · East–West {1} · to {2}", match.northSouth, match.eastWest,
-      formatNumber(match.target)) : "";
+// Whether the player still looks at this table: a snapshot that arrives after they left must not draw over another view.
+function privateTableOnScreen(tableId) {
+  return viewForPath(window.location.pathname) === "private-table" && privateTableId() === tableId;
 }
 
-function renderPrivateBoard(tableId, board, match) {
+// `you` is the viewer's seat, or null when they hold none: then no team is marked "You".
+function showPrivateScoreBar(tableId, match, board, you) {
+  if (privateTableOnScreen(tableId)) showScoreBar(match, board, you == null ? null : you % 2);
+}
+
+function renderPrivateBoard(tableId, board, match, you) {
+  // Before the unchanged-snapshot check: renderView hides the bar, and coming back to the table must show it again.
+  showPrivateScoreBar(tableId, match, board, you);
   const snapshot = JSON.stringify({ board, match });
   if (snapshot === lastRenderedPrivateBoardJson) return;
   lastRenderedPrivateBoardJson = snapshot;
@@ -737,15 +786,11 @@ function renderPrivateBoard(tableId, board, match) {
     : t("{0}'s turn · {1} of 8 tricks completed", playerName(board.activePlayer), board.completedTricks));
   document.querySelector("#private-auction-actions").hidden = true;
   document.querySelector("#private-play-status").hidden = false;
-  document.querySelector("#private-scoreboard").hidden = false;
   document.querySelector("#private-card-table").hidden = false;
   renderTableSeats("private", board.seats.map((seat, index) => ({ ...seat, dealer: index === board.dealerIndex })),
     board.currentPlayerIndex, contractFromBoard(board));
   document.querySelector("#private-declaring-team").textContent = t(board.declaringTeam);
   document.querySelector("#private-active-player").textContent = playerName(board.activePlayer);
-  document.querySelector("#private-north-south-score").textContent = board.northSouthScore;
-  document.querySelector("#private-east-west-score").textContent = board.eastWestScore;
-  renderPrivateMatchScore(match);
   setSuitText(document.querySelector("#private-declaration-message"), board.declarationMessage
     ? `${t(board.declarationMessage)}${board.beloteBonusPoints ? t(" Belote/Rebelote bonus: {0} points.", board.beloteBonusPoints) : ""}` : "");
   renderAnnouncements("private-", board);
@@ -954,10 +999,10 @@ async function loadBotGame(gameId) {
     document.querySelector("#game-variant-title").textContent = t(game.variantLabel);
     document.querySelector("#declaring-team").textContent = t(board.declaringTeam);
     document.querySelector("#active-player").textContent = playerName(board.activePlayer);
-    document.querySelector("#north-south-score").textContent = board.northSouthScore;
-    document.querySelector("#east-west-score").textContent = board.eastWestScore;
-    document.querySelector("#match-score").textContent = t("Match score — North–South {0} · East–West {1} · to {2}",
-      match.northSouth, match.eastWest, formatNumber(match.target));
+    // In pass and play, "You" waits for the hand-off, so the bar does not tell who holds the device next.
+    if (window.location.pathname === `/play/bot/game/${gameId}`) {
+      showScoreBar(match, board, game.passAndPlay ? null : board.currentPlayerIndex % 2);
+    }
     setSuitText(document.querySelector("#declaration-message"), t(board.declarationMessage || "")
       + (board.beloteBonusPoints ? t(" Belote/Rebelote bonus: {0} points.", board.beloteBonusPoints) : ""));
     renderAnnouncements("", board);
@@ -1015,6 +1060,7 @@ async function loadBotGame(gameId) {
       return item;
     }));
     await handedOff;
+    if (window.location.pathname === `/play/bot/game/${gameId}`) showScoreBar(match, board, board.currentPlayerIndex % 2);
     if (secondDeal) await playSecondDeal(board, secondDeal.hand, seatsForBoard, showTrick);
   } catch (error) {
     window.history.replaceState({}, "", "/play/bot");
@@ -1752,7 +1798,12 @@ async function loadBidding(gameId) {
     document.querySelectorAll("#trump-options button").forEach((button) => {
       button.disabled = !bidding.upturnedCard || button.dataset.suit === bidding.upturnedCard.suit;
     });
+    // In pass and play, "You" waits for the hand-off, so the bar does not tell who holds the device next.
+    if (window.location.pathname === `/play/bot/bidding/${gameId}`) {
+      showScoreBar(snapshot.match, null, game.passAndPlay ? null : currentPlayerIndex % 2);
+    }
     await handedOff;
+    if (window.location.pathname === `/play/bot/bidding/${gameId}`) showScoreBar(snapshot.match, null, currentPlayerIndex % 2);
     if (animateDeal) await playOpeningDeal(game, bidding, currentPlayerIndex);
     // A bot took the contract before the player's first call: show its call, then move to the card table.
     if (bidding.complete) {

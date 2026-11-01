@@ -1532,7 +1532,8 @@ Acceptance criteria:
   on a phone.
 - It also shows the points of each team so far in the round. The contract is
   not repeated there: it is shown at the bidder's seat (US-099).
-- Both values update as soon as a round ends, with the count-up of US-091.
+- Both values update as soon as a round ends. The count-up animation is added
+  by US-091.
 - It is exposed to screen readers as a live region that announces changes
   without interrupting play (US-074).
 - New texts are translated into French and Dutch.

@@ -13,6 +13,12 @@
     <a class="brand" href="/" aria-label="Beelot home">beelot<span>♠</span></a>
     <a class="settings-link" href="/settings">Settings</a>
 
+    <div class="score-bar" id="score-bar" role="group" aria-label="Score" hidden>
+        <span class="score-team" data-team="0"><span class="team-name">North–South</span><strong class="match-points"></strong><small class="round-points"></small><em class="you-mark" hidden>You</em></span>
+        <span class="score-target"></span>
+        <span class="score-team" data-team="1"><span class="team-name">East–West</span><strong class="match-points"></strong><small class="round-points"></small><em class="you-mark" hidden>You</em></span>
+    </div>
+    <span class="visually-hidden" id="score-bar-live" role="status" aria-live="polite"></span>
     <section class="home-view" data-view="home">
         <div class="hero-suits" aria-hidden="true"><span>♥</span><span>♣</span><span>♦</span></div>
         <p class="eyebrow">Belote, remixed ✨</p>
@@ -133,17 +139,11 @@
             <p class="difficulty-summary"><strong id="selected-variant"></strong><span>Bots · <strong id="selected-difficulty"></strong></span></p>
         </header>
         <div class="game-hud">
-            <div class="scoreboard" aria-label="Team scores">
-                <span><small>North–South</small><strong id="north-south-score">0</strong></span>
-                <i>VS</i>
-                <span><small>East–West</small><strong id="east-west-score">0</strong></span>
-            </div>
             <div class="game-status" aria-label="Game status">
                 <span>Contract <strong id="declaring-team"></strong></span>
                 <span class="turn-pill">Turn <strong id="active-player"></strong></span>
             </div>
         </div>
-        <p class="match-score" id="match-score"></p>
         <div class="card-table" id="bot-card-table" aria-label="Four-player card table">
             <div class="player-station station-top" id="bot-player-top"></div>
             <div class="player-station station-left" id="bot-player-left"></div>
@@ -295,14 +295,9 @@
         <section class="private-game-panel" id="private-game-panel" hidden>
             <div class="private-game-title"><span class="live-dot"></span><h2 id="private-game-heading">Auction</h2></div>
             <p id="private-game-message" role="status"></p>
-            <p class="match-score" id="private-match-score"></p>
             <div class="game-status" id="private-play-status" hidden aria-label="Private game status">
                 <span>Declaring team <strong id="private-declaring-team"></strong></span>
                 <span>Turn <strong id="private-active-player"></strong></span>
-            </div>
-            <div class="scoreboard" id="private-scoreboard" hidden aria-label="Private team scores">
-                <span>North–South <strong id="private-north-south-score">0</strong></span>
-                <span>East–West <strong id="private-east-west-score">0</strong></span>
             </div>
             <div class="card-table private-card-table" id="private-card-table" hidden aria-label="Four-player private card table">
                 <div class="player-station station-top" id="private-player-top"></div>
@@ -566,6 +561,7 @@
 <script src="/theme.js"></script>
 <script src="/suit-text.js"></script>
 <script src="/contract-badge.js"></script>
+<script src="/score-bar.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
