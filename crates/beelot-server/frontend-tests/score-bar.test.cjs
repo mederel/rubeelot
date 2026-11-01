@@ -95,3 +95,16 @@ test("countValue with no rise returns to", () => {
 test("countValue returns integers", () => {
   for (let i = 0; i <= 10; i++) assert.ok(Number.isInteger(countValue(0, 77, i / 10)));
 });
+
+test("progress exactly at the target is 1", () => {
+  const model = scoreBarModel({ match: { northSouth: 1000, eastWest: 1000, target: 1000 }, board: null, myTeam: 0 });
+  assert.deepEqual(model.teams.map((t) => t.progress), [1, 1]);
+});
+
+test("a non-finite score or target gives progress 0", () => {
+  const nan = scoreBarModel({ match: { northSouth: NaN, eastWest: 250, target: 1000 }, board: null, myTeam: 0 });
+  assert.equal(nan.teams[0].progress, 0);
+  assert.equal(nan.teams[1].progress, 0.25);
+  const inf = scoreBarModel({ match: { northSouth: 500, eastWest: 250, target: Infinity }, board: null, myTeam: 0 });
+  assert.deepEqual(inf.teams.map((t) => t.progress), [0, 0]);
+});

@@ -449,14 +449,16 @@ h2, h3 { letter-spacing: -.025em; }
     gap: 0 .35rem;
     grid-template-columns: auto auto;
     justify-content: start;
-    padding: .1rem .5rem;
+    padding: .1rem .5rem calc(.1rem + 7px);
+    position: relative;
   }
   .score-team[data-team="1"] { justify-content: end; }
   .team-name { font-size: .66rem; }
   .match-points { font-size: 1.1rem; line-height: 1.2; }
   .round-points { font-size: .7rem; grid-column: 1; }
   .you-mark { font-size: .55rem; grid-column: 2; grid-row: 2; justify-self: start; }
-  .score-progress { grid-column: 1 / -1; margin-top: 1px; }
+  /* Out of the grid, so the track always spans the chip's content width, whatever the digits. */
+  .score-progress { bottom: .1rem; left: .5rem; position: absolute; right: .5rem; }
   .score-target { font-size: .68rem; }
 }
 

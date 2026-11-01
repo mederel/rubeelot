@@ -80,7 +80,7 @@ A `<span class="score-progress" aria-hidden="true"><i></i></span>` in each
 ### `styles.css`
 
 - `.score-progress`: a 6 px high track, full width of the chip, rounded and
-  outlined in the cartoon style of the bar; its `i` fills with the team colour and
+  outlined in the cartoon style of the bar; its `i` fills with `--gold`, the bar's accent, and
   is scaled with `transform: scaleX(var(--progress))` (origin left), so only
   `transform` animates.
 - Full: `transition: transform 700ms ease-out`. Reduced: `transition: transform
