@@ -129,3 +129,12 @@ technology; the target is already spoken in the live region sentence.
 - The count of the match score starts as soon as the snapshot arrives, so it may
   run while the last trick of the round is still on view.
 - The count is skipped at Reduced and Off by design, not by a separate setting.
+- Verification (2026-11-01) found the phone bar's height depended on the
+  platform font: the team name, round points and "You" mark used `line-height:
+  normal`, and the "You" mark set the second row. They now use 1.2, and the bar
+  measures 61.41 px at 390 and 320 px wide (it was 62.86 px).
+- At 320 px wide with four-digit scores ("1 980"), the viewer's chip content is
+  1 px wider than the chip. The page does not scroll sideways and the bar keeps
+  its height; this comes from the US-096 chip layout, not the progress track.
+- Leaving a game mid-count stops the count where it is; coming back shows the
+  final score at once, since the game key resets what the bar has shown.
