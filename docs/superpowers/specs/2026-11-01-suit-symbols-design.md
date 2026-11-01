@@ -10,9 +10,10 @@ glance. From the backlog (`docs/product-backlog.md`):
 - The four suits differ by shape, not only by colour, and stay distinct at a
   small size.
 - Red and black keep a high contrast against the card face (WCAG AA at least).
-- Settings offers a four-colour option, remembered in the browser and applied
-  to the hand, the trick and the bidding buttons. (There is no separate size
-  option: the symbols have one size, the one chosen below.)
+- The symbols apply to the hand, the trick, the tutorial and the bidding
+  buttons. There is no Settings option: one size, and the usual red and black
+  (an earlier "Large suit symbols" option and a four-colour option were dropped
+  after reviewing mock-ups).
 - The suit names stay available to screen readers (US-074).
 - New texts are translated into French and Dutch.
 
@@ -41,21 +42,22 @@ US-087.
   40cqw wide, rank about 24cqw. There is no "Large suit symbols" option: a
   larger size covered too much of the court portraits, and the one size is
   already much bigger than the old glyph.
-- **Four colours by token.** Each suit's colour is a token (`--suit-hearts`,
-  `--suit-diamonds`, `--suit-spades`, `--suit-clubs`). By default hearts and
-  diamonds use `--card-red` and spades and clubs use `--card-black`. With
-  `body[data-suit-colors="four"]`, diamonds become blue and clubs green (about
-  `#1e6fd9` and `#1f8a4c`, adjusted until each is at least 4.5:1 against
-  `--card-paper`). Hearts stay red and spades stay black.
+- **Red and black, as today.** Hearts and diamonds use `--card-red`, spades and
+  clubs use `--card-black` (set by the `.playing-card` colour rule, which the
+  symbols inherit through `currentColor`). Both already pass 4.5:1 against
+  `--card-paper` in every theme (verified in the browser). Rejected: a
+  four-colour option (blue diamonds, green clubs).
+- **Court portraits make room.** On court cards the portrait is about 76% of the
+  card width, anchored to the bottom-right (`right: 2%; bottom: 0`, bottom edge
+  still cropped), instead of the 88% inset of US-086, so it never touches the
+  rank and symbol at the top left.
 - **One shared function.** `suitSymbol(suit)` in `app.js` returns the
   `<svg class="suit suit-<suit>"><use href="/suits.svg#suit-<suit>"/></svg>`
   element for a suit name such as `"HEARTS"`. Cards and the bidding buttons use
   it, and US-098 and US-099 will reuse it.
-- **One Settings checkbox**, next to Reactions and Sound: "Four suit colours".
-  Stored as `beelot.suit-four-colors` (`"true"` when on), applied by
-  `applySettings()` as `document.body.dataset.suitColors = "four"`, with the same
-  storage fallback (a session variable when storage throws) as the effects level
-  and theme.
+- **No new setting.** Nothing is added to Settings, to `applySettings()` or to
+  browser storage, and there is no new text to translate except the changed
+  suit-name keys below.
 - **Bidding buttons.** The trump buttons in the solo, private and pass-and-play
   bidding show the symbol, then the name, in place of the font glyph ("Clubs ♣"
   becomes the symbol and "Clubs"). The suit name stays as text.
@@ -73,8 +75,10 @@ US-087.
 - The pip layouts, the ace's centre symbol and the `.pip-field`, `.card-pip`
   and `.ace-face` rules are removed. Court cards keep the portrait (US-086) and
   the paper halo behind the index.
-- The suit colour of a card comes from its suit token through the `suit-<suit>`
-  class, replacing the red/black rule on `.playing-card.hearts` and the like.
+- The suit colour stays the existing red/black rule on `.playing-card`; the
+  symbol takes it through `currentColor`.
+- `.court-art` is resized and moved as described above; the index keeps its
+  paper halo only if the portrait still reaches it (check in the browser).
 
 ### Bidding buttons (`index.html`, `i18n.js`, `i18n-nl.js`)
 
@@ -83,11 +87,6 @@ US-087.
   keys "Clubs ♣", "Diamonds ♦", "Hearts ♥" and "Spades ♠" are replaced by
   "Clubs", "Diamonds", "Hearts" and "Spades" (checked against existing keys
   first).
-
-### Settings (`index.html`, `app.js`, `i18n.js`, `i18n-nl.js`)
-
-- One `setting-choice` checkbox with a one-line description.
-- New FR and NL texts for the option and its description.
 
 ## Testing
 
@@ -98,13 +97,12 @@ external references, and that the four shapes differ. The rest is verified in a
 real browser:
 
 1. All 32 faces rendered through `cardElement()` at hand, trick and tutorial
-   sizes, in red and black, four colours and greyscale: every suit identifiable, no
+   sizes, in red and black and in greyscale: every suit identifiable, no
    collision between rank, symbol and portrait, court portraits still
    recognisable.
-2. Contrast of each suit colour against the card paper at least 4.5:1,
-   including the four-colour blue and green.
-3. The setting applies at once, survives a reload, works with storage blocked,
-   and is independent of the themes (US-087) and effects level (US-094).
+2. Contrast of red and of black against the card paper at least 4.5:1 in
+   every theme (US-087).
+3. The symbols look right in every theme (US-087) and effects level (US-094).
 4. The trump buttons in the solo, private and pass-and-play bidding show the
    symbol and the name; screen-reader text is unchanged (accessibility tree).
 5. A real bot game at 1280 × 800 and 390 × 844 with no clipping or horizontal

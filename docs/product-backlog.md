@@ -1510,10 +1510,10 @@ Acceptance criteria:
   distinct from one another at a small size: for example spades and clubs are
   not mistaken, and hearts and diamonds are not mistaken.
 - Red and black keep a high contrast against the card face (WCAG AA at least).
-- Settings offers an option for four colours, one per suit, for players who
-  need more help. It is remembered in the browser and applies to the hand, the
-  trick, the contract at the bidder's seat (US-099) and the bidding buttons.
-  The symbols have a single size; there is no separate size option.
+- The symbols apply to the hand, the trick, the contract at the bidder's seat
+  (US-099) and the bidding buttons. They have a single size and keep the usual
+  red (hearts, diamonds) and black (spades, clubs); there is no Settings option
+  for size or colours.
 - The suit names stay available to screen readers (US-074).
 - New texts are translated into French and Dutch.
 
@@ -1568,7 +1568,7 @@ Acceptance criteria:
   table messages and the tutorial.
 - Where the symbol is already shown with a name close by (a call bubble, a
   bidding button), the name may be dropped when the symbol is enough.
-- The symbol uses the style of US-095, including its four-colour option.
+- The symbol uses the style of US-095.
 - The symbols come from one shared function next to `suitName`, so that every
   sentence uses the same display, in English, French and Dutch.
 - Screen readers read the suit name once, not the name and the symbol
