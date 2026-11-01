@@ -626,6 +626,17 @@ function suitName(suit, capitalise = true) {
   return capitalise ? name.charAt(0).toUpperCase() + name.slice(1) : name;
 }
 
+// Every suit word the page may show (active language and English), lower case, mapped to its suit key.
+function suitWordMap() {
+  const words = {};
+  for (const names of [locale?.suits, { clubs: "clubs", diamonds: "diamonds", hearts: "hearts", spades: "spades" }]) {
+    for (const suit of Object.keys(symbolBySuit)) {
+      if (names?.[suit]) words[names[suit].toLowerCase()] = suit;
+    }
+  }
+  return words;
+}
+
 function rankLabel(rank) {
   return locale ? locale.rankLabels[rank] ?? rank : rank;
 }
