@@ -338,8 +338,11 @@ function openTableStream(tableId, retry = 1000) {
 }
 
 // The score bar above the table: each team's match score and round points, the target, and the viewer's team.
-// The live region speaks only when its sentence changes, so tricks and repeated renders stay silent.
+// The live region speaks only when its sentence changes, so tricks, repeated renders and the move from bidding to
+// the card table stay silent; the sentence is forgotten only when the player leaves the game (see renderView).
+const scoreBarViews = ["bidding", "bot-game", "private-table"];
 let scoreBarSentence = "";
+let scoreBarGame = "";
 
 function showScoreBar(match, board, myTeam) {
   const model = scoreBarModel({ match, board, myTeam });
@@ -369,12 +372,17 @@ function showScoreBar(match, board, myTeam) {
 
 function hideScoreBar() {
   document.querySelector("#score-bar").hidden = true;
-  scoreBarSentence = "";
 }
 
 function renderView() {
   hideScoreBar();
   const activeView = viewForPath(window.location.pathname);
+  const game = scoreBarViews.includes(activeView) ? window.location.pathname.split("/").at(-1) : "";
+  if (game !== scoreBarGame) {
+    scoreBarGame = game;
+    scoreBarSentence = "";
+    document.querySelector("#score-bar-live").textContent = "";
+  }
   document.querySelectorAll("[data-view]").forEach((view) => {
     view.hidden = view.dataset.view !== activeView;
   });
